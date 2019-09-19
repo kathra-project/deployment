@@ -1,0 +1,17 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: deploymanager
+  labels:
+{{ include "factory.labels" . | indent 4 }}
+    product: kathra
+    app: deploymanager
+spec:
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  selector:
+    app: deploymanager
+    product: kathra
+  type: ClusterIP

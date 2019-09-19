@@ -1,0 +1,101 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: "resourcemanager-arangodb"
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    app: resourcemanager
+    impl: arangodb
+    product: kathra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: resourcemanager
+      impl: arangodb
+      product: kathra
+  template:
+    metadata:
+      labels:
+        app: resourcemanager
+        impl: arangodb
+        product: kathra
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - image: "{{ .Values.global.docker.registry.url }}/{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
+        imagePullPolicy: Always
+        name: resourcemanager-arangodb
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /api/v1/swagger.json
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 600
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        env:
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: ARANGODB_SERVICE_HOST
+          valueFrom:
+            configMapKeyRef:
+              key: ARANGODB_SERVICE_HOST
+              name: resource-manager-config
+        - name: ARANGODB_SERVICE_PORT
+          valueFrom:
+            configMapKeyRef:
+              key: ARANGODB_SERVICE_PORT
+              name: resource-manager-config
+        - name: ARANGODB_USER
+          valueFrom:
+            secretKeyRef:
+              key: ARANGODB_USER
+              name: resource-manager-secret
+        - name: ARANGODB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: ARANGODB_PASSWORD
+              name: resource-manager-secret
+        - name: ARANGODB_DATA
+          valueFrom:
+            configMapKeyRef:
+              key: ARANGODB_DATA
+              name: resource-manager-config
+        - name: KEYCLOAK_AUTH_URL
+          valueFrom:
+            configMapKeyRef:
+              name: keycloak-config
+              key: KEYCLOAK_AUTH_URL
+        - name: KEYCLOAK_REALM
+          valueFrom:
+            configMapKeyRef:
+              name: keycloak-config
+              key: KEYCLOAK_REALM
+        - name: KEYCLOAK_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              key: KEYCLOAK_CLIENT_ID
+              name: kathra-keycloak-secret
+        - name: KEYCLOAK_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: KEYCLOAK_CLIENT_SECRET
+              name: kathra-keycloak-secret
+        - name: JAVA_OPTS
+          value: "-XX:+UnlockExperimentalVMOptions  -XX:MaxRAMFraction=1 -Xms128M -Xmx512M"
+        ports:
+        - containerPort: 8080
+          name: web
+          protocol: TCP
+{{- if .Values.resources }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+{{- end }}
+

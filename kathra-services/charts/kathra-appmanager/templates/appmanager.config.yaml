@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: appmanager-config
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    project: kathra
+    app: appmanager
+data:
+  KATHRA_APPMANAGER_CODEGEN_URL: {{ .Values.services_url.codegen }}
+  KATHRA_APPMANAGER_SOURCEMANAGER_URL: {{ .Values.services_url.source_manager }}
+  KATHRA_APPMANAGER_PIPELINEMANAGER_URL: {{ .Values.services_url.pipeline_manager }}
+  KATHRA_APPMANAGER_RESOURCEMANAGER_URL: {{ .Values.services_url.resource_manager }}
+  KATHRA_APPMANAGER_DELETE_ZIP_FILE: {{ .Values.delete_zip_file | quote }}
+  IMAGE_REGISTRY_HOST: {{ .Values.image_registry_host }}

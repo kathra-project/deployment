@@ -1,0 +1,12 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: codegen-config
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    project: kathra
+    app: codegen
+data:
+  ARTIFACT_REPOSITORY_URL: {{ .Values.repository.url }}
+  ARTIFACT_PIP_REPOSITORY_NAME: {{ .Values.repository.pythonRepo }}

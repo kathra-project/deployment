@@ -1,0 +1,26 @@
+global:
+  namespace: kathra-dev
+  tld: dev-irtsysx.fr
+  docker:
+    registry: 
+      url: registry.hub.docker.com
+      root_repository: kathra
+      secret_b64: <base64_k8s_dockerconfig_secret>
+  keycloak:
+    kathra_services_client:
+      id: <kathra_services_client_id>
+      secret: <kathra_services_client_secret>
+
+image: codegen-swagger
+version: 1.0.0-RC-SNAPSHOT-ad5ff7d-35
+tls: true
+repository:
+  url: https://nexus.dev-irtsysx.fr
+  pythonRepo: pip-public/simple
+resources:
+  limits:
+    cpu: 300m
+    memory: 512Mi
+  requests:
+    cpu: 50m
+    memory: 256Mi

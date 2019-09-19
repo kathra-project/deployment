@@ -1,0 +1,83 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: dashboard-angular
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    app: dashboard
+    impl: angular
+    product: kathra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dashboard
+      impl: angular
+      product: kathra
+  template:
+    metadata:
+      labels:
+        app: dashboard
+        impl: angular
+        product: kathra
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - image: "{{ .Values.global.docker.registry.url }}/{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
+        imagePullPolicy: Always
+        name: dashboard-angular
+        env:
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: PLATFORM_MGR_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              key: PLATFORM_MGR_ENDPOINT
+              name: dashboard-config
+        - name: SERVICE_DOMAIN
+          valueFrom:
+            configMapKeyRef:
+              key: SERVICE_DOMAIN
+              name: dashboard-config
+        - name: APP_MGR_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              key: APP_MGR_ENDPOINT
+              name: dashboard-config
+        - name: PIPELINE_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              key: PIPELINE_ENDPOINT
+              name: dashboard-config
+        - name: KEYCLOAK_REALM
+          valueFrom:
+            configMapKeyRef:
+              key: KEYCLOAK_REALM
+              name: keycloak-config
+        - name: KEYCLOAK_AUTH_URL
+          valueFrom:
+            configMapKeyRef:
+              key: KEYCLOAK_AUTH_URL
+              name: keycloak-config
+        - name: KEYCLOAK_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              key: KEYCLOAK_CLIENT_ID
+              name: kathra-keycloak-secret
+        - name: KEYCLOAK_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: KEYCLOAK_CLIENT_SECRET
+              name: kathra-keycloak-secret
+        ports:
+        - containerPort: 8080
+          name: web
+          protocol: TCP
+{{- if .Values.resources }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+{{- end }}

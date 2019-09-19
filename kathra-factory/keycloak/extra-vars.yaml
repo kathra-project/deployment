@@ -1,0 +1,80 @@
+keycloak:
+  username: keycloak
+  password: keycloakadmin
+  
+  image:
+    tag: 4.2.1.Final
+
+  extraEnv: |
+    - name: KEYCLOAK_LOGLEVEL
+      value: INFO
+    - name: WILDFLY_LOGLEVEL
+      value: INFO
+    - name: PROXY_ADDRESS_FORWARDING
+      value: "true"
+    - name: LDAP_SERVICE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          key: password
+          name: {{ template "configuration.ldapPasswordService" . }}
+
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: traefik
+    hosts:
+      - <host-keycloak>
+
+  persistence:
+    dbVendor: postgres
+    existingSecret: "keycloak-postgres-kubedb-auth"
+    existingSecretKey: POSTGRES_PASSWORD
+    dbName: postgres
+    dbHost: keycloak-postgres-kubedb
+    dbUser: postgres
+
+configuration:
+  realm: kathra
+  ingress:
+    labels:
+      ingress: tls
+  ldapDomain: <ldap-host>
+  clientsDomain: <domain-clients>
+  ldapPasswordService: ldap-service-password
+  ldapPassword: <ldap-pwd>
+  ldapUserDn : <ldap-user-dn>
+  ldapServiceAccount: <ldap-account>
+  configurationShellScript: "keycloak-configuration.sh"
+  configurationConfigmap: keycloak-configuration
+  ldapGroupMapper:
+    groupsDn: <ldap-group-dn>
+    groupNameLdapAttribute: cn
+    groupObjectClass: group
+    preserveGroupInheritance: false
+    membershipLdapAttribute: member
+    membershipAttributeType: DN
+    groupsLdapFilter: ""
+    mappingMode: READ_ONLY
+    userRolesRetrieveStrategy: LOAD_GROUPS_BY_MEMBER_ATTRIBUTE_RECURSIVELY
+    mappedGroupsAttributes: ""
+    dropNonExistingGroupsDuringSync: false
+  #Only supports 2 levels groups (e.g. foo, foo/bar)
+  createGroups:
+    - jenkins-admin
+    - kathra-projects
+    - kathra-projects/demo
+  createUsers:
+    - user: kathra-pipelinemanager
+      groups:
+        - jenkins-admin
+    - user: kathra-demo
+      groups:
+        - kathra-projects/demo
+  serviceAccountsRoles:
+    - client: kathra-user-manager
+      roles:
+        - query-groups
+        - query-realms
+        - query-users
+        - view-realm
+        - view-users

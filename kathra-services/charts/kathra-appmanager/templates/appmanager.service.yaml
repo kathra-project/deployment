@@ -1,0 +1,17 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "appmanager"
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    product: "kathra"
+    app: "appmanager"
+spec:
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  selector:
+    product: "kathra"
+    app: "appmanager"
+  type: ClusterIP

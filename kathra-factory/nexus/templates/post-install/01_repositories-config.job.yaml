@@ -1,0 +1,73 @@
+{{- if .Values.postInstallConfig.enabled -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nexus-repositories-config
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
+spec:
+  backoffLimit: 10
+  template:
+    spec:
+      containers:
+      - name: curl
+        image: kathra/alpine-bash-curl:latest
+        command: ["/startup/nexus-repositories-config/01_repositories-config.sh"]
+        env:
+        - name: NEXUS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: nexus-repositories-config
+              key: NEXUS_URL
+        - name: ADMIN_USER
+          valueFrom:
+            secretKeyRef:
+              name: nexus-repositories-config-secret
+              key: ADMIN_USER
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nexus-repositories-config-secret
+              key: ADMIN_PASSWORD
+        volumeMounts:
+        - name: nexus-repositories-config
+          mountPath: /startup/nexus-repositories-config
+        - name: maven
+          mountPath: /scripts/maven
+        - name: pip
+          mountPath: /scripts/pip
+        - name: nuget
+          mountPath: /scripts/nuget
+      restartPolicy: Never
+      volumes:
+      - name: nexus-repositories-config
+        configMap:
+          name: nexus-repositories-config
+          defaultMode: 0777
+          items:
+          - key: 01_repositories-config.sh
+            path: 01_repositories-config.sh
+      - name: maven
+        configMap:
+          name: nexus-repositories-config
+          defaultMode: 0777
+          items:
+          - key: maven.groovy
+            path: maven.groovy
+      - name: nuget
+        configMap:
+          name: nexus-repositories-config
+          defaultMode: 0777
+          items:
+          - key: nuget.groovy
+            path: nuget.groovy
+      - name: pip
+        configMap:
+          name: nexus-repositories-config
+          defaultMode: 0777
+          items:
+          - key: pip.groovy
+            path: pip.groovy
+{{- end -}}

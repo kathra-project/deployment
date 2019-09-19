@@ -1,0 +1,28 @@
+global:
+  namespace: kathra-dev
+  tld: dev-irtsysx.fr
+  docker:
+    registry: 
+      url: registry.hub.docker.com
+      root_repository: kathra
+      secret_b64: <base64_k8s_dockerconfig_secret>
+  keycloak:
+    kathra_services_client:
+      id: <kathra_services_client_id>
+      secret: <kathra_services_client_secret>
+
+image: dashboard
+version: registry.hub.docker.com/kathra/kathra-dashboard-angular:1.0.0-RC-SNAPSHOT-f240bfe-61
+tls: true
+services_url:
+  platform_manager: wss://<parform-manager-host>/spm
+  app_manager: https://<appmanager-host>/api/v1
+  jenkins_url: https://<jenkins-host>/api/v1
+  base_domain: <base-domain>
+resources:
+  limits:
+    cpu: 300m
+    memory: 512Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi

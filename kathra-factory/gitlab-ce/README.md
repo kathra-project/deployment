@@ -1,0 +1,1 @@
+1. Get keycloak client secret

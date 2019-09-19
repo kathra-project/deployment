@@ -1,0 +1,69 @@
+{{- if .Values.postInstallConfig.enabled -}}
+{{ if eq .Values.auth.mode "oidc_auth" }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: harbor-oicd-config
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": "hook-succeeded"
+spec:
+  backoffLimit: 10
+  activeDeadlineSeconds: 100
+  template:
+    spec:
+      containers:
+      - name: curl
+        image: kathra/alpine-bash-curl:latest
+        command: ["/startup/oidc-config.sh"]
+        env:
+        - name: OIDC_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: harbor-oidc-cm
+              key: OIDC_ENDPOINT
+        - name: OIDC_SCOPE
+          valueFrom:
+            configMapKeyRef:
+              name: harbor-oidc-cm
+              key: OIDC_SCOPE
+        - name: OIDC_CLIENT_ID
+          valueFrom:
+            configMapKeyRef:
+              name: harbor-oidc-cm
+              key: OIDC_CLIENT_ID
+        - name: OIDC_CLIENT_SECRET
+          valueFrom:
+            configMapKeyRef:
+              name: harbor-oidc-cm
+              key: OIDC_CLIENT_SECRET
+        - name: HARBOR_CONFIGURATIONS_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: harbor-oidc-cm
+              key: HARBOR_CONFIGURATIONS_ENDPOINT
+        - name: ADMIN_USER
+          valueFrom:
+            secretKeyRef:
+              name: harbor-oidc-secret
+              key: ADMIN_USER
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: harbor-oidc-secret
+              key: ADMIN_PASSWORD
+        volumeMounts:
+        - name: startscript
+          mountPath: /startup
+      restartPolicy: Never
+      volumes:
+      - name: startscript
+        configMap:
+          name: harbor-oidc-cm
+          defaultMode: 0777
+          items:
+          - key: oidc-config.sh
+            path: oidc-config.sh
+{{- end -}}
+{{- end -}}

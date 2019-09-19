@@ -1,0 +1,10 @@
+apiVersion: v1
+data:
+  KEYCLOAK_AUTH_URL: {{ .Values.global.keycloak.auth_url }}
+  KEYCLOAK_REALM: {{ .Values.global.keycloak.realm }}
+kind: ConfigMap
+metadata:
+  name: keycloak-config
+  labels:
+    project: kathra
+    app: kathra-keycloak

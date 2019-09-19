@@ -1,0 +1,20 @@
+global:
+  docker:
+    registry: 
+      url: registry.hub.docker.com
+      root_repository: kathra
+      secret_b64: <base64_k8s_dockerconfig_secret>
+
+keycloak:
+    login: <admin-keycloak>
+    password: <pwd>
+
+image: users-sync
+version: 1.0.0-RC-SNAPSHOT
+resources:
+  limits:
+    cpu: 300m
+    memory: 768Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi

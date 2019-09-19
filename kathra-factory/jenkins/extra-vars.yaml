@@ -1,0 +1,194 @@
+Master:
+  Name: jenkins-master
+  Image: "jenkins/jenkins"
+  ImageTag: "2.164.3"
+  ImagePullPolicy: "IfNotPresent"
+  Component: "jenkins-master"
+  UseSecurity: true
+  AdminUser: admin
+  AdminPassword: "formetoknowforyoutofindout"
+  Cpu: "1"
+  Memory: "1024Mi"
+  ServiceType: ClusterIP
+  SlaveListenerServiceType: ClusterIP
+  InitContainerEnv:
+
+  ContainerEnv:
+    # Tell the plugin where to find its config. The '..data'
+    # part is needed for now due to this bug:
+    # https://github.com/jenkinsci/configuration-as-code-plugin/issues/425
+    - name: CASC_JENKINS_CONFIG
+      value: /var/jenkins_home/casc_configs/jenkins.yaml
+    # `SECRETS` is used to override the `/run/secrets` path,
+    # which is useful for setting credentials.
+    # But it needs to be used in conjuction with Master.SecretsFilesSecret
+    # - name: SECRETS
+    #   value: /usr/share/jenkins/ref/secrets
+    - name: JENKINS_OPENID_CLIENT_NAME
+      value: "jenkins"
+    - name : JENKINS_URL
+      value: "https://<jenkins-host>/"
+  # List of plugins to be install during Jenkins master start
+  # mind the last plugin in the list now ;)
+  InstallPlugins:
+    - kubernetes:1.14.9
+    - kubernetes-credentials:0.4.0
+    - workflow-aggregator:2.6
+    - workflow-job:2.32
+    - credentials-binding:1.18
+    - git:3.9.3
+    - oic-auth:1.6
+    - matrix-auth:2.4.2
+    - pipeline-utility-steps:2.3.0
+    - configuration-as-code:1.15
+    # You might also need this for a couple of third-party plugins (e.g. for setting credentials)
+    - configuration-as-code-support:1.15
+
+  InitScripts:
+    - ""
+
+  JCasC:
+    enabled: true
+    PluginVersion: 1.10
+    SupportPluginVersion: 1.10
+    ConfigScripts:
+      root-url: |
+        unclassified:
+          location:
+            url: https://<jenkins-host>/
+      global-creds: |
+        credentials:
+          system:
+            domainCredentials:
+              - domain: null
+                credentials:
+                  - basicSSHUserPrivateKey:
+                      scope: GLOBAL
+                      id: kathra-deploy
+                      username: git
+                      passphrase: kathra
+                      description: "SSH key for pulling Kathra Gitlab projects"
+                      privateKeySource:
+                        directEntry:
+                          privateKey: |
+                            -----BEGIN RSA PRIVATE KEY-----
+                            Proc-Type: 4,ENCRYPTED
+                            DEK-Info: AES-128-CBC,35E8BB44263B0B98DAE0C1EAEF2ADB21
+
+                            0L19mxhEW92iiF4h+ie7sgBhx5H1PyCqTjt7b4YUkGlbkDqXRPy9Q35fgTGiO3B0
+                            uBlnij6NgmkF7aq2RvZ0/YkQWWFY//FhithXZrIK28g+jmmPOktBg/dzcY1mSwWG
+                            BLijUaLJyeJObMlTENMv1Se/TOrlXobR/SdTZMl5zXHsltTvTMcs+01Rl5uWf70i
+                            HdN8XLSCLiuYf+ApEOQXDUzp/vbttINcXyvkiNmPg04zmPzBbgMDUB6+ED4AwLeb
+                            0wHKYrvkTSbv+96uICBalgq/NpNQnBQ5f+ycepIlMnthzeUo7xjzddBkoIVLSEsR
+                            7YgA6GzCa0G2ZuJuOZMWoWZQhxHynNPeiD4u0gCYfBh1lhZjmRd5OCEnRsSkRfys
+                            058XgLHWI9sL/psuaodbFA7h/KGbxq19yIK5fb+Q83lwTvUi4LxyLDnsmxHTS8ie
+                            cW6AY5xJHgVJO7XI3t2LKjFNgR18CxGh28mz6PeiHGtKHbsQmhZ/y3kTxDvVOi7G
+                            59f2j/EUOh1bvluzQsMoubCqUDX80EEuKFzm/iLMoCSeg53ub61cbZkwZcouLGLw
+                            RB8Ts/GAL6TIy0/qaXlx3l9EUD8M37L5BY63rI00ugrWwRUTrdxV4WJCDEH+Z471
+                            fvTkPFiNRQ3wfOIAp5GkQTPfv27yYLfGCd7uSHO2wTfHewbtgy6ZpyyHBEmXSlAo
+                            eb+2s59JLwNDlcvukhFwXOUCOuqXQED0JFYM0pWDu+35sOWlEZcCESYxZohm+RWL
+                            RFyYal1mOK+xVkecIQZZ9GN9gN1trMU+YSfVW48Vt1FmdONnkcfyEWxlNMiZ4KKl
+                            oC3HDWPuuGOTzZ+vxg19JmGonRGQ75v/prsE9IdFotfdB2UV8tUvzJPevGEQ11kb
+                            n3Dso0fu94UkRlUOfmzpKn8SMQsmjAOz+Ux5RnGEBAs1h2qMmyEhO920K8StaiDG
+                            wd7eoOnU78e809viXtCf59/zdGdVoRtu/qXcyvk8v8goWWAT3qEsS/47U/q1sYuE
+                            Y3F8LdQJyJJbTftaUfzB1xXbuF/5UohFaJJ0mZM5nGcmre0qmRY395KPRoDPMn+g
+                            UZXH0q+hl02WTFGvlIR+/GdA0T4fxo17mCipCTrD7EosESM2t7zFVnRDvNE12Ltp
+                            Hh2A+WavGfrgnO9Wpg9f/xmejRjBofiHp2+qSKeq/KMXcWQHO3F9dCcRpPA+Sb5N
+                            KdDjbIP/naMw/FH5ufkNKTMKGj/FNFDEQp4QLHopH27WzA4cQ5OLMwTHlDEZ2Qxe
+                            sOwp9wkOYdU3z7h4pKjv21REJDvLLmlJ+XqisW5IzJmWe1SDoZhz/RAOKFR33UTX
+                            FiSXd4XY0XTTEbpXdsG5BXmnG5hs/VUbTvvH+c1dWSTw7yvJNjStyITnzIaPDTu8
+                            0s1/KGKBGVB8yVNK9ZSn81FQSt2q4taizbZvAh6EaQHGIeAAUDQTMPY5Xh1A2dIE
+                            kaXSA+sC+G9uh0FZCwMLvkym9oMLPVhMi8vaQr6Jl7MVJ1h5KgNUjMqPepTDlHP0
+                            cEfsxGp16pJDi13HdKp5pG5hVhB0tcOVkdNE/DBfcFqPUSCPCy8NR9QA/kv/n/hu
+                            u0xNGzKMDucs8273wILr5aIFQAl2WlyKHAQQVVGfTpW6LfspqR0AbU38XIdRjDxd
+                            cgHhWHcK+O5vcJ4PAVoH9Nd7yVS5dLwO5Ma/ERHlJPLZ4f6J2o6XX1b/UVbzXxCU
+                            NrurFzkc3LirDwP8aMUtRfZPGsXNYPgs8kv90KNhUdIH75MwRb/9dCgo5OLYR2A7
+                            5oO2wzt2wxvPPsLKKG4ES9xFwxMGBbgjjFxnJ9hKlJMVhd8Pgy09F+N2YsAk9oal
+                            h7xlMgUhBPcOO7u+pDKTaULLVrfet1r7fiktbbfsfdkr+wcAj3fovC6b666VEHmb
+                            R+sbHovNy7yZIVUZikosSvnLnXOYxXr7tMhOEQUZkEsKh58/m7IAy3WtqIaegM1C
+                            qpIZxlGWb7XhD8GsV7bUfgUqXqMi1WUC42aFW0kLA/rAXq0/Nqy7D8fhi+uLcb2r
+                            7dYV212tIZXGQDf/m6Z7fCiBTrVp8RAqmx5lIn3kA/WKpPPNchYBHppipNHzI3OT
+                            MUtKDL9P/Sj3t3uFRF7D2NoqPCQljkD3Vn2dzWVFwYU0CU/5k3tSOGOwiD1Q96s2
+                            01p7ehIjUjVmDIrRDci++5k53rhqkovIKuOpHRYocBz1AF2umObV1pJhDjFQ22tE
+                            mP0YZn1NjRnmoRTssS1lPax4iF/WvTl1qzotjULlx/hqYzMxwj1Tq09T/oZKNg4B
+                            2nhOVmthhmSuwMT9CYR4mExJmLhsgU11hSm4+6cn5PTTnx9rYKO+/+61oajshOAr
+                            QGYga0AaYgW7dDFGGNME8LcCXWakxPcDWZ+yAbBB2/Ma4cTLCm/7w3cUmHJR764W
+                            ZyDV+MXT+YKsuqQLxkLaNdfPLt/ihoRzC9e6i15SypexXirvnBwfhpSdw3GDPk5+
+                            2qTQa6501TTt3x7IwxRcfBkc4NvzclNxfthJubP8aFjdbI+7Tm38jSDUQlAJ2q6m
+                            QU8UCAvTPXJwRHF1BTy5z9DaziflKjgWTGCzlrniYBjRAU5qCUcWPqNAQOqyxFif
+                            MgRldeWorvmhYvxOa5r1xOz0i+BYub8ftaAnooEJsKkQlG9dPJW13DIsZK9mUWcF
+                            gEuia+XGDkGCZ4Dw6HPzWfxR312qQffV55j2+68ag9dUwqv9udPkErpRjZDJptdG
+                            kBdFMoXGUoEZYy0ZicW67t6Es2sz/tUhwlrGeSIlgOCiFDVVyjtIdJa5eCb9t3UC
+                            LL1EEvIwqswTiysAQ2sNPsaHnB5Rzl/cPUiGoPpNrSTIb4VV95YaSqBb5f/UI0gi
+                            QUNRRkuMnr6HjhlpLlzK/cCEWH6FoMU1oYzVeSS9rD6B+v3YGvbd/HGNiSdcPDQl
+                            rD7LF6Z75L+YLcXhOEwshb9tU4D0CejLqPrkOP5fH4FrRdEMTE/Ovzy/7w9PPROX
+                            xCeDM6hAD2fUhOtne4EeEMcikzBQC0tfsuLRZrwdaMSN7hgbAJ6jrt3KKREMBGyk
+                            1kjnfWE0oS/m61CLt8wFVsX+fwPjEBeThFOoAwhFlX5OkNS9xtVSCzL9sMxNGcqi
+                            -----END RSA PRIVATE KEY-----    
+      global-libs: |
+        unclassified:
+          globalLibraries:
+            libraries:
+              - allowVersionOverride: true
+                defaultVersion: master
+                implicit: true
+                includeInChangesets: false
+                name: kathra-pipeline-library
+                retriever:
+                  modernSCM:
+                    scm:
+                      git:
+                        credentialsId:
+                        remote: https://gitlab.com/kathra/factory/jenkins/pipeline-library.git
+  ingress:
+    enabled: true
+    tls: false
+    path: /
+    hostName: <jenkins-host>
+    labels:
+      ingress: tls
+    annotations:
+      kubernetes.io/ingress.class: traefik
+  
+  HostName: https://<jenkins-host>/
+
+Persistence:
+  Enabled: true
+
+## Install Default RBAC roles and bindings
+rbac:
+  install: true
+  # serviceAccountName: jenkins
+  # Role reference
+  # roleRef: cluster-admin
+  # Role kind (Role or ClusterRole)
+  # roleKind: ClusterRole
+  # Role binding kind (RoleBinding or ClusterRoleBinding)
+  # roleBindingKind: ClusterRoleBinding
+
+configuration:
+  globalProperties:
+    envVars:
+      KATHRA_DOCKER_URL: registry.hub.docker.com
+      KATHRA_DOCKER_AUTH: jenkins.harbor:EwdcDEIKFJ8yiSCKx00Z
+      DOCKER_URL: harbor.<undefined>
+      DOCKER_AUTH: <undefined>
+      DEPLOYMANAGER_URL: http://deploymanager/api/v1
+      NEXUS_URL: http://sonatype-nexus-service:8081
+      NEXUS_USERNAME: admin
+      NEXUS_PASSWORD: admin123
+      MAVEN_PVC_STORAGE_SIZE: 5Gi
+      MAVEN_PV_NFS_SERVICE: 10.233.3.82
+  oidc:
+    client: jenkins
+    secret: 87afc004-2d3f-4dea-92bd-4bc3cd9c3ee7
+    wellKnownConfigUrl: https://<keycloak-host>/auth/realms/kathra/.well-known/openid-configuration
+    redirectUrl: https://<jenkins-host>/
+  matrixAuth:
+    adminGroup: /jenkins-admin
+    adminUser: kathra-pipelinemanager
+  sshConfig:
+    sourceHost: <gitlab-host>
+    sourceHostname: gitlab
+    sourceUser: git
+    sourcePort: 22

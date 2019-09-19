@@ -1,0 +1,11 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: binaryrepositorymanager-config
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    project: kathra
+    app: binaryrepositorymanager
+data:
+  HARBOR_URL: {{ .Values.harbor.url }}

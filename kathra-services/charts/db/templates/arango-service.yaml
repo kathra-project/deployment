@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: resource
+    product: kathra
+    project: resource
+  name: resource-db
+spec:
+  ports:
+  - port: 8529
+    protocol: TCP
+    targetPort: 8529
+  selector:
+    app: resource-arangodb
+  type: ClusterIP

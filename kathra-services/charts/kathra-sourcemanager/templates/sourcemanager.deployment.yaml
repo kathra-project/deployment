@@ -1,0 +1,105 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: sourcemanager-gitlab
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    app: sourcemanager
+    impl: gitlab
+    product: kathra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sourcemanager
+      impl: gitlab
+      product: kathra
+  template:
+    metadata:
+      labels:
+        app: sourcemanager
+        impl: gitlab
+        product: kathra
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - image: "{{ .Values.global.docker.registry.url }}/{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
+        imagePullPolicy: Always
+        name: sourcemanager-gitlab
+        env:
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: KATHRA_ROOT_GROUP
+          valueFrom:
+            configMapKeyRef:
+              key: KATHRA_ROOT_GROUP
+              name: source-manager-config
+        - name: KATHRA_SOURCEMANAGER_GITLAB_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: KATHRA_SOURCEMANAGER_GITLAB_API_TOKEN
+              name: source-manager-secret
+        - name: KATHRA_SOURCEMANAGER_GITLAB_URL
+          valueFrom:
+            configMapKeyRef:
+              key: KATHRA_SOURCEMANAGER_GITLAB_URL
+              name: source-manager-config
+        - name: KATHRA_SOURCEMANAGER_USERMANAGER_URL
+          valueFrom:
+            configMapKeyRef:
+              key: KATHRA_SOURCEMANAGER_USERMANAGER_URL
+              name: source-manager-config
+        - name: KATHRA_SOURCEMANAGER_FOLDER_NAME_CONTAINING_GIT_REPOS
+          valueFrom:
+            configMapKeyRef:
+              key: KATHRA_SOURCEMANAGER_FOLDER_NAME_CONTAINING_GIT_REPOS
+              name: source-manager-config
+        - name: KATHRA_SOURCEMANAGER_MAXIMAL_TRY_NUMBER_TO_CREATE_DIRECTORY
+          valueFrom:
+            configMapKeyRef:
+              key: KATHRA_SOURCEMANAGER_MAXIMAL_TRY_NUMBER_TO_CREATE_DIRECTORY
+              name: source-manager-config
+        - name: KATHRA_SOURCEMANAGER_DELETE_FOLDER_AFTER_GIT
+          valueFrom:
+            configMapKeyRef:
+              key: KATHRA_SOURCEMANAGER_DELETE_FOLDER_AFTER_GIT
+              name: source-manager-config
+        - name: KATHRA_SOURCEMANAGER_DELETE_ZIP_FILE
+          valueFrom:
+            configMapKeyRef:
+              key: KATHRA_SOURCEMANAGER_DELETE_ZIP_FILE
+              name: source-manager-config
+        - name: KEYCLOAK_AUTH_URL
+          valueFrom:
+            configMapKeyRef:
+              name: keycloak-config
+              key: KEYCLOAK_AUTH_URL
+        - name: KEYCLOAK_REALM
+          valueFrom:
+            configMapKeyRef:
+              name: keycloak-config
+              key: KEYCLOAK_REALM
+        - name: KEYCLOAK_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              key: KEYCLOAK_CLIENT_ID
+              name: kathra-keycloak-secret
+        - name: KEYCLOAK_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: KEYCLOAK_CLIENT_SECRET
+              name: kathra-keycloak-secret
+        - name: JAVA_OPTS
+          value: "-XX:+UnlockExperimentalVMOptions  -XX:MaxRAMFraction=1 -Xms128M -Xmx512M"
+        ports:
+        - containerPort: 8080
+          name: web
+          protocol: TCP
+{{- if .Values.resources }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+{{- end }}

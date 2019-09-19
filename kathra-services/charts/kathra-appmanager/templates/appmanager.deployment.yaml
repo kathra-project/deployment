@@ -1,0 +1,90 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: "appmanager-swagger"
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    product: kathra
+    app: appmanager
+    impl: "swagger"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        product: kathra
+        app: appmanager
+        impl: swagger
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: appmanager-swagger
+        image: "{{ .Values.global.docker.registry.url }}/{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
+        imagePullPolicy: Always
+        ports:
+        - name: web
+          containerPort: 8080
+          protocol: TCP
+        env:
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: KATHRA_APPMANAGER_CODEGEN_URL
+          valueFrom:
+            configMapKeyRef:
+              name: appmanager-config
+              key: KATHRA_APPMANAGER_CODEGEN_URL
+        - name: KATHRA_APPMANAGER_SOURCEMANAGER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: appmanager-config
+              key: KATHRA_APPMANAGER_SOURCEMANAGER_URL
+        - name: KATHRA_APPMANAGER_PIPELINEMANAGER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: appmanager-config
+              key: KATHRA_APPMANAGER_PIPELINEMANAGER_URL
+        - name: KATHRA_APPMANAGER_RESOURCEMANAGER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: appmanager-config
+              key: KATHRA_APPMANAGER_RESOURCEMANAGER_URL
+        - name: IMAGE_REGISTRY_HOST
+          valueFrom:
+            configMapKeyRef:
+              key: IMAGE_REGISTRY_HOST
+              name: appmanager-config
+        - name: KATHRA_APPMANAGER_DELETE_ZIP_FILE
+          valueFrom:
+            configMapKeyRef:
+              name: appmanager-config
+              key: KATHRA_APPMANAGER_DELETE_ZIP_FILE
+        - name: KEYCLOAK_AUTH_URL
+          valueFrom:
+            configMapKeyRef:
+              name: keycloak-config
+              key: KEYCLOAK_AUTH_URL
+        - name: KEYCLOAK_REALM
+          valueFrom:
+            configMapKeyRef:
+              name: keycloak-config
+              key: KEYCLOAK_REALM
+        - name: KEYCLOAK_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: kathra-keycloak-secret
+              key: KEYCLOAK_CLIENT_ID
+        - name: KEYCLOAK_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: kathra-keycloak-secret
+              key: KEYCLOAK_CLIENT_SECRET
+        - name: JAVA_OPTS
+          value: "-XX:+UnlockExperimentalVMOptions  -XX:MaxRAMFraction=1 -Xms128M -Xmx512M"
+{{- if .Values.resources }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+{{- end }}

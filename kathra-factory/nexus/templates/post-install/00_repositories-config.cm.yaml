@@ -1,0 +1,16 @@
+{{- if .Values.postInstallConfig.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nexus-repositories-config
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
+data:
+  {{ (.Files.Glob "config/01_repositories-config.sh").AsConfig | nindent 2 }}
+  {{ (.Files.Glob "config/groovy-scripts/maven.groovy").AsConfig | nindent 2 }}
+  {{ (.Files.Glob "config/groovy-scripts/pip.groovy").AsConfig | nindent 2 }}
+  {{ (.Files.Glob "config/groovy-scripts/nuget.groovy").AsConfig | nindent 2 }}
+  NEXUS_URL: https://{{ .Values.nexusProxy.env.nexusHttpHost }}
+{{- end -}}

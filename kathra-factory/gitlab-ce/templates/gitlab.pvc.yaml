@@ -1,0 +1,73 @@
+apiVersion: "v1"
+kind: "PersistentVolumeClaim"
+metadata:
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "standard"
+  labels:
+    project: "gitlab"
+  name: "gitlab-config"
+  ownerReferences: []
+spec:
+  accessModes:
+  - "ReadWriteOnce"
+  resources:
+    limits: {}
+    requests:
+      storage: "{{ .Values.storage.gitlabConfigSize }}"
+
+---
+
+apiVersion: "v1"
+kind: "PersistentVolumeClaim"
+metadata:
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "standard"
+  finalizers: []
+  labels:
+    project: "gitlab"
+  name: "gitlab-data"
+  ownerReferences: []
+spec:
+  accessModes:
+  - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "{{ .Values.storage.gitlabDataSize }}"
+ 
+---
+
+apiVersion: "v1"
+kind: "PersistentVolumeClaim"
+metadata:
+  annotations:  
+    volume.beta.kubernetes.io/storage-class: "standard"
+  labels:
+    project: "gitlab"
+  name: "gitlab-logs"
+  ownerReferences: []
+spec:
+  accessModes:
+  - "ReadWriteOnce"
+  resources:
+    limits: {}
+    requests:
+      storage: "{{ .Values.storage.gitlabLogsSize }}"
+
+---
+
+apiVersion: "v1"
+kind: "PersistentVolumeClaim"
+metadata:
+  annotations:  
+    volume.beta.kubernetes.io/storage-class: "standard"
+  labels:
+    project: "gitlab"
+  name: "gitlab-backup"
+  ownerReferences: []
+spec:
+  accessModes:
+  - "ReadWriteOnce"
+  resources:
+    limits: {}
+    requests:
+      storage: "{{ .Values.storage.gitlabBackupSize }}"

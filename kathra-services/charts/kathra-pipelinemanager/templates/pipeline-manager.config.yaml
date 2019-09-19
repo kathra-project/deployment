@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pipeline-manager-config
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    project: kathra
+    app: pipeline-manager
+data:
+  JENKINS_URL: {{ .Values.jenkins.url }}

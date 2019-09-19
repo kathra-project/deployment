@@ -1,0 +1,17 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: gitlab
+  annotations:
+    kubernetes.io/ingress.class: traefik
+  labels:
+    ingress: tls
+spec:
+  rules:
+  - host: {{ .Values.fqdn }} 
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: gitlab
+          servicePort: 80

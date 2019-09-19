@@ -1,0 +1,51 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: kathra-catalogmanager-kube
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    project: kathra
+    app: catalogmanager
+    impl: kube
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      project: kathra
+      app: catalogmanager
+      impl: kube
+  template:
+    metadata:
+      labels:
+        project: kathra
+        app: catalogmanager
+        impl: kube
+    spec:
+      serviceAccountName: catalogmanager
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - image: "{{ .Values.global.docker.registry.url }}/{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
+        imagePullPolicy: Always
+        name: kathra-catalogmanager-kube
+        env:
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        - containerPort: 9779
+          name: prometheus
+          protocol: TCP
+        - containerPort: 8778
+          name: jolokia
+          protocol: TCP
+{{- if .Values.resources }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+{{- end }}
+      

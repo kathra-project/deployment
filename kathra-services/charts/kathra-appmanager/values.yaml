@@ -1,0 +1,31 @@
+global:
+  namespace: kathra
+  tld: irtsystemx.org
+  docker:
+    registry: 
+      url: registry.hub.docker.com
+      root_repository: kathra
+  keycloak:
+    auth_url: https://keycloak.dev-irtsysx.fr/auth
+    realm: kathra
+    kathra_services_client:
+      id: kathra-resource-manager
+      secret: 184863e6-0b78-4df6-ae99-38b4003f6db5
+
+image: appmanager
+version: 1.0.0-RC-SNAPSHOT-644f4f0-175
+tls: true
+delete_zip_file: "true"
+image_registry_host: harbor.dev-irtsysx.fr
+services_url:
+  codegen: codegen/api/v1
+  source_manager: sourcemanager/api/v1
+  pipeline_manager: pipelinemanager/api/v1
+  resource_manager: resourcemanager/api/v1
+resources:
+  limits:
+    cpu: 300m
+    memory: 768Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi

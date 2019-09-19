@@ -1,0 +1,24 @@
+global:
+  namespace: kathra-dev
+  tld: dev-irtsysx.fr
+  docker:
+    registry: 
+      url: registry.hub.docker.com
+      root_repository: kathra
+      secret_b64: <base64_k8s_dockerconfig_secret>
+  keycloak:
+    kathra_services_client:
+      id: <kathra_services_client_id>
+      secret: <kathra_services_client_secret>
+
+tls: true
+repository: 
+  url: https://catalog-puller:4nmg_PeHxcbUQjtCGvU3@git.kathra.org/KATHRA/kathra-catalog.git
+  revision: 2c03ea909240bcae303e7998dc20eb8b27e9fcfd
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi

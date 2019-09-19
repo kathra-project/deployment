@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: source-manager-config
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    project: kathra
+    app: source-manager
+data:
+  KATHRA_ROOT_GROUP: {{ .Values.gitlab.parent_group }}
+  KATHRA_SOURCEMANAGER_GITLAB_URL: {{ .Values.gitlab.url }}
+  KATHRA_SOURCEMANAGER_USERMANAGER_URL: {{ .Values.user_manager.url }}
+  KATHRA_SOURCEMANAGER_FOLDER_NAME_CONTAINING_GIT_REPOS: {{ .Values.temp_repos_folder }}
+  KATHRA_SOURCEMANAGER_MAXIMAL_TRY_NUMBER_TO_CREATE_DIRECTORY: {{ .Values.dir_creation_max_retry | quote }}
+  KATHRA_SOURCEMANAGER_DELETE_FOLDER_AFTER_GIT: {{ .Values.delete_temp_folder | quote }}
+  KATHRA_SOURCEMANAGER_DELETE_ZIP_FILE: {{ .Values.delete_temp_zip | quote }}

@@ -1,0 +1,40 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: rabbitmq-deploymanager
+  labels:
+{{ include "factory.labels" . | indent 4 }}
+    product: kathra
+    app: rabbitmq-deploymanager
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+{{ include "factory.labels" . | indent 8 }}
+        app: rabbitmq-deploymanager
+        product: kathra
+    spec:
+      containers:
+      - name: rabbitmq
+        image: "{{ .Values.rabbitmq.image }}:{{ .Values.rabbitmq.version }}"
+        env: 
+        - name: RABBITMQ_DEFAULT_USER
+          valueFrom:
+            secretKeyRef:
+              key: RABBITMQ_DEFAULT_USER
+              name: deploymanager-secret
+        - name: RABBITMQ_DEFAULT_PASS
+          valueFrom:
+            secretKeyRef:
+              key: RABBITMQ_DEFAULT_PASS
+              name: deploymanager-secret
+        ports:
+        - name: "tcp"
+          containerPort: 5672
+        - name: "webui"
+          containerPort: 15672
+{{- if .Values.rabbitmq.resources }}
+        resources:
+{{ toYaml .Values.rabbitmq.resources | indent 10 }}
+{{- end }}

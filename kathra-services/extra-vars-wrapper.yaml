@@ -1,0 +1,225 @@
+## OVERIDE CHILDREN CHARTS' VALUES FROM HERE 
+## OR MODIFY THEM IN THEIR RESPECTIVE CHART
+global:
+  namespace: kathra
+  tld: irtsystemx.org
+  domain: ${BASE_DOMAIN}
+  docker:
+    registry: 
+      url: registry.hub.docker.com
+      root_repository: kathra
+      secret: eyJhdXRocyI6eyJoYXJib3IuaXJ0c3lzeC5mciI6eyJ1c2VybmFtZSI6ImplbmtpbnMuaGFyYm9yIiwicGFzc3dvcmQiOiJFd2RjREVJS0ZKOHlpU0NLeDAwWiIsImVtYWlsIjoiamVua2lucy5oYXJib3JAbm8tcmVwbHktaXJ0c3lzeC5mciIsImF1dGgiOiJhbVZ1YTJsdWN5NW9ZWEppYjNJNlJYZGtZMFJGU1V0R1NqaDVhVk5EUzNnd01Gbz0ifX19
+  keycloak:
+    auth_url: https://keycloak.${BASE_DOMAIN}/auth
+    realm: kathra
+    kathra_services_client:
+      id: kathra-resource-manager
+      secret: 184863e6-0b78-4df6-ae99-38b4003f6db5
+
+kathra-appmanager:
+  image: appmanager
+  version: 1.0.0-RC-SNAPSHOT
+  tls: true
+  delete_zip_file: "true"
+  image_registry_host: harbor.dev-irtsysx.fr
+  services_url:
+    codegen: codegen/api/v1
+    source_manager: sourcemanager/api/v1
+    pipeline_manager: pipelinemanager/api/v1
+    resource_manager: resourcemanager/api/v1
+  resources:
+    limits:
+      cpu: 900m
+      memory: 1Gi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+kathra-binaryrepositorymanager:
+  image: binaryrepositorymanager-harbor
+  version: 1.0.0-RC-SNAPSHOT
+  harbor:
+    url: https://harbor.${BASE_DOMAIN}/api
+    username: ${HARBOR_ADMIN_LOGIN}
+    password: ${HARBOR_ADMIN_PASSWORD}
+  resources:
+    limits:
+      cpu: 500m
+      memory: 768Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+kathra-catalog-icons:
+  tls: true
+  repository: 
+    url: https://kathra-catalog-icons:_vi429_1RAAyezLv2wn9@git.kathra.org/KATHRA/kathra-catalog.git
+    revision: 23a6c71e86f2d854669b959d657e1a7b9e8a2e60
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+kathra-catalog-updater:
+  image: catalogupdater
+  version: 1.0.0-RC-SNAPSHOT
+  protocol: https
+  repository:
+    url: https://kathra-catalog-icons:_vi429_1RAAyezLv2wn9@git.kathra.org/KATHRA/kathra-catalog.git
+    revision: 23a6c71e86f2d854669b959d657e1a7b9e8a2e60
+
+kathra-catalogmanager:
+  image: catalogmanager-kube
+  version: 1.0.0-RC-SNAPSHOT
+  tls: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 768Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+kathra-codegen:
+  image: codegen-swagger
+  version: 1.0.0-RC-SNAPSHOT
+  tls: true
+  repository:
+    url: https://nexus.${BASE_DOMAIN}
+    pythonRepo: pip-all/simple
+  resources:
+    limits:
+      cpu: 500m
+      memory: 768Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+kathra-dashboard: 
+  image: dashboard
+  version: 1.0.0-RC-SNAPSHOT
+  tls: true
+  services_url:
+    platform_manager: wss://platformmanager.${BASE_DOMAIN}/spm
+    app_manager: https://appmanager.${BASE_DOMAIN}/api/v1
+    jenkins_url: https://jenkins.${BASE_DOMAIN}
+    base_domain: ${BASE_DOMAIN}
+  resources:
+    limits:
+      cpu: 300m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+kathra-pipelinemanager:
+  image: pipelinemanager-jenkins
+  version: 1.0.0-RC-SNAPSHOT
+  tls: true
+  jenkins:
+    url: https://jenkins.${BASE_DOMAIN}
+    username: ${JENKINS_LOGIN}
+    api_token: ${JENKINS_API_TOKEN}
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+kathra-platformmanager:
+  image: platformmanager-kube
+  version: 1.0.0-RC-SNAPSHOT
+  tls: true
+  websocket:
+    port: "8080"
+  catalog_manager:
+    url: http://catalogmanager/api/v1
+  deployment:
+    ingress_controller: traefik
+    tld: ${BASE_DOMAIN}
+  resources:
+    limits:
+      cpu: 500m
+      memory: 768Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+kathra-resourcemanager:
+  image: resourcemanager-arangodb
+  version: 1.0.0-RC-SNAPSHOT
+  tls: true
+  arango:
+    host: resource-db
+    port: "8529"
+    database: KATHRA
+    user: root
+    password: ${ARANGODB_PASSWORD}
+  resources:
+    limits:
+      cpu: 500m
+      memory: 2Gi
+    requests:
+      cpu: 50m
+      memory: 256Mi
+
+db:
+  password: ${ARANGODB_PASSWORD}
+
+kathra-sourcemanager:
+  image: sourcemanager-gitlab
+  version: 1.0.0-RC-SNAPSHOT
+  tls: true
+  temp_repos_folder: /tmp/kathra-sourcemanager-git-repos
+  dir_creation_max_retry: "3"
+  delete_temp_folder: "true"
+  delete_temp_zip: "true"
+  gitlab:
+    url: https://gitlab.${BASE_DOMAIN}
+    api_token: ${GITLAB_API_TOKEN}
+    parent_group: kathra-projects
+  user_manager:
+    url: usermanager
+  resources:
+    limits:
+      cpu: 500m
+      memory: 768Mi
+    requests:
+      cpu: 50m
+      memory: 256Mi
+
+kathra-usermanager:
+  image: usermanager-keycloak
+  version: 1.0.0-RC-SNAPSHOT
+  tls: true
+  resources:
+    limits:
+      cpu: 300m
+      memory: 768Mi
+    requests:
+      cpu: 50m
+      memory: 256Mi
+  keycloak:
+    clientId: kathra-user-manager
+    clientSecret: a375446d-7fec-421f-ae8e-65d523afa0b8
+
+kathra-sync:
+  keycloak:
+    login: ${SYNCMANAGER_LOGIN}
+    password: ${SYNCMANAGER_PASSWORD}
+  image: users-sync
+  version: 1.0.0-RC-SNAPSHOT
+  resources:
+    limits:
+      cpu: 300m
+      memory: 768Mi
+    requests:
+      cpu: 50m
+      memory: 256Mi
+
+      

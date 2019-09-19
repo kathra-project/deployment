@@ -1,0 +1,17 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: appmanager
+  annotations:
+    kubernetes.io/ingress.class: traefik
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    ingress: "{{ if .Values.tls }}tls{{ else }}plain{{ end }}"
+spec:
+  rules:
+  - host: "appmanager.{{ .Values.global.domain }}"
+    http:
+      paths:
+      - backend:
+          serviceName: appmanager
+          servicePort: 80

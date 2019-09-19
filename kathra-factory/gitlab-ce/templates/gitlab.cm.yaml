@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gitlab-gitlab-rb
+data:
+  gitlab.rb: |
+{{ include "gitlab.rb" . | indent 4 }}

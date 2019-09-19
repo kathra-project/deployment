@@ -1,0 +1,76 @@
+---
+# Gitlab variables for public deployment
+fqdn: gitlab.${BASE_DOMAIN}
+externalUrl: https://gitlab.${BASE_DOMAIN}
+
+# OIDC Config
+oidc:
+  providerUrl: https://keycloak.${BASE_DOMAIN}
+  clientName: gitlab
+  clientSecret: f13c96db-c558-44b9-bc34-90f1a387015a
+  authorizeUrl: /auth/realms/kathra/protocol/openid-connect/auth
+  userInfoUrl: /auth/realms/kathra/protocol/openid-connect/userinfo
+  tokenUrl: /auth/realms/kathra/protocol/openid-connect/token
+  redirectUrl: https://gitlab.${BASE_DOMAIN}/users/auth/KATHRA/callback
+  omniauthEnabled: true
+  omniauthStrategyClass: OmniAuth::Strategies::OAuth2Generic
+  omniauthAutoSignInWithProvider: KATHRA
+  omniauthAllowSingleSignOn: KATHRA
+  omniauthBlockAutoCreatedUsers: false
+
+# LDAP Config
+# If some users created their account with an LDAP authentication (before changing the authentication method), Gitlab keeps track of it.
+# In order to avoid locking these users by disabling the LDAP auth, LDAP must be enabled with a fake minimal conf
+ldap:
+  enabled: false
+  host: 127.0.0.1
+  port: 636
+  method: ssl
+  baseDn: DC=my-domain,DC=local
+  userUID: sAMAccountName
+  bindDn: fake@my-domain.local
+
+# SMTP Config
+smtp:
+  enabled: false
+  address: smtp.office365.com
+  port: 587
+  username: gitlab-noreply@my-domain.com
+  password: <smtp_password>
+  domain: my-domain.com
+  authentication: login
+  enableStartTlsAuto: true
+  opensslVerifyMode: peer
+
+# Local nginx config
+nginx:
+  port: 80
+  listenHttps: false
+  setHeaders: >-
+    {
+      "X-Forwarded-Proto" => "https",
+      "X-Forwarded-Ssl" => "on"
+    }
+
+# Storage Config
+storage:
+  gitlabDataSize: 100Gi
+  gitlabConfigSize: 1Gi
+  gitlabLogsSize: 10Gi
+  gitlabBackupSize: 200Gi
+
+# Backup options
+backup:
+  cron: "@daily"
+  keepTime: 259200
+  kubectl:
+    image: roffe/kubectl
+    tag: v1.9.7
+
+# Other configuration
+configuration:
+  prometheusState: false
+  serviceType: NodePort
+  ssh:
+    containerPort: 22
+    nodePort: ${GITLAB_NODEPORT}

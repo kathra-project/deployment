@@ -1,0 +1,22 @@
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  labels:
+    project: "gitlab"
+  name: "gitlab"
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: "TCP"
+    targetPort: 80
+  - name: ssh
+    port: {{ .Values.configuration.ssh.containerPort }}
+    protocol: "TCP"
+    targetPort: {{ .Values.configuration.ssh.containerPort }}
+{{- if eq .Values.configuration.serviceType "NodePort" }}
+    nodePort: {{ .Values.configuration.ssh.nodePort }}
+{{- end }}
+  type: {{ .Values.configuration.serviceType }}
+  selector:
+    project: "gitlab"

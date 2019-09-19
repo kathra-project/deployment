@@ -1,0 +1,18 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: platformmanager
+  annotations:
+    kubernetes.io/ingress.class: traefik
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    ingress: "{{ if .Values.tls }}tls{{ else }}plain{{ end }}"
+spec:
+  rules:
+  - host: platformmanager.{{ .Values.global.domain }}
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: platformmanager
+          servicePort: 80

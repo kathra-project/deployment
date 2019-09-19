@@ -1,0 +1,2867 @@
+apiVersion: v1
+data:
+  app-manager-client.json: |
+      {
+        "clientId" : "kathra-app-manager",
+        "rootUrl" : "https://appmanager.{{ .Values.configuration.clientsDomain }}",
+        "adminUrl" : "https://appmanager.{{ .Values.configuration.clientsDomain }}",
+        "surrogateAuthRequired" : false,
+        "enabled" : true,
+        "clientAuthenticatorType" : "client-secret",
+        "secret": "200a0172-d129-496c-8a98-907a01aa3201",
+        "redirectUris" : [ "https://appmanager.{{ .Values.configuration.clientsDomain }}/*" ],
+        "webOrigins" : [ "https://appmanager.{{ .Values.configuration.clientsDomain }}" ],
+        "notBefore" : 0,
+        "bearerOnly" : false,
+        "consentRequired" : false,
+        "standardFlowEnabled" : true,
+        "implicitFlowEnabled" : false,
+        "directAccessGrantsEnabled" : true,
+        "serviceAccountsEnabled" : true,
+        "authorizationServicesEnabled" : true,
+        "publicClient" : false,
+        "frontchannelLogout" : false,
+        "protocol" : "openid-connect",
+        "attributes" : {
+          "saml.assertion.signature" : "false",
+          "saml.multivalued.roles" : "false",
+          "saml.force.post.binding" : "false",
+          "saml.encrypt" : "false",
+          "saml_force_name_id_format" : "false",
+          "saml.client.signature" : "false",
+          "saml.authnstatement" : "false",
+          "saml.server.signature" : "false",
+          "saml.server.signature.keyinfo.ext" : "false",
+          "saml.onetimeuse.condition" : "false"
+        },
+        "fullScopeAllowed" : true,
+        "nodeReRegistrationTimeout" : -1,
+        "protocolMappers" : [ {
+          "name": "Client ID",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientId",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientId",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name" : "groups",
+          "protocol" : "openid-connect",
+          "protocolMapper" : "oidc-group-membership-mapper",
+          "consentRequired" : false,
+          "config" : {
+            "full.path" : "true",
+            "usermodel.realmRoleMapping.rolePrefix" : "",
+            "multivalued" : "",
+            "userinfo.token.claim" : "",
+            "id.token.claim" : "true",
+            "access.token.claim" : "",
+            "claim.name" : "groups",
+            "jsonType.label" : ""
+          }
+        },
+        {
+          "name": "family name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "lastName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "family_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "role list",
+          "protocol": "saml",
+          "protocolMapper": "saml-role-list-mapper",
+          "consentRequired": false,
+          "config": {
+            "single": "false",
+            "attribute.nameformat": "Basic",
+            "attribute.name": "Role"
+          }
+        },
+        {
+          "name": "given name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "firstName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "given_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client IP Address",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientAddress",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientAddress",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client Host",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientHost",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientHost",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "full name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-full-name-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }],
+        "clientTemplate" : "{{ .Values.configuration.realm }}-service",
+        "useTemplateConfig" : false,
+        "useTemplateScope" : true,
+        "useTemplateMappers" : true,
+        "access" : {
+          "view" : true,
+          "configure" : true,
+          "manage" : true
+        }
+      }
+  binaryrepository-manager-client.json: |
+      {
+        "clientId" : "kathra-binaryrepository-manager",
+        "rootUrl" : "https://binaryrepositorymanager.{{ .Values.configuration.clientsDomain }}",
+        "adminUrl" : "https://binaryrepositorymanager.{{ .Values.configuration.clientsDomain }}",
+        "surrogateAuthRequired" : false,
+        "enabled" : true,
+        "clientAuthenticatorType" : "client-secret",
+        "secret": "3059dcb5-41b2-4765-b0e1-5ad2b884a35d",
+        "redirectUris" : [ "https://binaryrepositorymanager.{{ .Values.configuration.clientsDomain }}/*" ],
+        "webOrigins" : [ "https://binaryrepositorymanager.{{ .Values.configuration.clientsDomain }}" ],
+        "notBefore" : 0,
+        "bearerOnly" : false,
+        "consentRequired" : false,
+        "standardFlowEnabled" : true,
+        "implicitFlowEnabled" : false,
+        "directAccessGrantsEnabled" : true,
+        "serviceAccountsEnabled" : true,
+        "authorizationServicesEnabled" : true,
+        "publicClient" : false,
+        "frontchannelLogout" : false,
+        "protocol" : "openid-connect",
+        "attributes" : {
+          "saml.assertion.signature" : "false",
+          "saml.multivalued.roles" : "false",
+          "saml.force.post.binding" : "false",
+          "saml.encrypt" : "false",
+          "saml_force_name_id_format" : "false",
+          "saml.client.signature" : "false",
+          "saml.authnstatement" : "false",
+          "saml.server.signature" : "false",
+          "saml.server.signature.keyinfo.ext" : "false",
+          "saml.onetimeuse.condition" : "false"
+        },
+        "fullScopeAllowed" : true,
+        "nodeReRegistrationTimeout" : -1,
+        "protocolMappers" : [ {
+          "name": "Client ID",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientId",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientId",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name" : "groups",
+          "protocol" : "openid-connect",
+          "protocolMapper" : "oidc-group-membership-mapper",
+          "consentRequired" : false,
+          "config" : {
+            "full.path" : "true",
+            "usermodel.realmRoleMapping.rolePrefix" : "",
+            "multivalued" : "",
+            "userinfo.token.claim" : "true",
+            "id.token.claim" : "true",
+            "access.token.claim" : "true",
+            "claim.name" : "groups",
+            "jsonType.label" : ""
+          }
+        },
+        {
+          "name": "family name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "lastName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "family_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "role list",
+          "protocol": "saml",
+          "protocolMapper": "saml-role-list-mapper",
+          "consentRequired": false,
+          "config": {
+            "single": "false",
+            "attribute.nameformat": "Basic",
+            "attribute.name": "Role"
+          }
+        },
+        {
+          "name": "given name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "firstName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "given_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client IP Address",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientAddress",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientAddress",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client Host",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientHost",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientHost",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "full name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-full-name-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }],
+        "clientTemplate" : "{{ .Values.configuration.realm }}-service",
+        "useTemplateConfig" : false,
+        "useTemplateScope" : true,
+        "useTemplateMappers" : true,
+        "access" : {
+          "view" : true,
+          "configure" : true,
+          "manage" : true
+        }
+      }
+  codegen-client.json: |
+      {
+        "clientId" : "kathra-codegen",
+        "rootUrl" : "https://codegen.{{ .Values.configuration.clientsDomain }}",
+        "adminUrl" : "https://codegen.{{ .Values.configuration.clientsDomain }}",
+        "surrogateAuthRequired" : false,
+        "enabled" : true,
+        "clientAuthenticatorType" : "client-secret",
+        "secret": "4cbe6370-f58b-4072-a3e0-beabf9ca11b8",
+        "redirectUris" : [ "https://codegen.{{ .Values.configuration.clientsDomain }}/*" ],
+        "webOrigins" : [ "https://codegen.{{ .Values.configuration.clientsDomain }}" ],
+        "notBefore" : 0,
+        "bearerOnly" : false,
+        "consentRequired" : false,
+        "standardFlowEnabled" : true,
+        "implicitFlowEnabled" : false,
+        "directAccessGrantsEnabled" : true,
+        "serviceAccountsEnabled" : true,
+        "authorizationServicesEnabled" : true,
+        "publicClient" : false,
+        "frontchannelLogout" : false,
+        "protocol" : "openid-connect",
+        "attributes" : {
+          "saml.assertion.signature" : "false",
+          "saml.multivalued.roles" : "false",
+          "saml.force.post.binding" : "false",
+          "saml.encrypt" : "false",
+          "saml_force_name_id_format" : "false",
+          "saml.client.signature" : "false",
+          "saml.authnstatement" : "false",
+          "saml.server.signature" : "false",
+          "saml.server.signature.keyinfo.ext" : "false",
+          "saml.onetimeuse.condition" : "false"
+        },
+        "fullScopeAllowed" : true,
+        "nodeReRegistrationTimeout" : -1,
+        "protocolMappers" : [ {
+          "name": "Client ID",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientId",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientId",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name" : "groups",
+          "protocol" : "openid-connect",
+          "protocolMapper" : "oidc-group-membership-mapper",
+          "consentRequired" : false,
+          "config" : {
+            "full.path" : "true",
+            "usermodel.realmRoleMapping.rolePrefix" : "",
+            "multivalued" : "",
+            "userinfo.token.claim" : "true",
+            "id.token.claim" : "true",
+            "access.token.claim" : "true",
+            "claim.name" : "groups",
+            "jsonType.label" : ""
+          }
+        },
+        {
+          "name": "family name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "lastName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "family_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "role list",
+          "protocol": "saml",
+          "protocolMapper": "saml-role-list-mapper",
+          "consentRequired": false,
+          "config": {
+            "single": "false",
+            "attribute.nameformat": "Basic",
+            "attribute.name": "Role"
+          }
+        },
+        {
+          "name": "given name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "firstName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "given_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client IP Address",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientAddress",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientAddress",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client Host",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientHost",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientHost",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "full name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-full-name-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }],
+        "clientTemplate" : "{{ .Values.configuration.realm }}-service",
+        "useTemplateConfig" : false,
+        "useTemplateScope" : true,
+        "useTemplateMappers" : true,
+        "access" : {
+          "view" : true,
+          "configure" : true,
+          "manage" : true
+        }
+      }
+  dashboard-client.json: |
+      {
+        "clientId" : "kathra-dashboard",
+        "rootUrl" : "https://dashboard.{{ .Values.configuration.clientsDomain }}",
+        "adminUrl" : "https://dashboard.{{ .Values.configuration.clientsDomain }}",
+        "surrogateAuthRequired" : false,
+        "enabled" : true,
+        "clientAuthenticatorType" : "client-secret",
+        "secret": "e4d121c4-0af7-41b6-9f63-4ba07cf53641",
+        "redirectUris" : [ "https://dashboard.{{ .Values.configuration.clientsDomain }}/*" ],
+        "webOrigins" : [ "https://dashboard.{{ .Values.configuration.clientsDomain }}" ],
+        "notBefore" : 0,
+        "bearerOnly" : false,
+        "consentRequired" : false,
+        "standardFlowEnabled" : true,
+        "implicitFlowEnabled" : false,
+        "directAccessGrantsEnabled" : true,
+        "serviceAccountsEnabled" : true,
+        "authorizationServicesEnabled" : true,
+        "publicClient" : false,
+        "frontchannelLogout" : false,
+        "protocol" : "openid-connect",
+        "attributes" : {
+          "saml.assertion.signature" : "false",
+          "saml.multivalued.roles" : "false",
+          "saml.force.post.binding" : "false",
+          "saml.encrypt" : "false",
+          "saml_force_name_id_format" : "false",
+          "saml.client.signature" : "false",
+          "saml.authnstatement" : "false",
+          "saml.server.signature" : "false",
+          "saml.server.signature.keyinfo.ext" : "false",
+          "saml.onetimeuse.condition" : "false"
+        },
+        "fullScopeAllowed" : true,
+        "nodeReRegistrationTimeout" : -1,
+        "protocolMappers" : [ {
+          "name": "Client ID",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientId",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientId",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "family name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "lastName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "family_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "role list",
+          "protocol": "saml",
+          "protocolMapper": "saml-role-list-mapper",
+          "consentRequired": false,
+          "config": {
+            "single": "false",
+            "attribute.nameformat": "Basic",
+            "attribute.name": "Role"
+          }
+        },
+        {
+          "name": "given name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "firstName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "given_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client IP Address",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientAddress",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientAddress",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client Host",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientHost",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientHost",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "full name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-full-name-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }],
+        "clientTemplate" : "{{ .Values.configuration.realm }}-service",
+        "useTemplateConfig" : false,
+        "useTemplateScope" : true,
+        "useTemplateMappers" : true,
+        "access" : {
+          "view" : true,
+          "configure" : true,
+          "manage" : true
+        }
+      }
+  pipeline-manager-client.json: |
+      {
+        "clientId" : "kathra-pipeline-manager",
+        "rootUrl" : "https://pipelinemanager.{{ .Values.configuration.clientsDomain }}",
+        "adminUrl" : "https://pipelinemanager.{{ .Values.configuration.clientsDomain }}",
+        "surrogateAuthRequired" : false,
+        "enabled" : true,
+        "clientAuthenticatorType" : "client-secret",
+        "secret": "d213f2d1-88e9-4435-861b-5eb93df5d18f",
+        "redirectUris" : [ "https://pipelinemanager.{{ .Values.configuration.clientsDomain }}/*" ],
+        "webOrigins" : [ "https://pipelinemanager.{{ .Values.configuration.clientsDomain }}" ],
+        "notBefore" : 0,
+        "bearerOnly" : false,
+        "consentRequired" : false,
+        "standardFlowEnabled" : true,
+        "implicitFlowEnabled" : false,
+        "directAccessGrantsEnabled" : true,
+        "serviceAccountsEnabled" : true,
+        "authorizationServicesEnabled" : true,
+        "publicClient" : false,
+        "frontchannelLogout" : false,
+        "protocol" : "openid-connect",
+        "attributes" : {
+          "saml.assertion.signature" : "false",
+          "saml.multivalued.roles" : "false",
+          "saml.force.post.binding" : "false",
+          "saml.encrypt" : "false",
+          "saml_force_name_id_format" : "false",
+          "saml.client.signature" : "false",
+          "saml.authnstatement" : "false",
+          "saml.server.signature" : "false",
+          "saml.server.signature.keyinfo.ext" : "false",
+          "saml.onetimeuse.condition" : "false"
+        },
+        "fullScopeAllowed" : true,
+        "nodeReRegistrationTimeout" : -1,
+        "protocolMappers" : [ {
+          "name": "Client ID",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientId",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientId",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name" : "groups",
+          "protocol" : "openid-connect",
+          "protocolMapper" : "oidc-group-membership-mapper",
+          "consentRequired" : false,
+          "config" : {
+            "full.path" : "true",
+            "usermodel.realmRoleMapping.rolePrefix" : "",
+            "multivalued" : "",
+            "userinfo.token.claim" : "true",
+            "id.token.claim" : "true",
+            "access.token.claim" : "true",
+            "claim.name" : "groups",
+            "jsonType.label" : ""
+          }
+        },
+        {
+          "name": "family name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "lastName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "family_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "role list",
+          "protocol": "saml",
+          "protocolMapper": "saml-role-list-mapper",
+          "consentRequired": false,
+          "config": {
+            "single": "false",
+            "attribute.nameformat": "Basic",
+            "attribute.name": "Role"
+          }
+        },
+        {
+          "name": "given name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "firstName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "given_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client IP Address",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientAddress",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientAddress",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client Host",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientHost",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientHost",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "full name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-full-name-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }],
+        "clientTemplate" : "{{ .Values.configuration.realm }}-service",
+        "useTemplateConfig" : false,
+        "useTemplateScope" : true,
+        "useTemplateMappers" : true,
+        "access" : {
+          "view" : true,
+          "configure" : true,
+          "manage" : true
+        }
+      }
+  platformmanager-client.json: |
+      {
+        "clientId" : "kathra-platformmanager",
+        "rootUrl" : "https://platformmanager.{{ .Values.configuration.clientsDomain }}",
+        "adminUrl" : "https://platformmanager.{{ .Values.configuration.clientsDomain }}",
+        "surrogateAuthRequired" : false,
+        "enabled" : true,
+        "clientAuthenticatorType" : "client-secret",
+        "secret": "f800b13a-69e8-45e6-9437-d65e3e7742f6",
+        "redirectUris" : [ "https://platformmanager.{{ .Values.configuration.clientsDomain }}/*" ],
+        "webOrigins" : [ "https://platformmanager.{{ .Values.configuration.clientsDomain }}" ],
+        "notBefore" : 0,
+        "bearerOnly" : false,
+        "consentRequired" : false,
+        "standardFlowEnabled" : true,
+        "implicitFlowEnabled" : false,
+        "directAccessGrantsEnabled" : true,
+        "serviceAccountsEnabled" : true,
+        "authorizationServicesEnabled" : true,
+        "publicClient" : false,
+        "frontchannelLogout" : false,
+        "protocol" : "openid-connect",
+        "attributes" : {
+          "saml.assertion.signature" : "false",
+          "saml.multivalued.roles" : "false",
+          "saml.force.post.binding" : "false",
+          "saml.encrypt" : "false",
+          "saml_force_name_id_format" : "false",
+          "saml.client.signature" : "false",
+          "saml.authnstatement" : "false",
+          "saml.server.signature" : "false",
+          "saml.server.signature.keyinfo.ext" : "false",
+          "saml.onetimeuse.condition" : "false"
+        },
+        "fullScopeAllowed" : true,
+        "nodeReRegistrationTimeout" : -1,
+        "protocolMappers" : [ {
+          "name": "Client ID",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientId",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientId",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name" : "groups",
+          "protocol" : "openid-connect",
+          "protocolMapper" : "oidc-group-membership-mapper",
+          "consentRequired" : false,
+          "config" : {
+            "full.path" : "true",
+            "usermodel.realmRoleMapping.rolePrefix" : "",
+            "multivalued" : "",
+            "userinfo.token.claim" : "true",
+            "id.token.claim" : "true",
+            "access.token.claim" : "true",
+            "claim.name" : "groups",
+            "jsonType.label" : ""
+          }
+        },
+        {
+          "name": "family name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "lastName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "family_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "role list",
+          "protocol": "saml",
+          "protocolMapper": "saml-role-list-mapper",
+          "consentRequired": false,
+          "config": {
+            "single": "false",
+            "attribute.nameformat": "Basic",
+            "attribute.name": "Role"
+          }
+        },
+        {
+          "name": "given name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "firstName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "given_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client IP Address",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientAddress",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientAddress",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client Host",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientHost",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientHost",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "full name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-full-name-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }],
+        "clientTemplate" : "{{ .Values.configuration.realm }}-service",
+        "useTemplateConfig" : false,
+        "useTemplateScope" : true,
+        "useTemplateMappers" : true,
+        "access" : {
+          "view" : true,
+          "configure" : true,
+          "manage" : true
+        }
+      }
+  resource-manager-client.json: |
+      {
+        "clientId" : "kathra-resource-manager",
+        "rootUrl" : "",
+        "adminUrl" : "",
+        "surrogateAuthRequired" : false,
+        "enabled" : true,
+        "clientAuthenticatorType" : "client-secret",
+        "secret": "184863e6-0b78-4df6-ae99-38b4003f6db5",
+        "redirectUris" : [ "*" ],
+        "webOrigins" : [ "*" ],
+        "notBefore" : 0,
+        "bearerOnly" : false,
+        "consentRequired" : false,
+        "standardFlowEnabled" : true,
+        "implicitFlowEnabled" : false,
+        "directAccessGrantsEnabled" : true,
+        "serviceAccountsEnabled" : true,
+        "authorizationServicesEnabled" : true,
+        "publicClient" : false,
+        "frontchannelLogout" : false,
+        "protocol" : "openid-connect",
+        "attributes" : {
+          "saml.assertion.signature" : "false",
+          "saml.multivalued.roles" : "false",
+          "saml.force.post.binding" : "false",
+          "saml.encrypt" : "false",
+          "saml_force_name_id_format" : "false",
+          "saml.client.signature" : "false",
+          "saml.authnstatement" : "false",
+          "saml.server.signature" : "false",
+          "saml.server.signature.keyinfo.ext" : "false",
+          "saml.onetimeuse.condition" : "false"
+        },
+        "fullScopeAllowed" : true,
+        "nodeReRegistrationTimeout" : -1,
+        "protocolMappers" : [ {
+          "name": "Client ID",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientId",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientId",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name" : "groups",
+          "protocol" : "openid-connect",
+          "protocolMapper" : "oidc-group-membership-mapper",
+          "consentRequired" : false,
+          "config" : {
+            "full.path" : "true",
+            "usermodel.realmRoleMapping.rolePrefix" : "",
+            "multivalued" : "",
+            "userinfo.token.claim" : "true",
+            "id.token.claim" : "true",
+            "access.token.claim" : "true",
+            "claim.name" : "groups",
+            "jsonType.label" : ""
+          }
+        },
+        {
+          "name": "family name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "lastName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "family_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "role list",
+          "protocol": "saml",
+          "protocolMapper": "saml-role-list-mapper",
+          "consentRequired": false,
+          "config": {
+            "single": "false",
+            "attribute.nameformat": "Basic",
+            "attribute.name": "Role"
+          }
+        },
+        {
+          "name": "given name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "firstName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "given_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client IP Address",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientAddress",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientAddress",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client Host",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientHost",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientHost",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "full name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-full-name-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }],
+        "clientTemplate" : "{{ .Values.configuration.realm }}-service",
+        "useTemplateConfig" : false,
+        "useTemplateScope" : true,
+        "useTemplateMappers" : true,
+        "access" : {
+          "view" : true,
+          "configure" : true,
+          "manage" : true
+        }
+      }
+  source-manager-client.json: |
+      {
+        "clientId" : "kathra-source-manager",
+        "rootUrl" : "https://sourcemanager.{{ .Values.configuration.clientsDomain }}",
+        "adminUrl" : "https://sourcemanager.{{ .Values.configuration.clientsDomain }}",
+        "surrogateAuthRequired" : false,
+        "enabled" : true,
+        "clientAuthenticatorType" : "client-secret",
+        "secret": "37461511-5b8a-41f7-84ca-16a8ea643afb",
+        "redirectUris" : [ "https://sourcemanager.{{ .Values.configuration.clientsDomain }}/*" ],
+        "webOrigins" : [ "https://sourcemanager.{{ .Values.configuration.clientsDomain }}" ],
+        "notBefore" : 0,
+        "bearerOnly" : false,
+        "consentRequired" : false,
+        "standardFlowEnabled" : true,
+        "implicitFlowEnabled" : false,
+        "directAccessGrantsEnabled" : true,
+        "serviceAccountsEnabled" : true,
+        "authorizationServicesEnabled" : true,
+        "publicClient" : false,
+        "frontchannelLogout" : false,
+        "protocol" : "openid-connect",
+        "attributes" : {
+          "saml.assertion.signature" : "false",
+          "saml.multivalued.roles" : "false",
+          "saml.force.post.binding" : "false",
+          "saml.encrypt" : "false",
+          "saml_force_name_id_format" : "false",
+          "saml.client.signature" : "false",
+          "saml.authnstatement" : "false",
+          "saml.server.signature" : "false",
+          "saml.server.signature.keyinfo.ext" : "false",
+          "saml.onetimeuse.condition" : "false"
+        },
+        "fullScopeAllowed" : true,
+        "nodeReRegistrationTimeout" : -1,
+        "protocolMappers" : [ {
+          "name": "Client ID",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientId",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientId",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name" : "groups",
+          "protocol" : "openid-connect",
+          "protocolMapper" : "oidc-group-membership-mapper",
+          "consentRequired" : false,
+          "config" : {
+            "full.path" : "true",
+            "usermodel.realmRoleMapping.rolePrefix" : "",
+            "multivalued" : "",
+            "userinfo.token.claim" : "true",
+            "id.token.claim" : "true",
+            "access.token.claim" : "true",
+            "claim.name" : "groups",
+            "jsonType.label" : ""
+          }
+        },
+        {
+          "name": "family name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "lastName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "family_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "role list",
+          "protocol": "saml",
+          "protocolMapper": "saml-role-list-mapper",
+          "consentRequired": false,
+          "config": {
+            "single": "false",
+            "attribute.nameformat": "Basic",
+            "attribute.name": "Role"
+          }
+        },
+        {
+          "name": "given name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "firstName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "given_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client IP Address",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientAddress",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientAddress",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client Host",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientHost",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientHost",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "full name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-full-name-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }],
+        "clientTemplate" : "{{ .Values.configuration.realm }}-service",
+        "useTemplateConfig" : false,
+        "useTemplateScope" : true,
+        "useTemplateMappers" : true,
+        "access" : {
+          "view" : true,
+          "configure" : true,
+          "manage" : true
+        }
+      }
+  synchro-manager-client.json: |
+      {
+        "clientId" : "kathra-synchro-manager",
+        "rootUrl" : "https://synchromanager.{{ .Values.configuration.clientsDomain }}",
+        "adminUrl" : "https://synchromanager.{{ .Values.configuration.clientsDomain }}",
+        "surrogateAuthRequired" : false,
+        "enabled" : true,
+        "clientAuthenticatorType" : "client-secret",
+        "secret": "1d21316f-777b-4089-a3be-fe96a27b2a4a",
+        "redirectUris" : [ "https://synchromanager.{{ .Values.configuration.clientsDomain }}/*" ],
+        "webOrigins" : [ "https://synchromanager.{{ .Values.configuration.clientsDomain }}" ],
+        "notBefore" : 0,
+        "bearerOnly" : false,
+        "consentRequired" : false,
+        "standardFlowEnabled" : true,
+        "implicitFlowEnabled" : false,
+        "directAccessGrantsEnabled" : true,
+        "serviceAccountsEnabled" : true,
+        "authorizationServicesEnabled" : true,
+        "publicClient" : false,
+        "frontchannelLogout" : false,
+        "protocol" : "openid-connect",
+        "attributes" : {
+          "saml.assertion.signature" : "false",
+          "saml.multivalued.roles" : "false",
+          "saml.force.post.binding" : "false",
+          "saml.encrypt" : "false",
+          "saml_force_name_id_format" : "false",
+          "saml.client.signature" : "false",
+          "saml.authnstatement" : "false",
+          "saml.server.signature" : "false",
+          "saml.server.signature.keyinfo.ext" : "false",
+          "saml.onetimeuse.condition" : "false"
+        },
+        "fullScopeAllowed" : true,
+        "nodeReRegistrationTimeout" : -1,
+        "protocolMappers" : [ {
+          "name": "Client ID",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientId",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientId",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name" : "groups",
+          "protocol" : "openid-connect",
+          "protocolMapper" : "oidc-group-membership-mapper",
+          "consentRequired" : false,
+          "config" : {
+            "full.path" : "true",
+            "usermodel.realmRoleMapping.rolePrefix" : "",
+            "multivalued" : "",
+            "userinfo.token.claim" : "true",
+            "id.token.claim" : "true",
+            "access.token.claim" : "true",
+            "claim.name" : "groups",
+            "jsonType.label" : ""
+          }
+        },
+        {
+          "name": "family name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "lastName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "family_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "role list",
+          "protocol": "saml",
+          "protocolMapper": "saml-role-list-mapper",
+          "consentRequired": false,
+          "config": {
+            "single": "false",
+            "attribute.nameformat": "Basic",
+            "attribute.name": "Role"
+          }
+        },
+        {
+          "name": "given name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "firstName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "given_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client IP Address",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientAddress",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientAddress",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client Host",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientHost",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientHost",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "full name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-full-name-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }],
+        "clientTemplate" : "{{ .Values.configuration.realm }}-service",
+        "useTemplateConfig" : false,
+        "useTemplateScope" : true,
+        "useTemplateMappers" : true,
+        "access" : {
+          "view" : true,
+          "configure" : true,
+          "manage" : true
+        }
+      }
+  user-manager-client.json: |
+    {
+      "clientId" : "kathra-user-manager",
+      "rootUrl" : "https://usermanager.{{ .Values.configuration.clientsDomain }}",
+      "adminUrl" : "https://usermanager.{{ .Values.configuration.clientsDomain }}",
+      "surrogateAuthRequired" : false,
+      "enabled" : true,
+      "clientAuthenticatorType" : "client-secret",
+      "secret": "a375446d-7fec-421f-ae8e-65d523afa0b8",
+      "redirectUris" : [ "https://usermanager.{{ .Values.configuration.clientsDomain }}/*" ],
+      "webOrigins" : [ "https://usermanager.{{ .Values.configuration.clientsDomain }}" ],
+      "notBefore" : 0,
+      "bearerOnly" : false,
+      "consentRequired" : false,
+      "standardFlowEnabled" : true,
+      "implicitFlowEnabled" : false,
+      "directAccessGrantsEnabled" : true,
+      "serviceAccountsEnabled" : true,
+      "authorizationServicesEnabled" : true,
+      "publicClient" : false,
+      "frontchannelLogout" : false,
+      "protocol" : "openid-connect",
+      "attributes" : {
+        "saml.assertion.signature" : "false",
+        "saml.multivalued.roles" : "false",
+        "saml.force.post.binding" : "false",
+        "saml.encrypt" : "false",
+        "saml_force_name_id_format" : "false",
+        "saml.client.signature" : "false",
+        "saml.authnstatement" : "false",
+        "saml.server.signature" : "false",
+        "saml.server.signature.keyinfo.ext" : "false",
+        "saml.onetimeuse.condition" : "false"
+      },
+      "fullScopeAllowed" : true,
+      "nodeReRegistrationTimeout" : -1,
+      "protocolMappers" : [ {
+          "name": "Client ID",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientId",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientId",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name" : "groups",
+          "protocol" : "openid-connect",
+          "protocolMapper" : "oidc-group-membership-mapper",
+          "consentRequired" : false,
+          "config" : {
+            "full.path" : "true",
+            "usermodel.realmRoleMapping.rolePrefix" : "",
+            "multivalued" : "",
+            "userinfo.token.claim" : "true",
+            "id.token.claim" : "true",
+            "access.token.claim" : "true",
+            "claim.name" : "groups",
+            "jsonType.label" : ""
+          }
+        },
+        {
+          "name": "family name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "lastName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "family_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "role list",
+          "protocol": "saml",
+          "protocolMapper": "saml-role-list-mapper",
+          "consentRequired": false,
+          "config": {
+            "single": "false",
+            "attribute.nameformat": "Basic",
+            "attribute.name": "Role"
+          }
+        },
+        {
+          "name": "given name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "firstName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "given_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client IP Address",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientAddress",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientAddress",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "Client Host",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientHost",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientHost",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "full name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-full-name-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }],
+      "clientTemplate" : "{{ .Values.configuration.realm }}-service",
+      "useTemplateConfig" : false,
+      "useTemplateScope" : true,
+      "useTemplateMappers" : true,
+      "access" : {
+        "view" : true,
+        "configure" : true,
+        "manage" : true
+      }
+    }
+  gitlab-client.json: |
+    {
+      "clientId" : "gitlab",
+      "rootUrl" : "https://gitlab.{{ .Values.configuration.clientsDomain }}",
+      "adminUrl" : "https://gitlab.{{ .Values.configuration.clientsDomain }}",
+      "surrogateAuthRequired" : false,
+      "enabled" : true,
+      "clientAuthenticatorType" : "client-secret",
+      "secret" : "f13c96db-c558-44b9-bc34-90f1a387015a",
+      "redirectUris" : [ "https://gitlab.{{ .Values.configuration.clientsDomain }}/*" ],
+      "webOrigins" : [ "https://gitlab.{{ .Values.configuration.clientsDomain }}" ],
+      "notBefore" : 0,
+      "bearerOnly" : false,
+      "consentRequired" : false,
+      "standardFlowEnabled" : true,
+      "implicitFlowEnabled" : false,
+      "directAccessGrantsEnabled" : true,
+      "serviceAccountsEnabled" : true,
+      "authorizationServicesEnabled" : true,
+      "publicClient" : false,
+      "frontchannelLogout" : false,
+      "protocol" : "openid-connect",
+      "attributes" : {
+        "saml.assertion.signature" : "false",
+        "saml.force.post.binding" : "false",
+        "saml.multivalued.roles" : "false",
+        "saml.encrypt" : "false",
+        "saml_force_name_id_format" : "false",
+        "saml.client.signature" : "false",
+        "saml.authnstatement" : "false",
+        "saml.server.signature" : "false",
+        "saml.server.signature.keyinfo.ext" : "false",
+        "saml.onetimeuse.condition" : "false"
+      },
+      "fullScopeAllowed" : true,
+      "nodeReRegistrationTimeout" : -1,
+      "protocolMappers" : [ {
+        "name" : "Client ID",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usersessionmodel-note-mapper",
+        "consentRequired" : false,
+        "consentText" : "",
+        "config" : {
+          "user.session.note" : "clientId",
+          "userinfo.token.claim" : "true",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "clientId",
+          "jsonType.label" : "String"
+        }
+      },
+      {
+        "name" : "groups",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-group-membership-mapper",
+        "consentRequired" : false,
+        "config" : {
+          "full.path" : "true",
+          "usermodel.realmRoleMapping.rolePrefix" : "",
+          "multivalued" : "",
+          "userinfo.token.claim" : "true",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "groups",
+          "jsonType.label" : ""
+        }
+      },
+      {
+        "name" : "Client IP Address",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usersessionmodel-note-mapper",
+        "consentRequired" : false,
+        "consentText" : "",
+        "config" : {
+          "user.session.note" : "clientAddress",
+          "userinfo.token.claim" : "true",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "clientAddress",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "family name",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usermodel-property-mapper",
+        "consentRequired" : true,
+        "consentText" : "${familyName}",
+        "config" : {
+          "userinfo.token.claim" : "true",
+          "user.attribute" : "lastName",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "family_name",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "role list",
+        "protocol" : "saml",
+        "protocolMapper" : "saml-role-list-mapper",
+        "consentRequired" : false,
+        "config" : {
+          "single" : "false",
+          "attribute.nameformat" : "Basic",
+          "attribute.name" : "Role"
+        }
+      }, {
+        "name" : "given name",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usermodel-property-mapper",
+        "consentRequired" : true,
+        "consentText" : "${givenName}",
+        "config" : {
+          "userinfo.token.claim" : "true",
+          "user.attribute" : "firstName",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "given_name",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "email",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usermodel-property-mapper",
+        "consentRequired" : true,
+        "consentText" : "${email}",
+        "config" : {
+          "userinfo.token.claim" : "true",
+          "user.attribute" : "email",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "email",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "username",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usermodel-property-mapper",
+        "consentRequired" : true,
+        "consentText" : "${username}",
+        "config" : {
+          "userinfo.token.claim" : "true",
+          "user.attribute" : "username",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "preferred_username",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "Client Host",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usersessionmodel-note-mapper",
+        "consentRequired" : false,
+        "consentText" : "",
+        "config" : {
+          "user.session.note" : "clientHost",
+          "userinfo.token.claim" : "true",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "clientHost",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "full name",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-full-name-mapper",
+        "consentRequired" : true,
+        "consentText" : "${fullName}",
+        "config" : {
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "userinfo.token.claim" : "true"
+        }
+      } ],
+      "useTemplateConfig" : false,
+      "useTemplateScope" : false,
+      "useTemplateMappers" : false,
+      "access" : {
+        "view" : true,
+        "configure" : true,
+        "manage" : true
+      }
+    }
+  {{ .Values.configuration.realm }}-realm-creation.json: |
+    {
+      "realm": "{{ .Values.configuration.realm }}",
+      "enabled": true,
+      "notBefore": 0,
+      "refreshTokenMaxReuse": 0,
+      "accessTokenLifespan": 86400,
+      "accessTokenLifespanForImplicitFlow": 86400,
+      "ssoSessionIdleTimeout": 86400,
+      "ssoSessionMaxLifespan": 86400,
+      "offlineSessionIdleTimeout": 2592000,
+      "offlineSessionMaxLifespan": 5184000,
+      "accessCodeLifespan": 60,
+      "accessCodeLifespanUserAction": 300,
+      "accessCodeLifespanLogin": 1800,
+      "actionTokenGeneratedByAdminLifespan": 43200,
+      "actionTokenGeneratedByUserLifespan": 300
+    }
+  harbor-client.json: |
+    {
+      "clientId" : "harbor",
+      "rootUrl" : "https://harbor.{{ .Values.configuration.clientsDomain }}",
+      "adminUrl" : "https://harbor.{{ .Values.configuration.clientsDomain }}",
+      "surrogateAuthRequired" : false,
+      "enabled" : true,
+      "clientAuthenticatorType" : "client-secret",
+      "secret" : "25ab2d9a-0d20-4b96-8d10-5251da9f6fa5",
+      "redirectUris" : [ "https://harbor.{{ .Values.configuration.clientsDomain }}/*" ],
+      "webOrigins" : [ "https://harbor.{{ .Values.configuration.clientsDomain }}" ],
+      "notBefore" : 0,
+      "bearerOnly" : false,
+      "consentRequired" : false,
+      "standardFlowEnabled" : true,
+      "implicitFlowEnabled" : false,
+      "directAccessGrantsEnabled" : true,
+      "serviceAccountsEnabled" : true,
+      "authorizationServicesEnabled" : true,
+      "publicClient" : false,
+      "frontchannelLogout" : false,
+      "protocol" : "openid-connect",
+      "attributes" : {
+        "saml.assertion.signature" : "false",
+        "saml.force.post.binding" : "false",
+        "saml.multivalued.roles" : "false",
+        "saml.encrypt" : "false",
+        "saml_force_name_id_format" : "false",
+        "saml.client.signature" : "false",
+        "saml.authnstatement" : "false",
+        "saml.server.signature" : "false",
+        "saml.server.signature.keyinfo.ext" : "false",
+        "saml.onetimeuse.condition" : "false"
+      },
+      "fullScopeAllowed" : true,
+      "nodeReRegistrationTimeout" : -1,
+      "protocolMappers" : [ {
+        "name" : "groups",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-group-membership-mapper",
+        "consentRequired" : false,
+        "config" : {
+          "full.path" : "true",
+          "usermodel.realmRoleMapping.rolePrefix" : "",
+          "multivalued" : "",
+          "userinfo.token.claim" : "true",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "groups",
+          "jsonType.label" : ""
+        }
+      },
+      {
+        "name" : "family name",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usermodel-property-mapper",
+        "consentRequired" : true,
+        "consentText" : "${familyName}",
+        "config" : {
+          "userinfo.token.claim" : "true",
+          "user.attribute" : "lastName",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "family_name",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "Client ID",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usersessionmodel-note-mapper",
+        "consentRequired" : false,
+        "consentText" : "",
+        "config" : {
+          "user.session.note" : "clientId",
+          "userinfo.token.claim" : "true",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "clientId",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "Client IP Address",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usersessionmodel-note-mapper",
+        "consentRequired" : false,
+        "consentText" : "",
+        "config" : {
+          "user.session.note" : "clientAddress",
+          "userinfo.token.claim" : "true",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "clientAddress",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "role list",
+        "protocol" : "saml",
+        "protocolMapper" : "saml-role-list-mapper",
+        "consentRequired" : false,
+        "config" : {
+          "single" : "false",
+          "attribute.nameformat" : "Basic",
+          "attribute.name" : "Role"
+        }
+      }, {
+        "name" : "full name",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-full-name-mapper",
+        "consentRequired" : true,
+        "consentText" : "${fullName}",
+        "config" : {
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "userinfo.token.claim" : "true"
+        }
+      }, {
+        "name" : "username",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usermodel-property-mapper",
+        "consentRequired" : true,
+        "consentText" : "${username}",
+        "config" : {
+          "userinfo.token.claim" : "true",
+          "user.attribute" : "username",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "preferred_username",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "email",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usermodel-property-mapper",
+        "consentRequired" : true,
+        "consentText" : "${email}",
+        "config" : {
+          "userinfo.token.claim" : "true",
+          "user.attribute" : "email",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "email",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "Client Host",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usersessionmodel-note-mapper",
+        "consentRequired" : false,
+        "consentText" : "",
+        "config" : {
+          "user.session.note" : "clientHost",
+          "userinfo.token.claim" : "true",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "clientHost",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "given name",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usermodel-property-mapper",
+        "consentRequired" : true,
+        "consentText" : "${givenName}",
+        "config" : {
+          "userinfo.token.claim" : "true",
+          "user.attribute" : "firstName",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "given_name",
+          "jsonType.label" : "String"
+        }
+      } ],
+      "useTemplateConfig" : false,
+      "useTemplateScope" : false,
+      "useTemplateMappers" : false,
+      "access" : {
+        "view" : true,
+        "configure" : true,
+        "manage" : true
+      }
+    }
+  jenkins-client.json: |
+    {
+      "clientId" : "jenkins",
+      "rootUrl" : "https://jenkins.{{ .Values.configuration.clientsDomain }}",
+      "adminUrl" : "https://jenkins.{{ .Values.configuration.clientsDomain }}",
+      "surrogateAuthRequired" : false,
+      "enabled" : true,
+      "clientAuthenticatorType" : "client-secret",
+      "secret" : "87afc004-2d3f-4dea-92bd-4bc3cd9c3ee7",
+      "redirectUris" : [ "https://jenkins.{{ .Values.configuration.clientsDomain }}/*" ],
+      "webOrigins" : [ "https://jenkins.{{ .Values.configuration.clientsDomain }}" ],
+      "notBefore" : 0,
+      "bearerOnly" : false,
+      "consentRequired" : false,
+      "standardFlowEnabled" : true,
+      "implicitFlowEnabled" : false,
+      "directAccessGrantsEnabled" : true,
+      "serviceAccountsEnabled" : true,
+      "authorizationServicesEnabled" : true,
+      "publicClient" : false,
+      "frontchannelLogout" : false,
+      "protocol" : "openid-connect",
+      "attributes" : {
+        "saml.assertion.signature" : "false",
+        "saml.force.post.binding" : "false",
+        "saml.multivalued.roles" : "false",
+        "saml.encrypt" : "false",
+        "saml_force_name_id_format" : "false",
+        "saml.client.signature" : "false",
+        "saml.authnstatement" : "false",
+        "saml.server.signature" : "false",
+        "saml.server.signature.keyinfo.ext" : "false",
+        "saml.onetimeuse.condition" : "false"
+      },
+      "fullScopeAllowed" : true,
+      "nodeReRegistrationTimeout" : -1,
+      "protocolMappers" : [ {
+        "name" : "groups",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-group-membership-mapper",
+        "consentRequired" : false,
+        "config" : {
+          "full.path" : "true",
+          "usermodel.realmRoleMapping.rolePrefix" : "",
+          "multivalued" : "",
+          "userinfo.token.claim" : "true",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "groups",
+          "jsonType.label" : ""
+        }
+      },
+      {
+        "name" : "family name",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usermodel-property-mapper",
+        "consentRequired" : true,
+        "consentText" : "${familyName}",
+        "config" : {
+          "userinfo.token.claim" : "true",
+          "user.attribute" : "lastName",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "family_name",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "Client ID",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usersessionmodel-note-mapper",
+        "consentRequired" : false,
+        "consentText" : "",
+        "config" : {
+          "user.session.note" : "clientId",
+          "userinfo.token.claim" : "true",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "clientId",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "Client IP Address",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usersessionmodel-note-mapper",
+        "consentRequired" : false,
+        "consentText" : "",
+        "config" : {
+          "user.session.note" : "clientAddress",
+          "userinfo.token.claim" : "true",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "clientAddress",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "role list",
+        "protocol" : "saml",
+        "protocolMapper" : "saml-role-list-mapper",
+        "consentRequired" : false,
+        "config" : {
+          "single" : "false",
+          "attribute.nameformat" : "Basic",
+          "attribute.name" : "Role"
+        }
+      }, {
+        "name" : "full name",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-full-name-mapper",
+        "consentRequired" : true,
+        "consentText" : "${fullName}",
+        "config" : {
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "userinfo.token.claim" : "true"
+        }
+      }, {
+        "name" : "username",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usermodel-property-mapper",
+        "consentRequired" : true,
+        "consentText" : "${username}",
+        "config" : {
+          "userinfo.token.claim" : "true",
+          "user.attribute" : "username",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "preferred_username",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "email",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usermodel-property-mapper",
+        "consentRequired" : true,
+        "consentText" : "${email}",
+        "config" : {
+          "userinfo.token.claim" : "true",
+          "user.attribute" : "email",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "email",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "Client Host",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usersessionmodel-note-mapper",
+        "consentRequired" : false,
+        "consentText" : "",
+        "config" : {
+          "user.session.note" : "clientHost",
+          "userinfo.token.claim" : "true",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "clientHost",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "given name",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usermodel-property-mapper",
+        "consentRequired" : true,
+        "consentText" : "${givenName}",
+        "config" : {
+          "userinfo.token.claim" : "true",
+          "user.attribute" : "firstName",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "given_name",
+          "jsonType.label" : "String"
+        }
+      } ],
+      "useTemplateConfig" : false,
+      "useTemplateScope" : false,
+      "useTemplateMappers" : false,
+      "access" : {
+        "view" : true,
+        "configure" : true,
+        "manage" : true
+      }
+    }
+  {{ .Values.configuration.realm }}-realm-ldap-configuration.json: |
+    {
+      "name" : "{{ .Values.configuration.ldapDomain }}",
+      "providerId" : "ldap",
+      "providerType" : "org.keycloak.storage.UserStorageProvider",
+      "parentId" : "**********",
+      "config" : {
+        "pagination" : [ "true" ],
+        "fullSyncPeriod" : [ "-1" ],
+        "connectionPooling" : [ "true" ],
+        "usersDn" : [ "{{ .Values.configuration.ldapUserDn }}" ],
+        "cachePolicy" : [ "DEFAULT" ],
+        "useKerberosForPasswordAuthentication" : [ "false" ],
+        "importEnabled" : [ "true" ],
+        "enabled" : [ "true" ],
+        "usernameLDAPAttribute" : [ "samaccountname" ],
+        "changedSyncPeriod" : [ "-1" ],
+        "bindDn" : [ "{{ .Values.configuration.ldapServiceAccount }}" ],
+        "bindCredential" : [ "**********"  ],
+        "lastSync" : [ "1542275870" ],
+        "vendor" : [ "ad" ],
+        "uuidLDAPAttribute" : [ "objectGUID" ],
+        "connectionUrl" : [ "ldaps://{{ .Values.configuration.ldapDomain }}" ],
+        "allowKerberosAuthentication" : [ "false" ],
+        "syncRegistrations" : [ "false" ],
+        "authType" : [ "simple" ],
+        "customUserSearchFilter" : [ "(&(objectClass=user)(samaccounttype=805306368))" ],
+        "debug" : [ "false" ],
+        "searchScope" : [ "2" ],
+        "useTruststoreSpi" : [ "ldapsOnly" ],
+        "priority" : [ "0" ],
+        "userObjectClasses" : [ "person, organizationalPerson, user" ],
+        "rdnLDAPAttribute" : [ "cn" ],
+        "editMode" : [ "READ_ONLY" ],
+        "validatePasswordPolicy" : [ "false" ],
+        "batchSizeForSync" : [ "1000" ]
+      }
+    }
+  {{ .Values.configuration.configurationShellScript }}: |
+    #!/usr/bin/env bash
+    set -eu
+
+    declare keycloakHost="{{ index .Values.keycloak.ingress.hosts 0 }}"
+    declare retrySecondInterval=5
+    declare attemptCounter=0
+    declare maxAttempts=100
+    while true; do
+        curl --fail https://$keycloakHost/auth > /dev/null 2> /dev/null && break
+        [ $attemptCounter -eq $maxAttempts ] && echo "[ERROR] Wait Keycloak is not available" && exit 1
+        attemptCounter=$(($attemptCounter+1))
+        echo "[INFO] Wait Keycloak is available https://$keycloakHost, attempt ($attemptCounter/$maxAttempts)"
+        sleep $retrySecondInterval
+    done
+
+    # Download jq
+    echo "[INFO] Downloading jq."
+    curl --location https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 \
+      --output /jq/jq \
+      && chmod +x /jq/jq
+    # Log in as keycloak admin
+    echo "[INFO] Loging in as keycloak admin."
+    /opt/jboss/keycloak/bin/kcadm.sh config credentials \
+      --server https://$keycloakHost/auth \
+      --realm master --user ${KEYCLOAK_USER} \
+      --password ${KEYCLOAK_PASSWORD}
+    # Create realm
+    echo "[INFO] Creating realm {{ .Values.configuration.realm }}."
+    /opt/jboss/keycloak/bin/kcadm.sh create realms -f /configuration/{{ .Values.configuration.realm }}-realm-creation.json
+    tmp=$(mktemp)
+    
+    {{- if .Values.configuration.ldapEnabled }}
+      /jq/jq '.config.bindCredential = [ env.LDAP_SERVICE_PASSWORD ]' \
+        /configuration/{{ .Values.configuration.realm }}-realm-ldap-configuration.json \
+        > /jq/{{ .Values.configuration.realm }}-realm-ldap-configuration.json
+      /jq/jq --argjson args "$(/opt/jboss/keycloak/bin/kcadm.sh get realms/{{ .Values.configuration.realm }} --fields id)" \
+        '.parentId = $args.id' /jq/{{ .Values.configuration.realm }}-realm-ldap-configuration.json > "$tmp" \
+        && mv "$tmp" /jq/{{ .Values.configuration.realm }}-realm-ldap-configuration.json
+      # Configure realm wtih ldap
+      echo "[INFO] Configuring realm {{ .Values.configuration.realm }}."
+      /opt/jboss/keycloak/bin/kcadm.sh create components -r {{ .Values.configuration.realm }} -f /jq/{{ .Values.configuration.realm }}-realm-ldap-configuration.json
+    
+    {{- end }}
+    # Sync with LDAP
+    {{- if .Values.configuration.ldapEnabled }}
+    echo "[INFO] Syncing with LDAP."
+    irt_ldap_user_storage_provider_id=$(/opt/jboss/keycloak/bin/kcadm.sh get components -r {{ .Values.configuration.realm }} -q name={{ .Values.configuration.ldapDomain }} --fields id | /jq/jq -r '.[].id')
+    /opt/jboss/keycloak/bin/kcadm.sh create -r {{ .Values.configuration.realm }} user-storage/$irt_ldap_user_storage_provider_id/sync?action=triggerFullSync
+    # Create ldap groups mapper
+    echo "[INFO] Adding the LDAP groups mapper."
+    /opt/jboss/keycloak/bin/kcadm.sh create components -r {{ .Values.configuration.realm }} \
+      -s name=groups \
+      -s providerId=group-ldap-mapper \
+      -s providerType=org.keycloak.storage.ldap.mappers.LDAPStorageMapper \
+      -s parentId=$irt_ldap_user_storage_provider_id \
+      -s 'config."groups.dn"=[{{ .Values.configuration.ldapGroupMapper.groupsDn | quote }}]' \
+      -s 'config."group.name.ldap.attribute"=[{{ .Values.configuration.ldapGroupMapper.groupNameLdapAttribute | quote }}]' \
+      -s 'config."group.object.classes"=[{{ .Values.configuration.ldapGroupMapper.groupObjectClass | quote }}]' \
+      -s 'config."preserve.group.inheritance"=[{{ .Values.configuration.ldapGroupMapper.preserveGroupInheritance | quote }}]' \
+      -s 'config."membership.ldap.attribute"=[{{ .Values.configuration.ldapGroupMapper.membershipLdapAttribute | quote }}]' \
+      -s 'config."membership.attribute.type"=[{{ .Values.configuration.ldapGroupMapper.membershipAttributeType | quote }}]' \
+      -s 'config."groups.ldap.filter"=[{{ .Values.configuration.ldapGroupMapper.groupsLdapFilter | quote }}]' \
+      -s 'config.mode=[{{ .Values.configuration.ldapGroupMapper.mappingMode | quote }}]' \
+      -s 'config."user.roles.retrieve.strategy"=[{{ .Values.configuration.ldapGroupMapper.userRolesRetrieveStrategy | quote }}]' \
+      -s 'config."mapped.group.attributes"=[{{ .Values.configuration.ldapGroupMapper.mappedGroupsAttributes | quote }}]' \
+      -s 'config."drop.non.existing.groups.during.sync"=[{{ .Values.configuration.ldapGroupMapper.dropNonExistingGroupsDuringSync | quote }}]'
+    {{- end }}
+    # Create clients
+    echo "[INFO] Creating realm clients."
+    for i in /configuration/*client.json
+    do
+      /opt/jboss/keycloak/bin/kcadm.sh create clients -r {{ .Values.configuration.realm }} -f $i
+      echo "[INFO] Added client $i."
+    done
+    # Create additional groups
+    realm="{{ .Values.configuration.realm }}"
+    {{- range .Values.configuration.createGroups }}
+    group_name=$(echo {{ . }} | awk -F/ '{print $NF}')
+    if [[ {{ . | quote }} == *\/* ]]; then
+      parent_name=$(echo {{ . }} | awk -F/ '{print $1}')
+      parent_id=$(/opt/jboss/keycloak/bin/kcadm.sh get groups -r $realm -q search=$parent_name -F id --format csv --noquotes)
+      /opt/jboss/keycloak/bin/kcadm.sh create groups/$parent_id/children -r $realm -s name=$group_name -s path=/{{ . }}
+    else
+      /opt/jboss/keycloak/bin/kcadm.sh create groups -r $realm -s name=$group_name -s path=/{{ . }}
+    fi
+    {{- end }}
+    # Create additional users
+    echo "[INFO] Creating additional users."
+    {{- range .Values.configuration.createUsers }}
+    username={{ .user }}
+    user_id=$(/opt/jboss/keycloak/bin/kcadm.sh create users -s username=$username -s enabled=true -r $realm 2>&1 | gawk 'match($0, /'\''(.+)'\''/, a) {print a[1]}')
+    echo "[INFO] Added user $username."
+    # Create and add groups to users
+    {{- range .groups }}
+    group_name=$(echo {{ . }} | awk -F/ '{print $NF}')
+    # If simple group
+    if [[ {{ . | quote }} != *\/* ]]; then
+      # Create if doesn't exist
+      group_id=$(/opt/jboss/keycloak/bin/kcadm.sh get groups -r $realm -q search=$group_name -F id --format csv --noquotes)
+      if [[ -z "$group_id" ]]; then
+        group_id=$(/opt/jboss/keycloak/bin/kcadm.sh create groups -r $realm -s name=$group_name -s path=/{{ . }} 2>&1 | gawk 'match($0, /'\''(.+)'\''/, a) {print a[1]}')
+        echo "[INFO] Added group {{ . }}."
+      fi
+    # If subgroup
+    else
+      # If parent group doesn't exist, create and keep id
+      parent_name=$(echo {{ . }} | awk -F/ '{print $1}')
+      parent_id=$(/opt/jboss/keycloak/bin/kcadm.sh get groups -r $realm -q search=$parent_name -F id --format csv --noquotes)
+      if [[ -z "$parent_id" ]]; then
+        parent_id=$(/opt/jboss/keycloak/bin/kcadm.sh create groups -r $realm -s name=$group_name -s path=/{{ . }} 2>&1 | gawk 'match($0, /'\''(.+)'\''/, a) {print a[1]}')
+        echo "[INFO] Added group $parent_name."
+      fi
+      # Search subgroups in parent
+      subgroups_filtered=$(/opt/jboss/keycloak/bin/kcadm.sh get groups -r kathra -q search=$parent_name | /jq/jq '.[].subGroups[] | {id: .id, name: .name} |select(.name == "'$group_name'")')
+      # If subgroups_filtered empty, create subgroup and keep id
+      if [[ -z "$subgroups_filtered" ]]; then
+        group_id=$(/opt/jboss/keycloak/bin/kcadm.sh create groups/$parent_id/children -r $realm -s name=$group_name -s path=/{{ . }})
+        echo "[INFO] Added group $group_name."
+      fi
+    fi
+    # Assign to user
+    /opt/jboss/keycloak/bin/kcadm.sh update users/$user_id/groups/$group_id -r $realm -n
+    echo "[INFO] Assigned group {{ . }} to user $username."
+    {{- end }}
+    {{- end }}
+    # Create clients ServiceAccount roles
+    echo "[INFO] Creating clients' ServiceAccounts roles."
+    {{- range .Values.configuration.serviceAccountsRoles }}
+    sa_username="service-account-{{ .client }}"
+    echo "[INFO] Client serviceAccount name is $sa_username."
+    {{- range .roles }}
+    echo "[INFO] Adding role {{ . }} to serviceAccount $sa_username."
+    /opt/jboss/keycloak/bin/kcadm.sh add-roles -r $realm --uusername $sa_username --cclientid realm-management --rolename {{ . }}
+    {{- end }}
+    {{- end }}
+    echo "[INFO] Configuration done!"
+  kubernetes-client.json: |
+    {
+      "clientId": "kubernetes",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "publicClient": false,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "saml.assertion.signature": "false",
+        "saml.force.post.binding": "false",
+        "saml.multivalued.roles": "false",
+        "saml.encrypt": "false",
+        "saml_force_name_id_format": "false",
+        "saml.client.signature": "false",
+        "saml.authnstatement": "false",
+        "saml.server.signature": "false",
+        "saml.server.signature.keyinfo.ext": "false",
+        "saml.onetimeuse.condition": "false"
+      },
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "protocolMappers": [
+        {
+          "name": "role list",
+          "protocol": "saml",
+          "protocolMapper": "saml-role-list-mapper",
+          "consentRequired": false,
+          "config": {
+            "single": "false",
+            "attribute.nameformat": "Basic",
+            "attribute.name": "Role"
+          }
+        },
+        {
+          "name": "username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": true,
+          "consentText": "${username}",
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "family name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": true,
+          "consentText": "${familyName}",
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "lastName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "family_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "given name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": true,
+          "consentText": "${givenName}",
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "firstName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "given_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name" : "groups",
+          "protocol" : "openid-connect",
+          "protocolMapper" : "oidc-group-membership-mapper",
+          "consentRequired" : false,
+          "config" : {
+            "full.path" : "true",
+            "usermodel.realmRoleMapping.rolePrefix" : "",
+            "multivalued" : "",
+            "userinfo.token.claim" : "",
+            "id.token.claim" : "true",
+            "access.token.claim" : "",
+            "claim.name" : "groups",
+            "jsonType.label" : ""
+          }
+        },
+        {
+          "name": "full name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-full-name-mapper",
+          "consentRequired": true,
+          "consentText": "${fullName}",
+          "config": {
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": true,
+          "consentText": "${email}",
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        }
+      ],
+      "useTemplateConfig": false,
+      "useTemplateScope": false,
+      "useTemplateMappers": false,
+      "access": {
+        "view": true,
+        "configure": true,
+        "manage": true
+      }
+    }
+
+    {
+      "clientId" : "sva-owlontology",
+      "surrogateAuthRequired" : false,
+      "enabled" : true,
+      "clientAuthenticatorType" : "client-secret",
+      "redirectUris" : [ "https://192.168.208.39:8080/webprotege-3.0.0/*", "https://127.0.0.1:8000/*" ],
+      "webOrigins" : [ ],
+      "notBefore" : 0,
+      "bearerOnly" : false,
+      "consentRequired" : false,
+      "standardFlowEnabled" : true,
+      "implicitFlowEnabled" : false,
+      "directAccessGrantsEnabled" : true,
+      "serviceAccountsEnabled" : true,
+      "authorizationServicesEnabled" : true,
+      "publicClient" : false,
+      "frontchannelLogout" : false,
+      "protocol" : "openid-connect",
+      "attributes" : {
+        "saml.assertion.signature" : "false",
+        "saml.multivalued.roles" : "false",
+        "saml.force.post.binding" : "false",
+        "saml.encrypt" : "false",
+        "saml_force_name_id_format" : "false",
+        "saml.client.signature" : "false",
+        "saml.authnstatement" : "false",
+        "saml.server.signature" : "false",
+        "saml.server.signature.keyinfo.ext" : "false",
+        "saml.onetimeuse.condition" : "false"
+      },
+      "fullScopeAllowed" : true,
+      "nodeReRegistrationTimeout" : -1,
+      "protocolMappers" : [ {
+        "name" : "role list",
+        "protocol" : "saml",
+        "protocolMapper" : "saml-role-list-mapper",
+        "consentRequired" : false,
+        "config" : {
+          "single" : "false",
+          "attribute.nameformat" : "Basic",
+          "attribute.name" : "Role"
+        }
+      },
+      {
+        "name" : "groups",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-group-membership-mapper",
+        "consentRequired" : false,
+        "config" : {
+          "full.path" : "true",
+          "usermodel.realmRoleMapping.rolePrefix" : "",
+          "multivalued" : "",
+          "userinfo.token.claim" : "",
+          "id.token.claim" : "true",
+          "access.token.claim" : "",
+          "claim.name" : "groups",
+          "jsonType.label" : ""
+        }
+      },
+      {
+        "name" : "family name",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usermodel-property-mapper",
+        "consentRequired" : true,
+        "consentText" : "${familyName}",
+        "config" : {
+          "userinfo.token.claim" : "true",
+          "user.attribute" : "lastName",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "family_name",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "given name",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usermodel-property-mapper",
+        "consentRequired" : true,
+        "consentText" : "${givenName}",
+        "config" : {
+          "userinfo.token.claim" : "true",
+          "user.attribute" : "firstName",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "given_name",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "Client Host",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usersessionmodel-note-mapper",
+        "consentRequired" : false,
+        "consentText" : "",
+        "config" : {
+          "user.session.note" : "clientHost",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "clientHost",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "username",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usermodel-property-mapper",
+        "consentRequired" : true,
+        "consentText" : "${username}",
+        "config" : {
+          "userinfo.token.claim" : "true",
+          "user.attribute" : "username",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "preferred_username",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "Client ID",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usersessionmodel-note-mapper",
+        "consentRequired" : false,
+        "consentText" : "",
+        "config" : {
+          "user.session.note" : "clientId",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "clientId",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "full name",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-full-name-mapper",
+        "consentRequired" : true,
+        "consentText" : "${fullName}",
+        "config" : {
+          "id.token.claim" : "true",
+          "access.token.claim" : "true"
+        }
+      }, {
+        "name" : "email",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usermodel-property-mapper",
+        "consentRequired" : true,
+        "consentText" : "${email}",
+        "config" : {
+          "userinfo.token.claim" : "true",
+          "user.attribute" : "email",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "email",
+          "jsonType.label" : "String"
+        }
+      }, {
+        "name" : "Client IP Address",
+        "protocol" : "openid-connect",
+        "protocolMapper" : "oidc-usersessionmodel-note-mapper",
+        "consentRequired" : false,
+        "consentText" : "",
+        "config" : {
+          "user.session.note" : "clientAddress",
+          "id.token.claim" : "true",
+          "access.token.claim" : "true",
+          "claim.name" : "clientAddress",
+          "jsonType.label" : "String"
+        }
+      } ],
+      "useTemplateConfig" : false,
+      "useTemplateScope" : false,
+      "useTemplateMappers" : false,
+      "access" : {
+        "view" : true,
+        "configure" : true,
+        "manage" : true
+      }
+    }
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configuration.configurationConfigmap }}
+  # annotations:
+  #   "helm.sh/hook": post-install

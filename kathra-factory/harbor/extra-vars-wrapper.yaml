@@ -1,0 +1,83 @@
+postInstallConfig:
+  enabled: true
+
+externalURL: https://harbor.${BASE_DOMAIN}
+
+harborAdminPassword: ${HARBOR_ADMIN_PASSWORD}
+
+expose:
+  tls:
+    enabled: false
+  ingress:
+    labels:
+      ingress: tls
+    hosts:
+      core: harbor.${BASE_DOMAIN}
+      notary: harbor-notary.${BASE_DOMAIN}
+    annotations:
+      kubernetes.io/ingress.class: traefik
+      ingress.kubernetes.io/ssl-redirect:
+      ingress.kubernetes.io/proxy-body-size:
+      nginx.ingress.kubernetes.io/ssl-redirect:
+      nginx.ingress.kubernetes.io/proxy-body-size:
+
+auth:
+  mode: oidc_auth
+  selfRegistration: "off"
+  oidc:
+    scope: "openid,email"
+    clientId: "harbor"
+    clientSecret: "25ab2d9a-0d20-4b96-8d10-5251da9f6fa5"
+    endpoint: "https://keycloak.${BASE_DOMAIN}/auth/realms/kathra"
+
+
+nginx:
+  image:
+    tag: v1.8.2-dev
+portal:
+  image:
+    tag: v1.8.2-dev
+core:
+  image:
+    tag: v1.8.2-dev
+jobservice:
+  image:
+    tag: v1.8.2-dev
+registry:
+  registry:
+    image:
+      tag: v1.8.2-dev
+  controller:
+    image:
+      tag: v1.8.2-dev
+chartmuseum:
+  image:
+    tag: v1.8.2-dev
+clair:
+  image:
+    tag: v1.8.2-dev
+notary:
+  server:
+    image:
+      tag: v1.8.2-dev
+  signer:
+    image:
+      tag: v1.8.2-dev
+
+database:
+  internal:
+    image:
+      tag: v1.8.2-dev
+  external:
+    image:
+      tag: v1.8.2-dev
+
+redis:
+  internal:
+    image:
+      tag: v1.8.2-dev
+  external:
+    image:
+      tag: v1.8.2-dev
+
+

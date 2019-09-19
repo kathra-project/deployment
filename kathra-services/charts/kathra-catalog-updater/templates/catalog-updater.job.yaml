@@ -1,0 +1,35 @@
+kind: Job
+apiVersion: batch/v1
+metadata:
+  name: kathra-catalog-updater
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    product: "kathra"
+    app: "catalog-updater"
+    impl: "kubejob"
+spec:
+  template:
+    metadata:
+      name: kathra-catalog-updater
+    spec:
+      serviceAccountName: catalogupdater
+      imagePullSecrets:
+      - name: regcred
+      volumes:
+      - name: git-volume
+        gitRepo:
+          repository: {{ .Values.repository.url }}
+          revision: {{ .Values.repository.revision }}
+      containers:
+      - name: kathra-catalog-updater
+        image: "{{ .Values.global.docker.registry.url }}/{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: git-volume
+          mountPath: /data
+        env: 
+        - name: KATHRA_DOMAIN
+          value: {{ .Values.global.tld }}
+        - name: PROTOCOL
+          value: {{ .Values.protocol }}
+      restartPolicy: Never

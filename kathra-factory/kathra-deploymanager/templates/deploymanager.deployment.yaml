@@ -1,0 +1,50 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: kathra-deploymanager-k8s
+  labels:
+{{ include "factory.labels" . | indent 4 }}
+    product: kathra
+    app: deploymanager
+    impl: k8s
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+{{ include "factory.labels" . | indent 8 }}
+        product: kathra
+        app: deploymanager
+        impl: k8s
+    spec:
+      serviceAccountName: deploymanager
+      imagePullSecrets:
+      
+      containers:
+      - name: deploymanager-k8s
+        image: "{{ .Values.image }}:{{ .Values.tag }}"
+        imagePullPolicy: Always
+        ports:
+        - name: web
+          containerPort: 8080
+          protocol: TCP
+        env:
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: DOCKER_PULL_SECRET
+          value: {{ include "target-docker-config.json" . | b64enc }}
+        - name: CLUSTER_NAME
+          value: {{ .Values.targetCluster }}
+        - name: BROKER_URL
+          value: {{ .Values.rabbitmq.url }}
+        - name: TOPLEVEL_DOMAIN
+          value: {{ .Values.domain }}
+        - name: PROTOCOL
+          value: {{ .Values.protocol }}        
+{{- if .Values.resources }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+{{- end }}

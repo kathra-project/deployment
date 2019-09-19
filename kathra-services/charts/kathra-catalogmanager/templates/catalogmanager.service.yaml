@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalogmanager
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    project: kathra
+    app: catalogmanager
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    project: kathra
+    app: catalogmanager

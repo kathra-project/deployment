@@ -1,0 +1,26 @@
+global:
+  namespace: kathra-dev
+  tld: dev-irtsysx.fr
+  docker:
+    registry: 
+      url: registry.hub.docker.com
+      root_repository: kathra
+      secret_b64: <base64_k8s_dockerconfig_secret>
+  keycloak:
+    kathra_services_client:
+      id: <kathra_services_client_id>
+      secret: <kathra_services_client_secret>
+
+image: binaryrepositorymanager-harbor
+version: 1.0.0-RC-SNAPSHOT-81d2276-4
+harbor:
+  url: https://registry.hub.docker.com/api
+  username: <harbor_svc_username>
+  password: <harbor_svc_password>
+resources:
+  limits:
+    cpu: 300m
+    memory: 768Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi

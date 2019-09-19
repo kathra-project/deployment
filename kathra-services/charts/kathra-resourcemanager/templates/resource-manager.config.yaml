@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: resource-manager-config
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    project: kathra
+    app: resource-manager
+data:
+  ARANGODB_SERVICE_HOST: {{ .Values.arango.host }}
+  ARANGODB_SERVICE_PORT: {{ .Values.arango.port | quote }}
+  ARANGODB_DATA: {{ .Values.arango.database }}

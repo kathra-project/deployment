@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sync-config
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-delete-policy": "hook-succeeded"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    project: kathra
+    app: kathra-sync
+data:
+  SOURCE_MANAGER_URL: "http://sourcemanager/api/v1"
+  PIPELINE_MANAGER_URL: "http://pipelinemanager/api/v1"
+  RESOURCE_MANAGER_URL: "http://resourcemanager/api/v1"
+  USER_MANAGER_URL: "http://usermanager/api/v1"
+  BINARY_REPOSITORY_MANAGER_URL: "http://binaryrepositorymanager/api/v1"

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: resourcemanager
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    app: resourcemanager
+    product: kathra
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: resourcemanager
+    product: kathra
+  type: ClusterIP

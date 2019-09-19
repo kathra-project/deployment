@@ -1,0 +1,10 @@
+
+nexusProxy:
+  env:
+    nexusDockerHost: nexus.${BASE_DOMAIN}
+    nexusHttpHost: nexus.${BASE_DOMAIN}
+
+nexus:
+  adminPassword: ${NEXUS_ADMIN_PASSWORD}
+nexusBackup:
+  nexusAdminPassword: ${NEXUS_ADMIN_PASSWORD}

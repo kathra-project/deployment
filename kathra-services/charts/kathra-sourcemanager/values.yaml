@@ -1,0 +1,32 @@
+global:
+  namespace: kathra-dev
+  tld: dev-irtsysx.fr
+  docker:
+    registry: 
+      url: registry.hub.docker.com
+      root_repository: kathra
+      secret_b64: <base64_k8s_dockerconfig_secret>
+  keycloak:
+    kathra_services_client:
+      id: <kathra_services_client_id>
+      secret: <kathra_services_client_secret>
+
+image: sourcemanager-gitlab
+version: 1.0.0-RC-SNAPSHOT-4346772-49
+temp_repos_folder: /tmp/kathra-sourcemanager-git-repos
+dir_creation_max_retry: "3"
+delete_temp_folder: "true"
+delete_temp_zip: "true"
+gitlab:
+  url: https://git.dev-irtsysx.fr
+  api_token: <gitlab-api-token>
+  parent_group: kathra-projects
+user_manager:
+  url: usermanager.kathra-dev.svc
+resources:
+  limits:
+    cpu: 300m
+    memory: 768Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi

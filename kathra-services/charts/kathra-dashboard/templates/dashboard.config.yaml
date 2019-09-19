@@ -1,0 +1,12 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: dashboard-config
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+data:
+  PLATFORM_MGR_ENDPOINT: {{ .Values.services_url.platform_manager }}
+  APP_MGR_ENDPOINT: {{ .Values.services_url.app_manager }}
+  PIPELINE_ENDPOINT: {{ .Values.services_url.jenkins_url }}
+  SERVICE_DOMAIN: {{ .Values.services_url.base_domain }}
+

@@ -1,0 +1,43 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: deploymanager
+  namespace: {{ .Release.namespace }}
+  labels:
+{{ include "factory.labels" . | indent 4 }}
+    product: kathra
+    app: deploymanager
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: deploy-master-binding-{{ .Release.Namespace }}
+  labels:
+{{ include "factory.labels" . | indent 4 }}
+    product: kathra
+    app: deploymanager
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: deploy-master-{{ .Release.Namespace }}
+subjects:
+- kind: ServiceAccount
+  name: deploymanager
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: deploy-master-{{ .Release.Namespace }}
+  labels:
+{{ include "factory.labels" . | indent 4 }}
+    product: kathra
+    app: deploymanager
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - '*'
