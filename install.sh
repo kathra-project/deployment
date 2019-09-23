@@ -7,7 +7,7 @@
 
 # Kathra version to install
 export kathraVersion="master"
-export DEPLOYMENT_GIT_SSH="git@gitlab.com:KATHRA/deployment.git"
+export DEPLOYMENT_GIT_SSH="https://gitlab.com/kathra/deployment.git"
 export KATHRA_CLI_GIT="https://git.kathra.org/KATHRA/kathra-cli"
 export tmp=$HOME/.kathra-tmp-install
 export localConfFile=$HOME/.kathra_pwd
