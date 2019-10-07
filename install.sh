@@ -6,7 +6,7 @@
 ########################################################################
 
 # Kathra version to install
-export kathraVersion="master"
+export kathraVersion="factory-resources-limits"
 export DEPLOYMENT_GIT_SSH="https://gitlab.com/kathra/deployment.git"
 export KATHRA_CLI_GIT="https://git.kathra.org/KATHRA/kathra-cli"
 export tmp=$HOME/.kathra-tmp-install

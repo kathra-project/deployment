@@ -21,7 +21,13 @@ nexus:
       value: "-Xms1200M -Xmx1200M -XX:MaxDirectMemorySize=2G -XX:+UnlockExperimentalVMOptions "
   # nodeSelector:
   #   cloud.google.com/gke-nodepool: default-pool
-  resources: {}
+  resources:
+    limits:
+      cpu: "2"
+      memory: "2G"
+    requests:
+      cpu: "1"
+      memory: "1G"
     # requests:
       ## Based on https://support.sonatype.com/hc/en-us/articles/115006448847#mem
       ## and https://twitter.com/analytically/status/894592422382063616:

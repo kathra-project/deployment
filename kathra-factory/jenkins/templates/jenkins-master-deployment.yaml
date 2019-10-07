@@ -215,9 +215,12 @@ spec:
           # enough time to migrate.
           resources:
 {{ if or .Values.Master.Cpu .Values.Master.Memory }}
-            requests:
+            limits:
               cpu: "{{ .Values.Master.Cpu }}"
               memory: "{{ .Values.Master.Memory }}"
+            requests:
+              cpu: "1"
+              memory: "512Mi"
 {{ else }}
 {{ toYaml .Values.Master.resources | indent 12 }}
 {{ end }}
