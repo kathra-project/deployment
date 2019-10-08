@@ -78,6 +78,14 @@ spec:
           imagePullPolicy: "{{ .Values.Master.ImagePullPolicy }}"
           command: [ "sh", "/var/jenkins_config/apply_config.sh" ]
           env:
+            - name: CURL_CONNECTION_TIMEOUT
+              value: 60
+            - name: CURL_RETRY
+              value: 10
+            - name: CURL_RETRY
+              value: 5
+            - name: CURL_RETRY_DELAY
+              value: 300
           {{- if .Values.Master.UseSecurity }}
             - name: ADMIN_PASSWORD
               valueFrom:
