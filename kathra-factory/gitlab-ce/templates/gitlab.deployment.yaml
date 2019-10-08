@@ -51,11 +51,11 @@ spec:
           name: "https"
         resources:
           limits:
-            cpu: "2"
-            memory: 2Gi
+            cpu: "3"
+            memory: 4Gi
           requests:
-            cpu: "1"
-            memory: 512Mi
+            cpu: "500m"
+            memory: 1Gi
         volumeMounts:
           - name: gitlab-data
             mountPath: /var/opt/gitlab
