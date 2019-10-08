@@ -179,7 +179,7 @@ configuration:
   globalProperties:
     envVars:
       KATHRA_DOCKER_URL: registry.hub.docker.com
-      KATHRA_DOCKER_AUTH: jenkins.harbor:EwdcDEIKFJ8yiSCKx00Z
+      KATHRA_DOCKER_AUTH: undefined:undefined
       DOCKER_URL: harbor.${BASE_DOMAIN}
       DOCKER_AUTH: ${HARBOR_ADMIN_LOGIN}:${HARBOR_ADMIN_PASSWORD}
       DEPLOYMANAGER_URL: http://deploymanager/api/v1
