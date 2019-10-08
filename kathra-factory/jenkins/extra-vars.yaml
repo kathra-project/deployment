@@ -7,11 +7,18 @@ Master:
   UseSecurity: true
   AdminUser: admin
   AdminPassword: "formetoknowforyoutofindout"
-  Cpu: "1"
+  Cpu: "500m"
   Memory: "1024Mi"
   ServiceType: ClusterIP
   SlaveListenerServiceType: ClusterIP
   InitContainerEnv:
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "1024Mi"
 
   ContainerEnv:
     # Tell the plugin where to find its config. The '..data'

@@ -219,8 +219,8 @@ spec:
               cpu: "{{ .Values.Master.Cpu }}"
               memory: "{{ .Values.Master.Memory }}"
             requests:
-              cpu: "1"
-              memory: "512Mi"
+              cpu: "50m"
+              memory: "256Mi"
 {{ else }}
 {{ toYaml .Values.Master.resources | indent 12 }}
 {{ end }}
