@@ -359,6 +359,9 @@ data:
         - mountPath: /home/jenkins/.pypirc
           name: pypi-config
           subPath: .pypirc
+        - mountPath: /root/.pypirc
+          name: pypi-config
+          subPath: .pypirc
       volumes:
       - name: pypi-config
         secret:
