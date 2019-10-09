@@ -59,6 +59,7 @@ function parseArgs() {
             --cpus)                         minikubeCpus=$value;;
             --memory)                       minikubeMemory=$value;;
             --disk-size)                    minikubeDiskSize=$value;;
+            --minikube-version)             minikubeVersion=$value;;
             --kubernetes-version)           kubernetesVersion=$value;;
             --helm-version)                 helmVersion=$value;;
             --verbose)                      debug=1;;
