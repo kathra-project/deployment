@@ -4,6 +4,7 @@
 #
 # @author Julien Boubechtoula
 ########################################################################
+export SCRIPT_DIR=$(realpath $(dirname `which $0`))
 export debug=0
 export tmp=/tmp/kathra.minikube.wrapper
 [ ! -d $tmp ] && mkdir $tmp
@@ -17,8 +18,13 @@ export hostNetworkDevice=$(ip -4 addr show | grep '^[0-9]*:' | awk '{print $2;}'
 export nodePortHTTP=30080
 export nodePortHTTPS=30443
 export minikubeCpus=6
-export minikubeMemory=12288
+export minikubeMemory=16384
 export minikubeDiskSize="50000mb"
+export minikubeVersion="1.4.0"
+export kubernetesVersion="1.15.4"
+export helmVersion="2.14.3"
+export kubeDbVersion="0.8.0"
+export traefikChartVersion="1.78.2"
 
 function showHelp() {
     printInfo "KATHRA + Minikube Install Wrapper"
@@ -32,6 +38,9 @@ function showHelp() {
     printInfo "--cpus:                          Number of cpu [default: $minikubeCpus]"
     printInfo "--memory:                        Memory size [default: $minikubeMemory]"
     printInfo "--disk-size:                     Disk size [default: $minikubeDiskSize]"
+    printInfo "--minikube-version:              Minikube version [default: $minikubeVersion]"
+    printInfo "--kubernetes-version:            Kubernetes version [default: $kubernetesVersion]"
+    printInfo "--helm-version:                  Helm version [default: $helmVersion]"
     printInfo "--verbose:                       Enable DEBUG log level"
     exit 0
 }
@@ -50,6 +59,9 @@ function parseArgs() {
             --cpus)                         minikubeCpus=$value;;
             --memory)                       minikubeMemory=$value;;
             --disk-size)                    minikubeDiskSize=$value;;
+            --minikube-version)             minikubeVersion=$value;;
+            --kubernetes-version)           kubernetesVersion=$value;;
+            --helm-version)                 helmVersion=$value;;
             --verbose)                      debug=1;;
             --help|-h)                      showHelp;;
         esac    
@@ -141,7 +153,7 @@ function startMinikube() {
     downloadMinikube
     downloadKubectl
     [ $(minikube status | grep -e "host: Running\|kubelet: Running\|apiserver: Running\|kubectl: Correctly Configured" | wc -l) -eq 4 ] && printInfo "Minikube already started" && return 0
-    minikube start --cpus $minikubeCpus --memory $minikubeMemory --disk-size $minikubeDiskSize || printErrorAndExit "Unable to install minikube"
+    minikube start --cpus $minikubeCpus --memory $minikubeMemory --disk-size $minikubeDiskSize --kubernetes-version v$kubernetesVersion || printErrorAndExit "Unable to install minikube"
     printInfo "Minikubed started"
     return 0
 }
@@ -171,7 +183,7 @@ function installKubeDB() {
     helm repo add appscode https://charts.appscode.com/stable/ || printErrorAndExit "Unable add helm repo"
     helm repo update || printErrorAndExit "Unable update helm repo"
 
-    helm install appscode/kubedb --name $nameRelease --version 0.8.0 --set apiserver.ca="$(onessl get kube-ca)" --set apiserver.enableValidatingWebhook=true --set apiserver.enableMutatingWebhook=true || printErrorAndExit "Unable install kubedb"
+    helm install appscode/kubedb --name $nameRelease --version $kubeDbVersion --set apiserver.ca="$(onessl get kube-ca)" --set apiserver.enableValidatingWebhook=true --set apiserver.enableMutatingWebhook=true || printErrorAndExit "Unable install kubedb"
     printInfo "KubeDB Installed"
     return 0
 }
@@ -203,9 +215,9 @@ function downloadMinikube() {
     printDebug "downloadMinikube()"
     sudo apt-get install -y virtualbox
     which minikube > /dev/null 2> /dev/null && return 0
-    sudo curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-    sudo chmod +x minikube
-    sudo cp minikube /usr/local/bin && sudo rm minikube
+    sudo curl -L -o $tmp/minikube https://storage.googleapis.com/minikube/releases/v$minikubeVersion/minikube-linux-amd64
+    sudo chmod +x $tmp/minikube
+    sudo mv $tmp/minikube /usr/local/bin/minikube
 }
 export -f downloadMinikube
 
@@ -213,10 +225,9 @@ function downloadKubectl() {
     printDebug "downloadKubectl()"
     sudo apt-get install -y virtualbox
     which kubectl > /dev/null 2> /dev/null && return 0
-    curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
-    sudo chmod +x kubectl 
-    sudo cp kubectl /usr/local/bin
-    rm kubectl
+    sudo curl -L -o $tmp/kubectl https://storage.googleapis.com/kubernetes-release/release/v$kubernetesVersion/bin/linux/amd64/kubectl 
+    sudo chmod +x $tmp/kubectl 
+    sudo mv $tmp/kubectl /usr/local/bin/kubectl
 }
 export -f downloadKubectl
 
@@ -256,8 +267,8 @@ export -f coreDnsAddRecords
 
 function installTiller() {
     printDebug "installTiller()"
-     curl -L https://git.io/get_helm.sh > $tmp/get_helm.sh && chmod +x $tmp/get_helm.sh || printErrorAndExit "Unable to download Helm"
-    $tmp/get_helm.sh || printErrorAndExit "Unable to get Helm"
+    curl -L https://git.io/get_helm.sh > $tmp/get_helm.sh && chmod +x $tmp/get_helm.sh || printErrorAndExit "Unable to download Helm"
+    $tmp/get_helm.sh --version v$helmVersion  || printErrorAndExit "Unable to get Helm"
     helm init || printErrorAndExit "Unable to init Helm's Tiller"
     checkCommandAndRetry '[ $(kubectl -n kube-system get deployment tiller-deploy -o json | jq -r '"'"'.status.readyReplicas'"'"' | sed '"'"'s/null/0/g'"'"') -gt 0 ]'
     [ $? -ne 0 ] && printError "Unable to init Helm's Tiller"
@@ -273,7 +284,7 @@ function installTraefik() {
     printDebug "installTraefik(domainDashboard: $domainDashboard, httpPort: $httpPort, httpsPort: $httpsPort)"
     [ ! "$(helm list --output json | jq -r ".Releases[] | select(.Name==\"traefik\")")" == "" ] && printDebug "Traefik already installed" && return 0
 
-    helm install stable/traefik --name traefik --set dashboard.enabled=true,ssl.enabled=true,serviceType=NodePort,service.nodePorts.http=$httpPort,service.nodePorts.https=$httpsPort,dashboard.domain=$domainDashboard,rbac.enabled=true --namespace traefik || printErrorAndExit "Unable install Traefik"
+    helm install stable/traefik --name traefik --version $traefikChartVersion --set dashboard.enabled=true,ssl.enabled=true,serviceType=NodePort,service.nodePorts.http=$httpPort,service.nodePorts.https=$httpsPort,dashboard.domain=$domainDashboard,rbac.enabled=true --namespace traefik || printErrorAndExit "Unable install Traefik"
     printInfo "Traefik installed"
 
     checkCommandAndRetry "curl --fail http://$domainDashboard:$httpPort > /dev/null 2> /dev/null " || printErrorAndExit "Unable to get dashboard with HTTP : curl --fail http://$domainDashboard:$httpPort "
