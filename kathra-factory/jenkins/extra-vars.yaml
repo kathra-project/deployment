@@ -40,9 +40,9 @@ Master:
     - oic-auth:1.6
     - matrix-auth:2.4.2
     - pipeline-utility-steps:2.3.0
-    - configuration-as-code:1.15
+    - configuration-as-code:1.30
     # You might also need this for a couple of third-party plugins (e.g. for setting credentials)
-    - configuration-as-code-support:1.15
+    - configuration-as-code-support:1.30
 
   InitScripts:
     - ""
