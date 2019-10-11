@@ -8,9 +8,10 @@
 # Kathra version to install
 export kathraVersion="master"
 export DEPLOYMENT_GIT_SSH="https://gitlab.com/kathra/deployment.git"
-export KATHRA_CLI_GIT="https://git.kathra.org/KATHRA/kathra-cli"
+export KATHRA_CLI_GIT="https://gitlab.com/kathra/kathra/kathra-cli.git"
 export tmp=$HOME/.kathra-tmp-install
-export localConfFile=$HOME/.kathra_pwd
+export LOCAL_CONF_FILE=$HOME/.kathra_pwd
+export LOCAL_CONF_FILE_KATHRA_CLI=$HOME/.kathra-context
 export purge=0
 export debug=0
 
@@ -168,8 +169,8 @@ function main() {
         defineVar "USER_LOGIN" "Username to first user"
         defineSecretVar "USER_PASSWORD" "Password"
         defineVar "TEAM_NAME" "Group's name"
-        writeEntryIntoFile "USER_LOGIN" "$USER_LOGIN"
-        writeEntryIntoFile "USER_PASSWORD" "$USER_PASSWORD"
+        writeEntryIntoFile "USER_LOGIN" "$USER_LOGIN" "${LOCAL_CONF_FILE}"
+        writeEntryIntoFile "USER_PASSWORD" "$USER_PASSWORD" "${LOCAL_CONF_FILE}"
         defineVar "USER_PUBLIC_SSH_KEY" "SSH PublicKey file"
 
         askYesOrNo "Do you want to configure LDAP directory ?"
@@ -182,11 +183,11 @@ function main() {
             defineVar "LDAP_DN" "LDAP's group DN"
             defineVar "LDAP_USER_DN" "LDAP's user group DN"
             
-            writeEntryIntoFile "LDAP_DOMAIN" "$LDAP_DOMAIN"
-            writeEntryIntoFile "LDAP_SA" "$LDAP_SA"
-            writeEntryIntoFile "LDAP_PWD" "$LDAP_PWD"
-            writeEntryIntoFile "LDAP_DN" "$LDAP_DN"
-            writeEntryIntoFile "LDAP_USER_DN" "$LDAP_USER_DN"
+            writeEntryIntoFile "LDAP_DOMAIN" "$LDAP_DOMAIN" "${LOCAL_CONF_FILE}"
+            writeEntryIntoFile "LDAP_SA" "$LDAP_SA" "${LOCAL_CONF_FILE}"
+            writeEntryIntoFile "LDAP_PWD" "$LDAP_PWD" "${LOCAL_CONF_FILE}"
+            writeEntryIntoFile "LDAP_DN" "$LDAP_DN" "${LOCAL_CONF_FILE}"
+            writeEntryIntoFile "LDAP_USER_DN" "$LDAP_USER_DN" "${LOCAL_CONF_FILE}"
         fi
     else
         [ ! -f "$USER_PUBLIC_SSH_KEY" ] && printWarn "Unable to find public key : $USER_PUBLIC_SSH_KEY"
@@ -205,7 +206,7 @@ function main() {
     progressBar "30" "Install NFS-Server..." && installKathraFactoryChart "nfs" && printInfo "OK"
     progressBar "35" "Install Harbor..." && installKathraFactoryHarbor && printInfo "OK"
 
-    #export HARBOR_USER_SECRET_CLI=$(readEntryIntoFile "HARBOR_USER_SECRET_CLI")
+    #export HARBOR_USER_SECRET_CLI=$(readEntryIntoFile "HARBOR_USER_SECRET_CLI" "${LOCAL_CONF_FILE}")
 
     cat > $tmp/commands_to_exec <<EOF
     printInfo "Install Jenkins... Pending" && installJenkins && printInfo "Install Jenkins... OK"
@@ -216,12 +217,13 @@ EOF
     cat $tmp/commands_to_exec | xargs -I{} -n 1 -P 5  bash -c {}
     
     progressBar "90" "Install KATHRA services..." && installKathraService && printInfo "OK"
-    
+    progressBar "95" "Configure KATHRA-CLI..." && autoConfigureKathraCli && printInfo "OK"
+
     progressBar "100" "Done..."
 
     printInfo "Kathra is installed in $((`date +%s`-start)) secondes"
     printInfo "You can use Kathra from dashboard : https://dashboard.${BASE_DOMAIN} or from kathra-cli: $KATHRA_CLI_GIT"
-    printInfo "Yours passwords are stored here : $localConfFile" 
+    printInfo "Yours passwords are stored here : $LOCAL_CONF_FILE" 
     return 0
 }
 
@@ -238,20 +240,20 @@ function askYesOrNo() {
 }
 
 function initPasswords() {
-    printInfo "Use existing passwords from file '$localConfFile' or generate new ones.... "
+    printInfo "Use existing passwords from file '$LOCAL_CONF_FILE' or generate new ones.... "
     generatePasswordIfNotExist "KEYCLOAK_ADMIN_PASSWORD"
     generatePasswordIfNotExist "JENKINS_PASSWORD"
     generatePasswordIfNotExist "SYNCMANAGER_PASSWORD"
     generatePasswordIfNotExist "ARANGODB_PASSWORD"
     generatePasswordIfNotExist "HARBOR_ADMIN_PASSWORD"
-    #writeEntryIntoFile "HARBOR_USER_LOGIN" "$HARBOR_USER_LOGIN"
+    #writeEntryIntoFile "HARBOR_USER_LOGIN" "$HARBOR_USER_LOGIN" "${LOCAL_CONF_FILE}"
     #generatePasswordIfNotExist "HARBOR_USER_PASSWORD"
     generatePasswordIfNotExist "NEXUS_ADMIN_PASSWORD"
 }
 export -f initPasswords
 function generatePasswordIfNotExist() {
     local key=$1
-    local existingPassword=$(readEntryIntoFile "$key")
+    local existingPassword=$(readEntryIntoFile "$key" "${LOCAL_CONF_FILE}")
     [ "$existingPassword" == "null" ] && generatePassword "$key" || eval "export $key=\"$existingPassword\""
 }
 export -f generatePasswordIfNotExist
@@ -259,22 +261,24 @@ function generatePassword() {
     local key=$1
     local pwd="$(< /dev/urandom tr -dc A-Za-z0-9 | head -c20;echo;)"
     eval "export $key=\"$pwd\""
-    writeEntryIntoFile "$key" "$pwd"
+    writeEntryIntoFile "$key" "$pwd" "${LOCAL_CONF_FILE}"
 }
 export -f generatePassword
 
 function writeEntryIntoFile(){
     local key=$1
     local value=$2
-    [ ! -f $localConfFile ] && echo "{}" > $localConfFile
-    jq ".$key = \"$value\"" $localConfFile > $localConfFile.updated && mv $localConfFile.updated $localConfFile
+    local file=$3
+    [ ! -f $file ] && echo "{}" > $file
+    jq ".$key = \"$value\"" $file > $file.updated && mv $file.updated $file
 }
 export -f writeEntryIntoFile
 
 function readEntryIntoFile() {
     local key=$1
-    [ ! -f $localConfFile ] && echo "{}" > $localConfFile
-    jq -r ".$key" < $localConfFile
+    local file=$2
+    [ ! -f $file ] && echo "{}" > $file
+    jq -r ".$key" < $file
 }
 export -f readEntryIntoFile
 
@@ -363,7 +367,7 @@ function installGitlab() {
     gitlabResetAdminPwd "$SYNCMANAGER_PASSWORD"
     
     gitlabGenerateApiToken "$USER_LOGIN" "$USER_PASSWORD" "$tmp/gitlab.user.tokenValue" 
-    writeEntryIntoFile "GITLAB_API_TOKEN_USER" "$(cat $tmp/gitlab.user.tokenValue)"
+    writeEntryIntoFile "GITLAB_API_TOKEN_USER" "$(cat $tmp/gitlab.user.tokenValue)" "${LOCAL_CONF_FILE}"
     [ -f "$USER_PUBLIC_SSH_KEY" ] && gitlabImportPublicSshKey "$USER_LOGIN" "$(cat $tmp/gitlab.user.tokenValue)" "$USER_PUBLIC_SSH_KEY"
     
     local nodeIp=$(kubectl get nodes -o json | jq -r '.items[0] | .status.addresses[] | select(.type=="InternalIP") | .address ')
@@ -453,9 +457,9 @@ function installKathraFactoryKeycloak() {
     keycloakCreateGroup "${TEAM_NAME}" $tmp/group.default "$(cat $tmp/group.kathra-projects | tr -d '\r')"
     keycloakCreateUser "${USER_LOGIN}" "${USER_PASSWORD}" "$(cat $tmp/group.default | tr -d '\r')" $tmp/kathra.keycloak.firstUser
     keycloakCreateGroup "jenkins-admin" $tmp/group.jenkins-admin
-    keycloakCreateUser "${JENKINS_LOGIN}" "$(readEntryIntoFile "JENKINS_PASSWORD")" "$(cat $tmp/group.jenkins-admin | tr -d '\r')" $tmp/kathra.keycloak.jenkins-admin
-    #keycloakCreateUser "${HARBOR_USER_LOGIN}" "$(readEntryIntoFile "HARBOR_USER_PASSWORD")" "" $tmp/kathra.keycloak.harbor-admin
-    keycloakCreateUser "${SYNCMANAGER_LOGIN}" "$(readEntryIntoFile "SYNCMANAGER_PASSWORD")" "" $tmp/kathra.keycloak.${SYNCMANAGER_LOGIN}
+    keycloakCreateUser "${JENKINS_LOGIN}" "$(readEntryIntoFile "JENKINS_PASSWORD" "${LOCAL_CONF_FILE}")" "$(cat $tmp/group.jenkins-admin | tr -d '\r')" $tmp/kathra.keycloak.jenkins-admin
+    #keycloakCreateUser "${HARBOR_USER_LOGIN}" "$(readEntryIntoFile "HARBOR_USER_PASSWORD" "${LOCAL_CONF_FILE}")" "" $tmp/kathra.keycloak.harbor-admin
+    keycloakCreateUser "${SYNCMANAGER_LOGIN}" "$(readEntryIntoFile "SYNCMANAGER_PASSWORD" "${LOCAL_CONF_FILE}")" "" $tmp/kathra.keycloak.${SYNCMANAGER_LOGIN}
     keycloakInitPermission
     restartKeycloak
     return $?
@@ -491,7 +495,7 @@ function installKathraFactoryHarbor() {
 
     #harborInitCliSecret $HARBOR_ADMIN_LOGIN $HARBOR_ADMIN_PASSWORD $HARBOR_USER_LOGIN "$tmp/harbor.tokenValue"
     #export HARBOR_USER_SECRET_CLI=$(cat $tmp/harbor.tokenValue)
-    #writeEntryIntoFile "HARBOR_USER_SECRET_CLI" "$HARBOR_USER_SECRET_CLI"
+    #writeEntryIntoFile "HARBOR_USER_SECRET_CLI" "$HARBOR_USER_SECRET_CLI" "${LOCAL_CONF_FILE}"
 
     return 0
 }
@@ -535,15 +539,15 @@ export -f replaceVarName
 function installKathraService() { 
     [ $purge -eq 0 ] && checkChartDeployed "$helmAppKathraNS" "$helmAppKathraName" && printInfo "KATHRA already deployed" && return 2
     
-    gitlabGenerateApiToken "$SYNCMANAGER_LOGIN" "$(readEntryIntoFile "SYNCMANAGER_PASSWORD")" "$tmp/gitlab.tokenValue" 
+    gitlabGenerateApiToken "$SYNCMANAGER_LOGIN" "$(readEntryIntoFile "SYNCMANAGER_PASSWORD" "${LOCAL_CONF_FILE}")" "$tmp/gitlab.tokenValue" 
     export GITLAB_API_TOKEN=$(cat $tmp/gitlab.tokenValue)
-    writeEntryIntoFile "GITLAB_API_TOKEN" "$GITLAB_API_TOKEN"
+    writeEntryIntoFile "GITLAB_API_TOKEN" "$GITLAB_API_TOKEN" "${LOCAL_CONF_FILE}"
     
-    jenkinsGenerateApiToken "$JENKINS_LOGIN" "$(readEntryIntoFile "JENKINS_PASSWORD")" "$tmp/jenkins.tokenValue"
+    jenkinsGenerateApiToken "$JENKINS_LOGIN" "$(readEntryIntoFile "JENKINS_PASSWORD" "${LOCAL_CONF_FILE}")" "$tmp/jenkins.tokenValue"
     export JENKINS_API_TOKEN=$(cat $tmp/jenkins.tokenValue)
-    writeEntryIntoFile "JENKINS_API_TOKEN" "$JENKINS_API_TOKEN"
+    writeEntryIntoFile "JENKINS_API_TOKEN" "$JENKINS_API_TOKEN" "${LOCAL_CONF_FILE}"
     
-    #export HARBOR_USER_SECRET_CLI=$(readEntryIntoFile "HARBOR_USER_SECRET_CLI")
+    #export HARBOR_USER_SECRET_CLI=$(readEntryIntoFile "HARBOR_USER_SECRET_CLI" "${LOCAL_CONF_FILE}")
 
     [ "${JENKINS_API_TOKEN}" == "" ] && defineVar "JENKINS_API_TOKEN" "Please generate a Jenkins's Api Token from (https://jenkins.${BASE_DOMAIN}/user/${JENKINS_LOGIN}/configure password: ${JENKINS_PASSWORD})"
     [ "${GITLAB_API_TOKEN}" == "" ] && defineVar "GITLAB_API_TOKEN" "Please generate a GitLab's Api Token from (https://gitlab.${BASE_DOMAIN}/profile/personal_access_tokens)"
@@ -949,6 +953,28 @@ function harborInitCliSecret() {
     jq -r '.secret' < $tmp.harborInitCliSecret.$userLogin.post.response > ${out}
 }
 export -f harborInitCliSecret
+
+function autoConfigureKathraCli() {
+    printDebug "autoConfigureKathraCli()"
+
+    writeEntryIntoFile "DOMAIN_HOST" "$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
+    writeEntryIntoFile "KEYCLOAK_HOST" "keycloak.$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
+    writeEntryIntoFile "APP_MANAGER_HOST" "keycloak.$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
+    writeEntryIntoFile "RESOURCE_MANAGER_HOST" "appmanager.$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
+    writeEntryIntoFile "PIPELINE_MANAGER_HOST" "pipelinemanager.$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
+    writeEntryIntoFile "SOURCE_MANAGER_HOST" "resourcemanager.$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
+    writeEntryIntoFile "JENKINS_HOST" "jenkins.$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
+    writeEntryIntoFile "GITLAB_HOST" "gitlab.$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
+    writeEntryIntoFile "JENKINS_HOST" "jenkins.$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
+    writeEntryIntoFile "KEYCLOAK_CLIENT_ID" "kathra-resource-manager" "${LOCAL_CONF_FILE_KATHRA_CLI}"
+    writeEntryIntoFile "KEYCLOAK_CLIENT_SECRET" "184863e6-0b78-4df6-ae99-38b4003f6db5" "${LOCAL_CONF_FILE_KATHRA_CLI}"
+    writeEntryIntoFile "KEYCLOAK_CLIENT_REALM" "kathra" "${LOCAL_CONF_FILE_KATHRA_CLI}"
+    writeEntryIntoFile "JENKINS_API_USER" "kathra-pipelinemanager" "${LOCAL_CONF_FILE_KATHRA_CLI}"
+    writeEntryIntoFile "JENKINS_API_TOKEN" "$(readEntryIntoFile "JENKINS_API_TOKEN" "${LOCAL_CONF_FILE}")" "${LOCAL_CONF_FILE_KATHRA_CLI}"
+    writeEntryIntoFile "GITLAB_API_TOKEN" "$(readEntryIntoFile "GITLAB_API_TOKEN" "${LOCAL_CONF_FILE}")" "${LOCAL_CONF_FILE_KATHRA_CLI}"
+    printInfo "kathra-cli configured : ${LOCAL_CONF_FILE_KATHRA_CLI}"
+}
+export -f autoConfigureKathraCli
 
 main $@
 
