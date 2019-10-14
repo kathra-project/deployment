@@ -2,7 +2,8 @@ stages:
   - installK8S
   - installKathra
   - initKathraCli
-  - initKathraComponent
+  - createComponent
+  - initImportKathraComponent
 
 variables:
   DOMAIN_NAME: kathra.boubechtoula.ovh
@@ -24,7 +25,7 @@ installKathra:
   tags: 
     - workstation
   script: 
-    - ./install.sh --domain=$DOMAIN_NAME --user-login=$USER_LOGIN --user-login=$USER_PASSWORD --verbose
+    - ./install.sh --domain=$DOMAIN_NAME --user-login=$USER_LOGIN --user-password=$USER_PASSWORD --verbose
 
 initKathraCli:
   stage: initKathraCli
@@ -35,8 +36,15 @@ initKathraCli:
     - ./kathra-cli/kathra-cli.sh login --username=$USER_LOGIN --password=$USER_PASSWORD
     - ./kathra-cli/kathra-cli.sh get components
 
-initKathraComponent:
-  stage: initKathraComponent
+createComponent:
+  stage: createComponent
+  tags: 
+    - workstation
+  script: 
+    - ./kathra-cli/kathra-cli.sh create components "./kathra-cli/swagger.example.yaml" "my-first-component" "my-team" "Component's description"
+
+initImportKathraComponent:
+  stage: initImportKathraComponent
   tags: 
     - workstation
   script: 
