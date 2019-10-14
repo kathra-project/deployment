@@ -1,8 +1,43 @@
 stages:
-  - install
+  - installK8S
+  - installKathra
+  - initKathraCli
+  - initKathraComponent
 
-job 1:
-  stage: install
-  tags: workstation
+variables:
+  DOMAIN_NAME: kathra.boubechtoula.ovh
+  TLS_CERT: /etc/letsencrypt/live/kathra.boubechtoula.ovh/fullchain.pem
+  TLS_KEY: /etc/letsencrypt/live/kathra.boubechtoula.ovh/privkey.pem
+  NETWORK_DEVICE: enp4s0
+  USER_LOGIN: userTest
+  USER_PASSWORD: passwordTest
+
+installK8S:
+  stage: installK8S
+  tags: 
+    - workstation
   script: 
-    - ./install-minikube.sh --help
+    - ./install-minikube.sh --domain=$DOMAIN_NAME --tlsCert=$TLS_CERT --tlsKey=$TLS_KEY --network-device=$NETWORK_DEVICE --verbose
+
+installKathra:
+  stage: installKathra
+  tags: 
+    - workstation
+  script: 
+    - ./install.sh --domain=$DOMAIN_NAME --user-login=$USER_LOGIN --user-login=$USER_PASSWORD --verbose
+
+initKathraCli:
+  stage: initKathraCli
+  tags: 
+    - workstation
+  script: 
+    - git clone --branch=feature_login https://gitlab.com/kathra/kathra/kathra-cli.git
+    - ./kathra-cli/kathra-cli.sh login --username=$USER_LOGIN --password=$USER_PASSWORD
+    - ./kathra-cli/kathra-cli.sh get components
+
+initKathraComponent:
+  stage: initKathraComponent
+  tags: 
+    - workstation
+  script: 
+    - ./kathra-cli/init-kathra-components.sh kathra-components.json kathra-pipelinemanager
