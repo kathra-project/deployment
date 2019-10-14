@@ -1,8 +1,9 @@
 stages:
-  - installK8S
+  - installMinikube
   - installKathra
   - initKathraCli
   - createComponent
+  - createImplementations
   - initImportKathraComponent
 
 variables:
@@ -12,14 +13,16 @@ variables:
   NETWORK_DEVICE: enp4s0
   USER_LOGIN: userTest
   USER_PASSWORD: passwordTest
+  USER_TEAM: team-test-e2e
 
-installK8S:
-  stage: installK8S
+installMinikube:
+  stage: installMinikube
   only:
     - master
   tags: 
     - workstation
   script: 
+    - minikube delete || echo "No cluster to delete"
     - ./install-minikube.sh --domain=$DOMAIN_NAME --tlsCert=$TLS_CERT --tlsKey=$TLS_KEY --network-device=$NETWORK_DEVICE --verbose
 
 installKathra:
@@ -29,7 +32,7 @@ installKathra:
   tags: 
     - workstation
   script: 
-    - ./install.sh --domain=$DOMAIN_NAME --user-login=$USER_LOGIN --user-password=$USER_PASSWORD --verbose
+    - ./install.sh --domain=$DOMAIN_NAME --user-login=$USER_LOGIN --user-password=$USER_PASSWORD --user-team=$USER_TEAM --verbose
 
 initKathraCli:
   stage: initKathraCli
@@ -50,7 +53,31 @@ createComponent:
     - workstation
   script: 
     - git clone https://gitlab.com/kathra/kathra/kathra-cli.git
-    - ./kathra-cli/kathra-cli.sh create components "./kathra-cli/swagger.example.yaml" "my-first-component" "my-team" "Component's description"
+    - ./kathra-cli/kathra-cli.sh create components "./kathra-cli/swagger.example.yaml" "my-first-component" "$USER_TEAM" "Component's description"
+    - ./kathra-cli/kathra-cli.sh create implementations "my-java-implementation" "my-first-component" "1.0.0" "JAVA" "Java implementation description"
+
+createImplJava:
+  stage: createImplementations
+  only:
+    - master
+  tags: 
+    - workstation
+  script: 
+    - git clone https://gitlab.com/kathra/kathra/kathra-cli.git
+    - ./kathra-cli/kathra-cli.sh create implementations "my-java-implementation" "my-first-component" "1.0.0" "JAVA" "Java implementation description"
+    - curl -v -H "Host: my-first-component.my-team-dev.kathra.boubechtoula.ovh" http://$(dig +short dashboard.${DOMAIN_NAME})/api/v1/swagger.json > /dev/null
+
+createImplPython:
+  stage: createImplementations
+  only:
+    - master
+  tags: 
+    - workstation
+  script: 
+    - git clone https://gitlab.com/kathra/kathra/kathra-cli.git
+    - ./kathra-cli/kathra-cli.sh create implementations "my-python-implementation" "my-first-component" "1.0.0" "PYTHON" "Python implementation description"
+    - curl -v -H "Host: my-first-component.my-team-dev.kathra.boubechtoula.ovh" http://$(dig +short dashboard.${DOMAIN_NAME})/api/v1/swagger.json > /dev/null
+
 
 initImportKathraComponent:
   stage: initImportKathraComponent
@@ -60,4 +87,5 @@ initImportKathraComponent:
     - workstation
   script: 
     - git clone --branch=feature_importSmiteComponent https://gitlab.com/kathra/kathra/kathra-cli.git
-    - ./kathra-cli/init-kathra-components.sh ./kathra-cli/kathra-components.json kathra-pipelinemanager
+    - sed "s/\"my-team\"/\"$USER_TEAM\"/" < ./kathra-cli/kathra-components.json > ./kathra-components.json
+    - ./kathra-cli/init-kathra-components.sh ./kathra-components.json kathra-pipelinemanager

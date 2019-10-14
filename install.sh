@@ -370,9 +370,9 @@ function installGitlab() {
     writeEntryIntoFile "GITLAB_API_TOKEN_USER" "$(cat $tmp/gitlab.user.tokenValue)" "${LOCAL_CONF_FILE}"
     [ -f "$USER_PUBLIC_SSH_KEY" ] && gitlabImportPublicSshKey "$USER_LOGIN" "$(cat $tmp/gitlab.user.tokenValue)" "$USER_PUBLIC_SSH_KEY"
     
-    local nodeIp=$(kubectl get nodes -o json | jq -r '.items[0] | .status.addresses[] | select(.type=="InternalIP") | .address ')
-    configureSSHConfig "gitlab.${BASE_DOMAIN}" "$nodeIp" "$GITLAB_NODEPORT"
-
+    local sshServer=$(kubectl get nodes -o json | jq -r '.items[0] | .status.addresses[] | select(.type=="InternalIP") | .address ')
+    ping -w 2 $sshServer 2> /dev/null > /dev/null || sshServer=$(dig +short gitlab.${BASE_DOMAIN})
+    configureSSHConfig "gitlab.${BASE_DOMAIN}" "$sshServer" "$GITLAB_NODEPORT"
     return $?
 }
 export -f installGitlab
@@ -399,6 +399,7 @@ function configureSSHConfig() {
 Host ${hostName}
     Port ${nodePortSSH}
     HostName ${nodeIp}
+    StrictHostKeyChecking no
 
 EOF
     ## remove previous host config if exists
