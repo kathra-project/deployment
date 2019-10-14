@@ -1,0 +1,8 @@
+stages:
+  - install
+
+job 1:
+  stage: install
+  tags: workstation
+  script: 
+    - ./install-minikube.sh --help
