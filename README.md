@@ -1,10 +1,10 @@
 # How to install KATHRA
 ## Requirements
- - Kubernetes : v1.9.11 or later
+ - Kubernetes : between v1.9.11 and v1.15.1
  - Kubernetes client with full access
  - Kubernetes features :
-    - Traefik Ingress Controller (1.7.9 or later) with SSL
-    - KubeDB (0.8.0 or later)
+    - Traefik Ingress Controller (v1.7.9 or later) with SSL
+    - KubeDB v0.8.0
  - Domains names pointing to your public k8s :
     - dashboard.your-domain.xyz
     - appmanager.your-domain.xyz
@@ -310,3 +310,33 @@ java.io.IOException: Configuration as Code Support Plugin version 1.15 failed to
 
 
 Solution: You have to retry later when updates.jenkins.io is avaliable
+
+
+##  Factory products compatiblities
+
+| Product 	      | Recommended version 	|
+|--------------	|---------------------	|
+| Kubernetes   	| 1.51.1             	|
+| Treafik      	| 1.7.9               	|
+| KubeDb       	| 0.8.0               	|
+| Keycloak     	| 4.2.1               	|
+| Gitlab-ci    	| 11.2.3              	|
+| Nexus        	| 3.15.2              	|
+| Harbor       	| 1.8.2               	|
+| Jenkins      	| 2.164.3             	|
+
+##  Jenkins plugins compatiblities
+
+| Plugin            	      | Recommended version 	|
+|------------------------	|---------------------	|
+| Kubernetes             	| 1.14.9              	|
+| Kubernetes credential  	| 0.4.0               	|
+| Workflow aggregator    	| 2.6                 	|
+| Workflow job           	| 2.32                	|
+| Credential binding     	| 1.18                	|
+| Docker Pipeline        	| 1.20                	|
+| Git                    	| 3.9.3               	|
+| OpenId connect auth    	| 1.6                 	|
+| Pipeline utility steps 	| 2.3.0               	|
+| Pipeline Job           	| 2.32                	|
+| Matrix auth            	| 2.4.2               	|
