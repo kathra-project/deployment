@@ -7,7 +7,7 @@ protocol: https
 
 docker:
   KATHRA_DOCKER_URL: registry.hub.docker.com
-  KATHRA_DOCKER_AUTH: jenkins.harbor:EwdcDEIKFJ8yiSCKx00Z
+  KATHRA_DOCKER_AUTH: undefined:undefined
   TARGET_DOCKER_URL: harbor.<undefined>
   TARGET_DOCKER_AUTH: <undefined>:<undefined>
 

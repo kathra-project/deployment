@@ -78,6 +78,14 @@ spec:
           imagePullPolicy: "{{ .Values.Master.ImagePullPolicy }}"
           command: [ "sh", "/var/jenkins_config/apply_config.sh" ]
           env:
+            - name: "CURL_CONNECTION_TIMEOUT"
+              value: "60"
+            - name: "CURL_RETRY"
+              value: "6"
+            - name: "CURL_RETRY_DELAY"
+              value: "0"
+            - name: "CURL_RETRY_MAX_TIME"
+              value: "120"
           {{- if .Values.Master.UseSecurity }}
             - name: ADMIN_PASSWORD
               valueFrom:
@@ -215,9 +223,12 @@ spec:
           # enough time to migrate.
           resources:
 {{ if or .Values.Master.Cpu .Values.Master.Memory }}
-            requests:
+            limits:
               cpu: "{{ .Values.Master.Cpu }}"
               memory: "{{ .Values.Master.Memory }}"
+            requests:
+              cpu: "50m"
+              memory: "256Mi"
 {{ else }}
 {{ toYaml .Values.Master.resources | indent 12 }}
 {{ end }}
