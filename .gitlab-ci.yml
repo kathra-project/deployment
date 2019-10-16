@@ -93,6 +93,6 @@ initImportKathraComponent:
     - workstation
     - sudoers
   script: 
-    - git clone --branch=feature_importSmiteComponent https://gitlab.com/kathra/kathra/kathra-cli.git
+    - git clone https://gitlab.com/kathra/kathra/kathra-cli.git
     - sed "s/\"my-team\"/\"$USER_TEAM\"/" < ./kathra-cli/kathra-components.json > ./kathra-components.json
     - ./kathra-cli/init-kathra-components.sh ./kathra-components.json kathra-pipelinemanager
