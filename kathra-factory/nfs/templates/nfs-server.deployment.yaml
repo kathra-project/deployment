@@ -39,7 +39,11 @@ spec:
           name: rpcbind
           protocol: TCP
         resources:
+          limits:
+            memory: 256Mi
+            cpu: 500m
           requests:
+            memory: 128Mi
             cpu: 10m
         securityContext:
           privileged: true
