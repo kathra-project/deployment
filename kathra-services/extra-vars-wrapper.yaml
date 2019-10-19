@@ -6,7 +6,7 @@ global:
   domain: ${BASE_DOMAIN}
   docker:
     registry: 
-      url: registry.hub.docker.com
+      url: ${KATHRA_IMAGE_REGISTRY}
       root_repository: kathra
       secret: eyJhdXRocyI6eyJoYXJib3IuaXJ0c3lzeC5mciI6eyJ1c2VybmFtZSI6ImplbmtpbnMuaGFyYm9yIiwicGFzc3dvcmQiOiJFd2RjREVJS0ZKOHlpU0NLeDAwWiIsImVtYWlsIjoiamVua2lucy5oYXJib3JAbm8tcmVwbHktaXJ0c3lzeC5mciIsImF1dGgiOiJhbVZ1YTJsdWN5NW9ZWEppYjNJNlJYZGtZMFJGU1V0R1NqaDVhVk5EUzNnd01Gbz0ifX19
   keycloak:
@@ -18,7 +18,7 @@ global:
 
 kathra-appmanager:
   image: appmanager
-  version: 1.0.0-RC-SNAPSHOT
+  version: ${KATHRA_IMAGE_TAG}
   tls: true
   delete_zip_file: "true"
   image_registry_host: harbor.dev-irtsysx.fr
@@ -37,7 +37,7 @@ kathra-appmanager:
 
 kathra-binaryrepositorymanager:
   image: binaryrepositorymanager-harbor
-  version: 1.0.0-RC-SNAPSHOT
+  version: ${KATHRA_IMAGE_TAG}
   harbor:
     url: https://harbor.${BASE_DOMAIN}/api
     username: ${HARBOR_ADMIN_LOGIN}
@@ -65,7 +65,7 @@ kathra-catalog-icons:
 
 kathra-catalog-updater:
   image: catalogupdater
-  version: 1.0.0-RC-SNAPSHOT
+  version: ${KATHRA_IMAGE_TAG}
   protocol: https
   repository:
     url: https://kathra-catalog-icons:_vi429_1RAAyezLv2wn9@git.kathra.org/KATHRA/kathra-catalog.git
@@ -73,7 +73,7 @@ kathra-catalog-updater:
 
 kathra-catalogmanager:
   image: catalogmanager-kube
-  version: 1.0.0-RC-SNAPSHOT
+  version: ${KATHRA_IMAGE_TAG}
   tls: true
   resources:
     limits:
@@ -85,7 +85,7 @@ kathra-catalogmanager:
 
 kathra-codegen:
   image: codegen-swagger
-  version: 1.0.0-RC-SNAPSHOT
+  version: ${KATHRA_IMAGE_TAG}
   tls: true
   repository:
     url: https://nexus.${BASE_DOMAIN}
@@ -100,7 +100,7 @@ kathra-codegen:
 
 kathra-dashboard: 
   image: dashboard
-  version: 1.0.0-RC-SNAPSHOT
+  version: ${KATHRA_IMAGE_TAG}
   tls: true
   services_url:
     platform_manager: wss://platformmanager.${BASE_DOMAIN}/spm
@@ -117,7 +117,7 @@ kathra-dashboard:
 
 kathra-pipelinemanager:
   image: pipelinemanager-jenkins
-  version: 1.0.0-RC-SNAPSHOT
+  version: ${KATHRA_IMAGE_TAG}
   tls: true
   jenkins:
     url: https://jenkins.${BASE_DOMAIN}
@@ -133,7 +133,7 @@ kathra-pipelinemanager:
 
 kathra-platformmanager:
   image: platformmanager-kube
-  version: 1.0.0-RC-SNAPSHOT
+  version: ${KATHRA_IMAGE_TAG}
   tls: true
   websocket:
     port: "8080"
@@ -152,7 +152,7 @@ kathra-platformmanager:
 
 kathra-resourcemanager:
   image: resourcemanager-arangodb
-  version: 1.0.0-RC-SNAPSHOT
+  version: ${KATHRA_IMAGE_TAG}
   tls: true
   arango:
     host: resource-db
@@ -173,7 +173,7 @@ db:
 
 kathra-sourcemanager:
   image: sourcemanager-gitlab
-  version: 1.0.0-RC-SNAPSHOT
+  version: ${KATHRA_IMAGE_TAG}
   tls: true
   temp_repos_folder: /tmp/kathra-sourcemanager-git-repos
   dir_creation_max_retry: "3"
@@ -195,7 +195,7 @@ kathra-sourcemanager:
 
 kathra-usermanager:
   image: usermanager-keycloak
-  version: 1.0.0-RC-SNAPSHOT
+  version: ${KATHRA_IMAGE_TAG}
   tls: true
   resources:
     limits:
@@ -213,7 +213,7 @@ kathra-sync:
     login: ${SYNCMANAGER_LOGIN}
     password: ${SYNCMANAGER_PASSWORD}
   image: users-sync
-  version: 1.0.0-RC-SNAPSHOT
+  version: ${KATHRA_IMAGE_TAG}
   resources:
     limits:
       cpu: 300m
