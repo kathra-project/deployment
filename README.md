@@ -209,7 +209,7 @@ If you want to pull images from Harbor's repository, you have to configure your 
 You can use "jenkins.harbor" account to pull image with password generated into ~/.kathra_pwd.
 But, we recommend to create specific account with read only access.
 ```
-docker login --username "jenkins.harbor" --password "$(cat ~/.kathra_pwd | jq -r '.HARBOR_USER_PASSWORD')" https://harbor.your-domain.xyz
+docker login --username "jenkins.harbor" --password "$(cat ~/.kathra_pwd | jq -r '.HARBOR_ADMIN_PASSWORD')" https://harbor.your-domain.xyz
 ```
 
 ## Troubleshootings tips
