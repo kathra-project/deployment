@@ -40,7 +40,7 @@ KATHRA INSTALLER (VERSION : stable)
  your-domain.xyz
  Username to first user [default:user] ?
  Password [default:123] ?
- SSH PublicKey file [default:/home/jboubechtoula/.ssh/id_rsa.pub] ?
+ SSH PublicKey file [default:/home/my-user/.ssh/id_rsa.pub] ?
  Do you want configure LDAP authentication ? [Y/N] ?
  N
 
@@ -52,7 +52,7 @@ KATHRA INSTALLER (VERSION : stable)
 [########                                                                        ]  10 % Check KubeDB... OK
 [############                                                                    ]  15 % Check Treafik... OK
 [################                                                                ]  20 % Clone Charts from version 'stable'... OK
-[###################                                                             ]  24 % Generating password... Use existing passwords from file '/home/jboubechtoula/.kathra_pwd' or generated....
+[###################                                                             ]  24 % Generating password... Use existing passwords from file '/home/my-user/.kathra_pwd' or generated....
  OK
 [####################                                                            ]  25 % Install Keycloak... OK
 [####################                                                            ]  30 % Install Harbor... OK
