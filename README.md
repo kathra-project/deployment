@@ -312,7 +312,7 @@ java.io.IOException: Configuration as Code Support Plugin version 1.15 failed to
 Solution: You have to retry later when updates.jenkins.io is avaliable
 
 
-##  Factory products compatiblities
+##  Factory products compatibilities
 
 | Product 	      | Recommended version 	|
 |--------------	|---------------------	|
@@ -325,7 +325,7 @@ Solution: You have to retry later when updates.jenkins.io is avaliable
 | Harbor       	| 1.8.2               	|
 | Jenkins      	| 2.164.3             	|
 
-##  Jenkins plugins compatiblities
+##  Jenkins plugins compatibilities
 
 | Plugin            	      | Recommended version 	|
 |------------------------	|---------------------	|

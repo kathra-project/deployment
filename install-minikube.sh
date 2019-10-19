@@ -224,7 +224,8 @@ export -f addEntryHostFile
 
 function downloadMinikube() {
     printDebug "downloadMinikube()"
-    [ "${minikubeVmDriver}" == "virtualbox" ]sudo apt-get install -y virtualbox
+    [ "${minikubeVmDriver}" == "virtualbox" ] && sudo apt-get install -y virtualbox
+    [ "${minikubeVmDriver}" == "none" ] && sudo apt-get install -y nfs-common
     which minikube > /dev/null 2> /dev/null && return 0
     sudo curl -L -o $tmp/minikube https://storage.googleapis.com/minikube/releases/v$minikubeVersion/minikube-linux-amd64
     sudo chmod +x $tmp/minikube
