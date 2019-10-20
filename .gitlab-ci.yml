@@ -8,20 +8,14 @@ stages:
   - initImportKathraComponent
 
 variables:
-  DOMAIN_NAME: kathra.boubechtoula.ovh
-  TLS_CERT: /etc/letsencrypt/live/kathra.boubechtoula.ovh/fullchain.pem
-  TLS_KEY: /etc/letsencrypt/live/kathra.boubechtoula.ovh/privkey.pem
-  NETWORK_DEVICE: enp4s0
+  #DOMAIN_NAME: kathra.boubechtoula.ovh
+  #TLS_CERT: /etc/letsencrypt/live/kathra.boubechtoula.ovh/fullchain.pem
+  #TLS_KEY: /etc/letsencrypt/live/kathra.boubechtoula.ovh/privkey.pem
+  #NETWORK_DEVICE: enp4s0
   USER_LOGIN: userTest
   USER_PASSWORD: passwordTest
   USER_TEAM: team-test-e2e
 
-test:
-  stage: test
-  only:
-    - master
-  script: 
-    - echo "toto"
 
 installMinikube:
   stage: installMinikube
