@@ -16,12 +16,18 @@ variables:
   USER_PASSWORD: passwordTest
   USER_TEAM: team-test-e2e
 
+test:
+  stage: test
+  only:
+    - master
+  script: 
+    - echo "toto"
+
 installMinikube:
   stage: installMinikube
   only:
     - master
   tags: 
-    - workstation
     - sudoers
   script: 
     - minikube delete || echo "No cluster to delete"
@@ -32,7 +38,7 @@ installKathra:
   only:
     - master
   tags: 
-    - workstation
+    - sudoers
   script: 
     - ./install.sh --domain=$DOMAIN_NAME --user-login=$USER_LOGIN --user-password=$USER_PASSWORD --user-team=$USER_TEAM --verbose
 
@@ -41,7 +47,6 @@ initKathraCli:
   only:
     - master
   tags: 
-    - workstation
     - sudoers
   script: 
     - git clone --branch=feature_login https://gitlab.com/kathra/kathra/kathra-cli.git
@@ -53,7 +58,6 @@ createComponent:
   only:
     - master
   tags: 
-    - workstation
     - sudoers
   script: 
     - git clone https://gitlab.com/kathra/kathra/kathra-cli.git
@@ -65,7 +69,6 @@ createImplJava:
   only:
     - master
   tags: 
-    - workstation
     - sudoers
   script: 
     - git clone https://gitlab.com/kathra/kathra/kathra-cli.git
@@ -77,7 +80,6 @@ createImplPython:
   only:
     - master
   tags: 
-    - workstation
     - sudoers
   script: 
     - git clone https://gitlab.com/kathra/kathra/kathra-cli.git
@@ -90,7 +92,6 @@ initImportKathraComponent:
   only:
     - master
   tags: 
-    - workstation
     - sudoers
   script: 
     - git clone https://gitlab.com/kathra/kathra/kathra-cli.git
