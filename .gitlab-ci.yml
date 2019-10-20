@@ -5,12 +5,15 @@ stages:
   - createComponent
   - createImplPython
   - createImplJava
+  - deleteComponent
   - initImportKathraComponent
 
 variables:
   USER_LOGIN: userTest
   USER_PASSWORD: passwordTest
   USER_TEAM: team-test-e2e
+  DISK_SIZE: 30000mb
+  KATHRA_VERSION: latest
 
 
 installMinikube:
@@ -21,7 +24,7 @@ installMinikube:
     - sudoers
   script: 
     - minikube delete || echo "No cluster to delete"
-    - ./install-minikube.sh --domain=$DOMAIN_NAME --tlsCert=$TLS_CERT --tlsKey=$TLS_KEY --network-device=$NETWORK_DEVICE --disk-size=35000mb --verbose
+    - ./install-minikube.sh --domain=$DOMAIN_NAME --tlsCert=$TLS_CERT --tlsKey=$TLS_KEY --network-device=$NETWORK_DEVICE --disk-size=$DISK_SIZE --verbose
 
 installKathra:
   stage: installKathra
@@ -30,7 +33,7 @@ installKathra:
   tags: 
     - sudoers
   script: 
-    - ./install.sh --domain=$DOMAIN_NAME --user-login=$USER_LOGIN --user-password=$USER_PASSWORD --user-team=$USER_TEAM --verbose
+    - ./install.sh --kathra-image-tag=KATHRA_VERSION --domain=$DOMAIN_NAME --user-login=$USER_LOGIN --user-password=$USER_PASSWORD --user-team=$USER_TEAM --verbose
 
 initKathraCli:
   stage: initKathraCli
@@ -39,9 +42,9 @@ initKathraCli:
   tags: 
     - sudoers
   script: 
-    - git clone --branch=feature_login https://gitlab.com/kathra/kathra/kathra-cli.git
+    - git clone https://gitlab.com/kathra/kathra/kathra-cli.git
     - ./kathra-cli/kathra-cli.sh login --username=$USER_LOGIN --password=$USER_PASSWORD
-    - ./kathra-cli/kathra-cli.sh get components
+    - ./kathra-cli/kathra-cli.sh get groups | jq -r '.name' | grep "^$USER_TEAM\$"
 
 createComponent:
   stage: createComponent
@@ -52,7 +55,7 @@ createComponent:
   script: 
     - git clone https://gitlab.com/kathra/kathra/kathra-cli.git
     - ./kathra-cli/kathra-cli.sh create components "./kathra-cli/swagger.example.yaml" "my-first-component" "$USER_TEAM" "Component's description"
-    - ./kathra-cli/kathra-cli.sh create implementations "my-java-implementation" "my-first-component" "1.0.0" "JAVA" "Java implementation description"
+    - ./kathra-cli/kathra-cli.sh get components 
 
 createImplJava:
   stage: createImplJava
@@ -63,7 +66,7 @@ createImplJava:
   script: 
     - git clone https://gitlab.com/kathra/kathra/kathra-cli.git
     - ./kathra-cli/kathra-cli.sh create implementations "my-java-implementation" "my-first-component" "1.0.0" "JAVA" "Java implementation description"
-    - 'curl -v -H "Host: my-first-component.my-team-dev.kathra.boubechtoula.ovh" http://$(dig +short dashboard.${DOMAIN_NAME})/api/v1/swagger.json > /dev/null'
+    - 'curl -v -H "Host: my-first-component.$USER_TEAM-dev.kathra.boubechtoula.ovh" http://$(dig +short dashboard.${DOMAIN_NAME})/api/v1/swagger.json > /dev/null'
 
 createImplPython:
   stage: createImplPython
@@ -74,8 +77,17 @@ createImplPython:
   script: 
     - git clone https://gitlab.com/kathra/kathra/kathra-cli.git
     - ./kathra-cli/kathra-cli.sh create implementations "my-python-implementation" "my-first-component" "1.0.0" "PYTHON" "Python implementation description"
-    - 'curl -v -H "Host: my-first-component.my-team-dev.kathra.boubechtoula.ovh" http://$(dig +short dashboard.${DOMAIN_NAME})/api/v1/swagger.json > /dev/null'
+    - 'curl --fail -v -H "Host: my-first-component.$USER_TEAM-dev.kathra.boubechtoula.ovh" http://$(dig +short dashboard.${DOMAIN_NAME})/api/v1/swagger.json > /dev/null'
 
+deleteComponent:
+  stage: deleteComponent
+  only:
+    - master
+  tags: 
+    - sudoers
+  script: 
+    - git clone https://gitlab.com/kathra/kathra/kathra-cli.git
+    - ./kathra-cli/kathra-cli.sh delete components "$(./kathra-cli/kathra-cli.sh get components "my-first-component" | jq -r '.id')" --purge
 
 initImportKathraComponent:
   stage: initImportKathraComponent
@@ -86,4 +98,4 @@ initImportKathraComponent:
   script: 
     - git clone https://gitlab.com/kathra/kathra/kathra-cli.git
     - sed "s/\"my-team\"/\"$USER_TEAM\"/" < ./kathra-cli/kathra-components.json > ./kathra-components.json
-    - ./kathra-cli/init-kathra-components.sh ./kathra-components.json kathra-pipelinemanager
+    - ./kathra-cli/init-kathra-components.sh ./kathra-components.json

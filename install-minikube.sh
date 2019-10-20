@@ -206,7 +206,7 @@ function forwardPort() {
     local portDist=$3
     printDebug "forwardPort(portLocal: $portLocal, hostDist: $hostDist, portDist: $portDist)"
     sudo apt-get install -y socat > /dev/null 2> /dev/null
-    ps a | grep "socat tcp-l:$portLocal," | grep -v grep | awk '{print $1}' | xargs sudo kill -9 > /dev/null 2> /dev/null
+    sudo ps aux | grep "socat tcp-l:$portLocal," | grep -v grep | awk '{print $2}' | xargs sudo kill -9 > /dev/null 2> /dev/null
     nohup sudo socat tcp-l:$portLocal,fork,reuseaddr tcp:$hostDist:$portDist > /dev/null 2>&1 </dev/null &
     printInfo "localhost listen on port $portLocal and redirect to $hostDist:$portDist"
     return $?
