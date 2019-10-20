@@ -25,7 +25,7 @@ installMinikube:
     - sudoers
   script: 
     - minikube delete || echo "No cluster to delete"
-    - ./install-minikube.sh --domain=$DOMAIN_NAME --tlsCert=$TLS_CERT --tlsKey=$TLS_KEY --network-device=$NETWORK_DEVICE --vm-driver=none --verbose
+    - ./install-minikube.sh --domain=$DOMAIN_NAME --tlsCert=$TLS_CERT --tlsKey=$TLS_KEY --network-device=$NETWORK_DEVICE --disk-size=35000mb --verbose
 
 installKathra:
   stage: installKathra
