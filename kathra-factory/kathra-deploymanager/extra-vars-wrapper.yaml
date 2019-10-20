@@ -1,5 +1,5 @@
-image: registry.hub.docker.com/kathra/deploymanager-k8s
-tag: 1.0.0-RC-SNAPSHOT
+image: ${KATHRA_IMAGE_REGISTRY}/kathra/deploymanager-k8s
+tag: ${KATHRA_IMAGE_TAG}
 mode: master
 targetCluster: interne
 domain: ${BASE_DOMAIN}
@@ -7,12 +7,18 @@ protocol: https
 
 docker:
   KATHRA_DOCKER_URL: registry.hub.docker.com
-  KATHRA_DOCKER_AUTH: jenkins.harbor:EwdcDEIKFJ8yiSCKx00Z
+  KATHRA_DOCKER_AUTH: undefined:undefined
   TARGET_DOCKER_URL: harbor.${BASE_DOMAIN}
   TARGET_DOCKER_AUTH: ${HARBOR_ADMIN_LOGIN}:${HARBOR_ADMIN_PASSWORD}
 
 
-resources: {}
+resources:
+  limits:
+    cpu: "500m"
+    memory: "256Mi"
+  requests:
+    cpu: "50m"
+    memory: "128Mi"
     
 rabbitmq:
   image: rabbitmq
@@ -22,4 +28,10 @@ rabbitmq:
   username: guest
   password: guest
   nodePort: "31965"
-  resources: {}
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "256Mi"
+    requests:
+      cpu: "50m"
+      memory: "128Mi"

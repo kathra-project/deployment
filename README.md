@@ -1,10 +1,10 @@
 # How to install KATHRA
 ## Requirements
- - Kubernetes : v1.9.11 or later
+ - Kubernetes : between v1.9.11 and v1.15.1
  - Kubernetes client with full access
  - Kubernetes features :
-    - Traefik Ingress Controller (1.7.9 or later) with SSL
-    - KubeDB (0.8.0 or later)
+    - Traefik Ingress Controller (v1.7.9 or later) with SSL
+    - KubeDB v0.8.0
  - Domains names pointing to your public k8s :
     - dashboard.your-domain.xyz
     - appmanager.your-domain.xyz
@@ -40,7 +40,7 @@ KATHRA INSTALLER (VERSION : stable)
  your-domain.xyz
  Username to first user [default:user] ?
  Password [default:123] ?
- SSH PublicKey file [default:/home/jboubechtoula/.ssh/id_rsa.pub] ?
+ SSH PublicKey file [default:/home/my-user/.ssh/id_rsa.pub] ?
  Do you want configure LDAP authentication ? [Y/N] ?
  N
 
@@ -52,7 +52,7 @@ KATHRA INSTALLER (VERSION : stable)
 [########                                                                        ]  10 % Check KubeDB... OK
 [############                                                                    ]  15 % Check Treafik... OK
 [################                                                                ]  20 % Clone Charts from version 'stable'... OK
-[###################                                                             ]  24 % Generating password... Use existing passwords from file '/home/jboubechtoula/.kathra_pwd' or generated....
+[###################                                                             ]  24 % Generating password... Use existing passwords from file '/home/my-user/.kathra_pwd' or generated....
  OK
 [####################                                                            ]  25 % Install Keycloak... OK
 [####################                                                            ]  30 % Install Harbor... OK
@@ -209,7 +209,7 @@ If you want to pull images from Harbor's repository, you have to configure your 
 You can use "jenkins.harbor" account to pull image with password generated into ~/.kathra_pwd.
 But, we recommend to create specific account with read only access.
 ```
-docker login --username "jenkins.harbor" --password "$(cat ~/.kathra_pwd | jq -r '.HARBOR_USER_PASSWORD')" https://harbor.your-domain.xyz
+docker login --username "jenkins.harbor" --password "$(cat ~/.kathra_pwd | jq -r '.HARBOR_ADMIN_PASSWORD')" https://harbor.your-domain.xyz
 ```
 
 ## Troubleshootings tips
@@ -310,3 +310,33 @@ java.io.IOException: Configuration as Code Support Plugin version 1.15 failed to
 
 
 Solution: You have to retry later when updates.jenkins.io is avaliable
+
+
+##  Factory products compatibilities
+
+| Product 	      | Recommended version 	|
+|--------------	|---------------------	|
+| Kubernetes   	| 1.51.1             	|
+| Treafik      	| 1.7.9               	|
+| KubeDb       	| 0.8.0               	|
+| Keycloak     	| 4.2.1               	|
+| Gitlab-ci    	| 11.2.3              	|
+| Nexus        	| 3.15.2              	|
+| Harbor       	| 1.8.2               	|
+| Jenkins      	| 2.164.3             	|
+
+##  Jenkins plugins compatibilities
+
+| Plugin            	      | Recommended version 	|
+|------------------------	|---------------------	|
+| Kubernetes             	| 1.14.9              	|
+| Kubernetes credential  	| 0.4.0               	|
+| Workflow aggregator    	| 2.6                 	|
+| Workflow job           	| 2.32                	|
+| Credential binding     	| 1.18                	|
+| Docker Pipeline        	| 1.20                	|
+| Git                    	| 3.9.3               	|
+| OpenId connect auth    	| 1.6                 	|
+| Pipeline utility steps 	| 2.3.0               	|
+| Pipeline Job           	| 2.32                	|
+| Matrix auth            	| 2.4.2               	|

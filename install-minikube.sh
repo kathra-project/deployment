@@ -21,10 +21,12 @@ export minikubeCpus=6
 export minikubeMemory=16384
 export minikubeDiskSize="50000mb"
 export minikubeVersion="1.3.1"
+export minikubeVmDriver="virtualbox"
 export kubernetesVersion="1.15.1"
 export helmVersion="2.14.3"
 export kubeDbVersion="0.8.0"
 export traefikChartVersion="1.78.2"
+export sudo=""
 
 function showHelp() {
     printInfo "KATHRA + Minikube Install Wrapper"
@@ -39,6 +41,7 @@ function showHelp() {
     printInfo "--memory:                        Memory size [default: $minikubeMemory]"
     printInfo "--disk-size:                     Disk size [default: $minikubeDiskSize]"
     printInfo "--minikube-version:              Minikube version [default: $minikubeVersion]"
+    printInfo "--vm-driver:                     Minikube VM driver [default: $minikubeVmDriver]"
     printInfo "--kubernetes-version:            Kubernetes version [default: $kubernetesVersion]"
     printInfo "--helm-version:                  Helm version [default: $helmVersion]"
     printInfo "--verbose:                       Enable DEBUG log level"
@@ -60,6 +63,7 @@ function parseArgs() {
             --memory)                       minikubeMemory=$value;;
             --disk-size)                    minikubeDiskSize=$value;;
             --minikube-version)             minikubeVersion=$value;;
+            --vm-driver)                    minikubeVmDriver=$value;;
             --kubernetes-version)           kubernetesVersion=$value;;
             --helm-version)                 helmVersion=$value;;
             --verbose)                      debug=1;;
@@ -84,6 +88,8 @@ function main() {
     printDebug "main()"
     parseArgs $*
 
+    [ "$minikubeVmDriver" == "none" ] && export sudo="sudo"
+    
     sudo apt-get update > /dev/null 2> /dev/null                                                                        || printErrorAndExit "Unable to apt-get update" 
     sudo apt-get install curl jq -y > /dev/null 2> /dev/null                                                            || printErrorAndExit "Unable to apt-get install 'curl, jq'" 
     [ "$domain" == "" ] && printErrorAndExit "Domain is not specifed"                                                   || printDebug "domain=$domain"
@@ -103,8 +109,8 @@ function main() {
 
     startMinikube
 
-    minikube ip 2> /dev/null > /dev/null || printErrorAndExit "Unable to get minikube IP"
-    local minikubeIp=$(minikube ip)
+    $sudo minikube ip 2> /dev/null > /dev/null || printErrorAndExit "Unable to get minikube IP"
+    local minikubeIp=$($sudo minikube ip)
     printInfo "Minikube is started and has ip $minikubeIp"
     
     kubectl version 2> /dev/null > /dev/null || printErrorAndExit "Unable to connect to minikube with kubectl"
@@ -153,7 +159,12 @@ function startMinikube() {
     downloadMinikube
     downloadKubectl
     [ $(minikube status | grep -e "host: Running\|kubelet: Running\|apiserver: Running\|kubectl: Correctly Configured" | wc -l) -eq 4 ] && printInfo "Minikube already started" && return 0
-    minikube start --cpus $minikubeCpus --memory $minikubeMemory --disk-size $minikubeDiskSize --kubernetes-version v$kubernetesVersion || printErrorAndExit "Unable to install minikube"
+    if [ $minikubeVmDriver == "none" ]
+    then
+        $sudo minikube start --vm-driver="none" --kubernetes-version v$kubernetesVersion || printErrorAndExit "Unable to install minikube"
+    else
+        minikube start --vm-driver=$minikubeVmDriver --cpus $minikubeCpus --memory $minikubeMemory --disk-size $minikubeDiskSize --kubernetes-version v$kubernetesVersion || printErrorAndExit "Unable to install minikube"
+    fi
     printInfo "Minikubed started"
     return 0
 }
@@ -213,7 +224,8 @@ export -f addEntryHostFile
 
 function downloadMinikube() {
     printDebug "downloadMinikube()"
-    sudo apt-get install -y virtualbox
+    [ "${minikubeVmDriver}" == "virtualbox" ] && sudo apt-get install -y virtualbox
+    [ "${minikubeVmDriver}" == "none" ] && sudo apt-get install -y nfs-common
     which minikube > /dev/null 2> /dev/null && return 0
     sudo curl -L -o $tmp/minikube https://storage.googleapis.com/minikube/releases/v$minikubeVersion/minikube-linux-amd64
     sudo chmod +x $tmp/minikube

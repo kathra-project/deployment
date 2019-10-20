@@ -6,7 +6,9 @@
 ########################################################################
 
 # Kathra version to install
-export kathraVersion="master"
+export KATHRA_CHART_VERSION="master"
+export KATHRA_IMAGE_REGISTRY="registry.hub.docker.com"
+export KATHRA_IMAGE_TAG="1.0.0-RC-SNAPSHOT"
 export DEPLOYMENT_GIT_SSH="https://gitlab.com/kathra/deployment.git"
 export KATHRA_CLI_GIT="https://gitlab.com/kathra/kathra/kathra-cli.git"
 export tmp=$HOME/.kathra-tmp-install
@@ -56,26 +58,21 @@ export TEAM_NAME="my-team"
 
 # Keycloak's user settings for Keycloak
 export JENKINS_LOGIN=kathra-pipelinemanager
-export JENKINS_PASSWORD=1196deae5bd111f7e0c2d5beb14c42be44
+export JENKINS_PASSWORD=
 export JENKINS_API_TOKEN=
 
 # SyncManager's user settings for Keycloak
 export SYNCMANAGER_LOGIN=kathrausersynchronizer
-export SYNCMANAGER_PASSWORD=q2Eewe9FjNF2JCfg
+export SYNCMANAGER_PASSWORD=
 
-export ARANGODB_PASSWORD=VPDcYx5u6qamxTyV
+export ARANGODB_PASSWORD=
 
 # Admin's user settings for Harbor
 export HARBOR_ADMIN_LOGIN=admin
 export HARBOR_ADMIN_PASSWORD=
 
 # Admin's user settings for Nexus
-export NEXUS_ADMIN_PASSWORD=admin123
-
-# Harbor's user settings for Keycloak
-#export HARBOR_USER_LOGIN=jenkins.harbor
-#export HARBOR_USER_PASSWORD=EwdcDEIKFJ8yiSCKx00Z
-#export HARBOR_USER_SECRET_CLI
+export NEXUS_ADMIN_PASSWORD=
 
 # Admin's user settings for GitLab
 export GITLAB_NODEPORT=
@@ -90,16 +87,26 @@ export ASK_PARAMETERS=0
 function showHelp() {
     printInfo "Usage: "
     printInfo "--domain=<my-domain.xyz>:        Base domain  [default: $BASE_DOMAIN]"
+    printInfo "--verbose:                       Enable DEBUG log level"
+    printInfo "--interactive -i:                Interactive mode"
+    printInfo ""
+    printInfo "Kathra version"
+    printInfo "--chart-version=<branch/tag>:    Clone specific version chart [default: $KATHRA_CHART_VERSION]"
+    printInfo "--kathra-image-tag=<tag>:        Deploy specific tag images [default: $KATHRA_IMAGE_TAG]"
+    printInfo ""
+    printInfo "User options"
     printInfo "--user-login=<username>:         User's login [default: $USER_LOGIN]"
     printInfo "--user-password=<password>:      User's password [default: $USER_PASSWORD]"
     printInfo "--user-public-key=<file-path>:   User's public key [default: $USER_PUBLIC_SSH_KEY]"
     printInfo "--user-team=<name>:              User's team name [default: $TEAM_NAME]"
+    printInfo ""
+    printInfo "Kubernetes options"
     printInfo "--factory-ns=<namespace>:        Factory K8S namespace [default: $helmFactoryKathraNS]"
-    printInfo "--kathra-ns=<namespace>:          Kathra K8S namespace [default: $helmAppKathraNS]"
-    printInfo "--interactive -i:                Interactive mode"
+    printInfo "--kathra-ns=<namespace>:         Kathra K8S namespace [default: $helmAppKathraNS]"
     printInfo "--purge -p:                      Clean previous install (delete all persistent data)"
-    printInfo "--verbose:                       Enable DEBUG log level"
     printInfo "--tiller-ns:                     Tiller namespace"
+    printInfo ""
+    printInfo "LDAP settings (disabled by default)"
     printInfo "--ldap-server=<value>:           LDAP server [default: $LDAP_DOMAIN]"
     printInfo "--ldap-sa=<value>:               LDAP service account [default: $LDAP_SA]"
     printInfo "--ldap-password=<value>:         LDAP password [default: $LDAP_PWD]"
@@ -125,6 +132,8 @@ function parseArgs() {
             --help|-h)                      showHelp;;
             --verbose)                      debug=1;;
             --tiller-ns)                    tillerNs=$value;;
+            --chart-version)                KATHRA_CHART_VERSION=$value;;
+            --kathra-image-tag)             KATHRA_IMAGE_TAG=$value;;
             --purge|-p)
                                             purge=1
                                             echo -e "\e[41m All existing data into PV and PVC will be deleted \033[0m" 1>&2
@@ -152,7 +161,7 @@ function parseArgs() {
 ###     * Install KATHRA's services
 ###
 function main() {
-    printInfo "KATHRA INSTALLER (VERSION : $kathraVersion)"
+    printInfo "KATHRA INSTALLER (VERSION : $KATHRA_CHART_VERSION)"
     parseArgs $@
     local start=`date +%s`
     # Purge temp
@@ -198,7 +207,7 @@ function main() {
     progressBar "5" "Check Helm Tiller..." && checkTillerHelm && printInfo "OK"
     progressBar "10" "Check KubeDB..." && installKubeDBifNotPresent && printInfo "OK"
     progressBar "15" "Check Treafik..." && checkTreafikInstall && printInfo "OK"
-    progressBar "20" "Clone Charts from version ${kathraVersion}..." && cloneCharts && printInfo "OK"
+    progressBar "20" "Clone Charts from version ${KATHRA_CHART_VERSION}..." && cloneCharts && printInfo "OK"
     progressBar "24" "Generating password..." && initPasswords && printInfo "OK"
     
     
@@ -439,7 +448,7 @@ function defineSecretVar() {
 ### Clone chart from repository
 ###
 function cloneCharts() {
-    git clone --single-branch --branch ${kathraVersion}  ${DEPLOYMENT_GIT_SSH} $tmp/deployment 2> /dev/null
+    git clone --single-branch --branch ${KATHRA_CHART_VERSION}  ${DEPLOYMENT_GIT_SSH} $tmp/deployment 2> /dev/null
     [ $? -ne 0 ] && printError "Unable to clone ${DEPLOYMENT_GIT_SSH}" && exit 1
     return 0
 }
@@ -523,7 +532,7 @@ function installKathraFactoryChart() {
 export -f installKathraFactoryChart
 
 function overrideEnvVar() {
-    local vars=( 'BASE_DOMAIN' 'K8S_NAMESPACE_NAME' 'GITLAB_API_TOKEN' 'NFS_SERVER' 'ARANGODB_PASSWORD' 'JENKINS_LOGIN' 'JENKINS_API_TOKEN' 'SYNCMANAGER_LOGIN' 'SYNCMANAGER_PASSWORD' 'GITLAB_NODEPORT' 'HARBOR_ADMIN_LOGIN' 'HARBOR_ADMIN_PASSWORD' 'HARBOR_USER_LOGIN' 'HARBOR_USER_PASSWORD' 'NEXUS_ADMIN_PASSWORD' 'HARBOR_USER_SECRET_CLI' 'KEYCLOAK_ADMIN_LOGIN' 'KEYCLOAK_ADMIN_PASSWORD' 'LDAP_ENABLED' 'LDAP_SA' 'LDAP_DOMAIN' 'LDAP_PWD' 'LDAP_USER_DN' 'LDAP_USER_DN' 'LDAP_ADMIN_DN' 'LDAP_DN' )
+    local vars=( 'KATHRA_IMAGE_REGISTRY' 'KATHRA_IMAGE_TAG' 'BASE_DOMAIN' 'K8S_NAMESPACE_NAME' 'GITLAB_API_TOKEN' 'NFS_SERVER' 'ARANGODB_PASSWORD' 'JENKINS_LOGIN' 'JENKINS_API_TOKEN' 'SYNCMANAGER_LOGIN' 'SYNCMANAGER_PASSWORD' 'GITLAB_NODEPORT' 'HARBOR_ADMIN_LOGIN' 'HARBOR_ADMIN_PASSWORD' 'HARBOR_USER_LOGIN' 'HARBOR_USER_PASSWORD' 'NEXUS_ADMIN_PASSWORD' 'HARBOR_USER_SECRET_CLI' 'KEYCLOAK_ADMIN_LOGIN' 'KEYCLOAK_ADMIN_PASSWORD' 'LDAP_ENABLED' 'LDAP_SA' 'LDAP_DOMAIN' 'LDAP_PWD' 'LDAP_USER_DN' 'LDAP_USER_DN' 'LDAP_ADMIN_DN' 'LDAP_DN' )
     local cmd=""
     for i in "${vars[@]}"; do cmd="$cmd | replaceVarName $i"; done
     eval "cat $1 $cmd > $2"
@@ -960,10 +969,10 @@ function autoConfigureKathraCli() {
 
     writeEntryIntoFile "DOMAIN_HOST" "$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
     writeEntryIntoFile "KEYCLOAK_HOST" "keycloak.$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
-    writeEntryIntoFile "APP_MANAGER_HOST" "keycloak.$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
-    writeEntryIntoFile "RESOURCE_MANAGER_HOST" "appmanager.$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
+    writeEntryIntoFile "APP_MANAGER_HOST" "appmanager.$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
+    writeEntryIntoFile "RESOURCE_MANAGER_HOST" "resourcemanager.$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
     writeEntryIntoFile "PIPELINE_MANAGER_HOST" "pipelinemanager.$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
-    writeEntryIntoFile "SOURCE_MANAGER_HOST" "resourcemanager.$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
+    writeEntryIntoFile "SOURCE_MANAGER_HOST" "sourcemanager.$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
     writeEntryIntoFile "JENKINS_HOST" "jenkins.$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
     writeEntryIntoFile "GITLAB_HOST" "gitlab.$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
     writeEntryIntoFile "JENKINS_HOST" "jenkins.$BASE_DOMAIN" "${LOCAL_CONF_FILE_KATHRA_CLI}"
