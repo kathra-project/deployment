@@ -169,7 +169,8 @@ kathra-resourcemanager:
       memory: 256Mi
 
 db:
-  password: ${ARANGODB_PASSWORD}
+  db:
+    password: ${ARANGODB_PASSWORD}
 
 kathra-sourcemanager:
   image: sourcemanager-gitlab
