@@ -249,7 +249,8 @@ function coreDnsAddRecords() {
     printDebug "coreDnsAddRecords(domain: $domain, ip: $ip)"
     ## Add kathra.db into Coredns ConfigMap
     kubectl -n kube-system get cm coredns -o json >  $tmp/coredns.cm.json
-    if [ $(grep "/etc/coredns/kathra.db" < $tmp/coredns.cm.json | wc -l) -eq 0 ]
+    local configMap=$(kubectl -n kube-system get cm coredns -o json | jq -r '.data["kathra.db"]')
+    if [ "$configMap" == "null" ]
     then
         cat > $tmp/kathra.db <<EOF
 $domain.            IN      SOA     sns.dns.icann.org. noc.dns.icann.org. 2015082541 7200 3600 1209600 3600
@@ -281,6 +282,7 @@ function installTiller() {
     printDebug "installTiller()"
     curl -L https://git.io/get_helm.sh > $tmp/get_helm.sh && chmod +x $tmp/get_helm.sh || printErrorAndExit "Unable to download Helm"
     $tmp/get_helm.sh --version v$helmVersion  || printErrorAndExit "Unable to get Helm"
+    helm list 2> /dev/null > /dev/null && printInfo "Tiller already installed" && return 0
     helm init || printErrorAndExit "Unable to init Helm's Tiller"
     checkCommandAndRetry '[ $(kubectl -n kube-system get deployment tiller-deploy -o json | jq -r '"'"'.status.readyReplicas'"'"' | sed '"'"'s/null/0/g'"'"') -gt 0 ]'
     [ $? -ne 0 ] && printError "Unable to init Helm's Tiller"
