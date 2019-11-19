@@ -322,7 +322,7 @@ data:
               <containers>
                 <org.csanchez.jenkins.plugins.kubernetes.ContainerTemplate>
                   <name>pip</name>
-                  <image>registry.hub.docker.com/kathra/pip-builder:1.0.0</image>
+                  <image>registry.hub.docker.com/kathra/pip-builder:1.0.1</image>
                   <privileged>false</privileged>
                   <alwaysPullImage>false</alwaysPullImage>
                   <workingDir>/home/jenkins</workingDir>
@@ -354,7 +354,7 @@ data:
     spec:
       containers:
       - name: pip
-        image: registry.hub.docker.com/kathra/pip-builder:1.0.0
+        image: registry.hub.docker.com/kathra/pip-builder:1.0.1
         volumeMounts:
         - mountPath: /home/jenkins/.pypirc
           name: pypi-config
