@@ -194,7 +194,7 @@ function installKubeDB() {
     helm repo add appscode https://charts.appscode.com/stable/ || printErrorAndExit "Unable add helm repo"
     helm repo update || printErrorAndExit "Unable update helm repo"
 
-    helm install appscode/kubedb --name $nameRelease --version $kubeDbVersion --set apiserver.ca="$(onessl get kube-ca)" --set apiserver.enableValidatingWebhook=true --set apiserver.enableMutatingWebhook=true || printErrorAndExit "Unable install kubedb"
+    helm install appscode/kubedb --namespace kubedb --name $nameRelease --version $kubeDbVersion --set apiserver.ca="$(onessl get kube-ca)" --set apiserver.enableValidatingWebhook=true --set apiserver.enableMutatingWebhook=true || printErrorAndExit "Unable install kubedb"
     printInfo "KubeDB Installed"
     return 0
 }

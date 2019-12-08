@@ -8,10 +8,10 @@
 # Kathra version to install
 export KATHRA_CHART_VERSION="master"
 export KATHRA_IMAGE_REGISTRY="registry.hub.docker.com"
-export KATHRA_IMAGE_TAG="1.0.0-RC-SNAPSHOT"
+export KATHRA_IMAGE_TAG="1.0.0"
 export DEPLOYMENT_GIT_SSH="https://gitlab.com/kathra/deployment.git"
 export KATHRA_CLI_GIT="https://gitlab.com/kathra/kathra/kathra-cli.git"
-export tmp=$HOME/.kathra-tmp-install
+export tmp=/tmp/kathra-install
 export LOCAL_CONF_FILE=$HOME/.kathra_pwd
 export LOCAL_CONF_FILE_KATHRA_CLI=$HOME/.kathra-context
 export purge=0
@@ -53,6 +53,7 @@ export LDAP_USER_DN="dc=xx,dc=zz"
 # KATHRA's user settings for Keycloak
 export USER_LOGIN=user
 export USER_PASSWORD=123
+export USER_EMAIL=user@undefined.kathra.org
 export USER_PUBLIC_SSH_KEY=$HOME/.ssh/id_rsa.pub
 export TEAM_NAME="my-team"
 
@@ -97,6 +98,7 @@ function showHelp() {
     printInfo "User options"
     printInfo "--user-login=<username>:         User's login [default: $USER_LOGIN]"
     printInfo "--user-password=<password>:      User's password [default: $USER_PASSWORD]"
+    printInfo "--user-email=<email>:            User's email [default: $USER_EMAIL]"
     printInfo "--user-public-key=<file-path>:   User's public key [default: $USER_PUBLIC_SSH_KEY]"
     printInfo "--user-team=<name>:              User's team name [default: $TEAM_NAME]"
     printInfo ""
@@ -128,7 +130,7 @@ function parseArgs() {
             --user-team)                    TEAM_NAME=$value;;
             --interactive|-i)               ASK_PARAMETERS=1;;
             --factory-ns)                   helmFactoryKathraNS=$value;;
-            --kathra-ns)                     helmAppKathraNS=$value;;
+            --kathra-ns)                    helmAppKathraNS=$value;;
             --help|-h)                      showHelp;;
             --verbose)                      debug=1;;
             --tiller-ns)                    tillerNs=$value;;
@@ -211,16 +213,19 @@ function main() {
     progressBar "24" "Generating password..." && initPasswords && printInfo "OK"
     
     
-    progressBar "25" "Install Keycloak..." && installKathraFactoryKeycloak && printInfo "OK"
-    progressBar "30" "Install NFS-Server..." && installKathraFactoryChart "nfs" && printInfo "OK"
-    progressBar "35" "Install Harbor..." && installKathraFactoryHarbor && printInfo "OK"
-
-    #export HARBOR_USER_SECRET_CLI=$(readEntryIntoFile "HARBOR_USER_SECRET_CLI" "${LOCAL_CONF_FILE}")
+    progressBar "25" "Install Keycloak..." && installKathraFactoryKeycloak && printInfo "OK" || printErrorExit "Unable to install Keycloak"
+    #progressBar "30" "Install NFS-Server..." && installKathraFactoryChart "nfs" && printInfo "OK" || printErrorExit "Unable to install NFS-Server"
+    #progressBar "40" "Install Jenkins..." && installJenkins && printInfo "OK" || printErrorExit "Unable to install Jenkins"
+    #progressBar "50" "Install GitLab-CE..." && installGitlab && printInfo "OK" || printErrorExit "Unable to install GitLab"
+    #progressBar "60" "Install Nexus..." && installKathraFactoryChart "nexus" && printInfo "OK" || printErrorExit "Unable to install Nexus"
+    #progressBar "70" "Install Harbor..." && installKathraFactoryHarbor  && printInfo "OK" || printErrorExit "Unable to install Harbor"
+    #progressBar "80" "Install DeployManager..." && installKathraFactoryChart "kathra-deploymanager"  && printInfo "OK" || printErrorExit "Unable to install DeployManager"
 
     cat > $tmp/commands_to_exec <<EOF
     printInfo "Install Jenkins... Pending" && installJenkins && printInfo "Install Jenkins... OK"
     printInfo "Install GitLab-CE... Pending" && installGitlab && printInfo "Install GitLab-CE... OK"
     printInfo "Install Nexus... Pending" && installKathraFactoryChart "nexus" && printInfo "Install Nexus... OK"
+    printInfo "Install Harbor... Pending" && installKathraFactoryHarbor && printInfo "OK"
     printInfo "Install DeployManager... Pending" && installKathraFactoryChart "kathra-deploymanager" && printInfo "Install DeployManager... OK"
 EOF
     cat $tmp/commands_to_exec | xargs -I{} -n 1 -P 5  bash -c {}
@@ -464,11 +469,11 @@ function installKathraFactoryKeycloak() {
     keycloakInitToken
     keycloakCreateGroup "kathra-projects" $tmp/group.kathra-projects
     keycloakCreateGroup "${TEAM_NAME}" $tmp/group.default "$(cat $tmp/group.kathra-projects | tr -d '\r')"
-    keycloakCreateUser "${USER_LOGIN}" "${USER_PASSWORD}" "$(cat $tmp/group.default | tr -d '\r')" $tmp/kathra.keycloak.firstUser
+    keycloakCreateUser "${USER_LOGIN}" "${USER_PASSWORD}" "${USER_EMAIL}" "$(cat $tmp/group.default | tr -d '\r')" $tmp/kathra.keycloak.firstUser
     keycloakCreateGroup "jenkins-admin" $tmp/group.jenkins-admin
-    keycloakCreateUser "${JENKINS_LOGIN}" "$(readEntryIntoFile "JENKINS_PASSWORD" "${LOCAL_CONF_FILE}")" "$(cat $tmp/group.jenkins-admin | tr -d '\r')" $tmp/kathra.keycloak.jenkins-admin
+    keycloakCreateUser "${JENKINS_LOGIN}" "$(readEntryIntoFile "JENKINS_PASSWORD" "${LOCAL_CONF_FILE}")" "${JENKINS_LOGIN}@${BASE_DOMAIN}" "$(cat $tmp/group.jenkins-admin | tr -d '\r')" $tmp/kathra.keycloak.jenkins-admin
     #keycloakCreateUser "${HARBOR_USER_LOGIN}" "$(readEntryIntoFile "HARBOR_USER_PASSWORD" "${LOCAL_CONF_FILE}")" "" $tmp/kathra.keycloak.harbor-admin
-    keycloakCreateUser "${SYNCMANAGER_LOGIN}" "$(readEntryIntoFile "SYNCMANAGER_PASSWORD" "${LOCAL_CONF_FILE}")" "" $tmp/kathra.keycloak.${SYNCMANAGER_LOGIN}
+    keycloakCreateUser "${SYNCMANAGER_LOGIN}" "$(readEntryIntoFile "SYNCMANAGER_PASSWORD" "${LOCAL_CONF_FILE}")" "${SYNCMANAGER_LOGIN}@${BASE_DOMAIN}" "" $tmp/kathra.keycloak.${SYNCMANAGER_LOGIN}
     keycloakInitPermission
     restartKeycloak
     return $?
@@ -582,12 +587,12 @@ export -f waitUntilJobSyncIsSucceeded
 ### Create keycloak user
 ###
 function keycloakCreateUser() {
-    printDebug "keycloakCreateUser(username: $1, password: $2, groupUUID: $3, uuidFile: $4)"
-    curl -v -X POST https://keycloak.${BASE_DOMAIN}/auth/admin/realms/kathra/users -H "Content-Type: application/json" -H "Authorization: bearer $keycloakAdminToken"   --data "{\"username\":\"${1}\", \"enabled\":\"true\", \"emailVerified\":\"true\",\"email\":\"${1}@${BASE_DOMAIN}\", \"credentials\": [{\"type\": \"password\",\"value\": \"${2}\", \"temporary\": \"false\"}]}" 2>&1 | grep -i "< Location:" | sed 's/^.*\/users\/\(.*\)$/\1/' > $4
+    printDebug "keycloakCreateUser(username: $1, password: $2, email: $3, groupUUID: $4, uuidFile: $5)"
+    curl -v -X POST https://keycloak.${BASE_DOMAIN}/auth/admin/realms/kathra/users -H "Content-Type: application/json" -H "Authorization: bearer $keycloakAdminToken"   --data "{\"username\":\"${1}\", \"enabled\":\"true\", \"emailVerified\":\"true\",\"email\":\"${3}\", \"credentials\": [{\"type\": \"password\",\"value\": \"${2}\", \"temporary\": \"false\"}]}" 2>&1 | grep -i "< Location:" | sed 's/^.*\/users\/\(.*\)$/\1/' > $5
     [ $? -ne 0 ] && printError "Unable to create user '$1' into keycloak" && exit 1
-    [ "${3}" == "" ] && return 0
-    curl -X PUT https://keycloak.${BASE_DOMAIN}/auth/admin/realms/kathra/users/$(cat $4 | tr -d '\r')/groups/${3} -H "Authorization: bearer $keycloakAdminToken"
-    [ $? -ne 0 ] && printError "Unable to add user '$1' into keycloak's group '$3'" && exit 1
+    [ "${4}" == "" ] && return 0
+    curl -X PUT https://keycloak.${BASE_DOMAIN}/auth/admin/realms/kathra/users/$(cat $5 | tr -d '\r')/groups/${4} -H "Authorization: bearer $keycloakAdminToken"
+    [ $? -ne 0 ] && printError "Unable to add user '$1' into keycloak's group '$4'" && exit 1
     return 0
 }
 export -f keycloakCreateUser
@@ -715,8 +720,8 @@ function jenkinsGenerateApiToken() {
     local fileOut=$3
     printDebug "jenkinsGenerateApiToken(login: $login, password: $password, fileOut: $fileOut)"
 
-    local attempt_counter=0
-    local max_attempts=100
+
+
     
     checkCommandAndRetry "curl -v https://jenkins.${BASE_DOMAIN}/me/configure 2>&1 | grep \"HTTP.* 403\" > /dev/null"
     [ $? -ne 0 ] && printError "https://jenkins.${BASE_DOMAIN} is not ready" && exit 1
@@ -760,7 +765,7 @@ export -f getHttpHeaderSetCookie
 function checkCommandAndRetry() {
     local retrySecondInterval=5
     local attempt_counter=0
-    local max_attempts=150
+    local max_attempts=300
     while true; do
         eval "${1}" && return 0 
         [ ${attempt_counter} -eq ${max_attempts} ] && printError "Check $1, error" && return 1
@@ -800,7 +805,7 @@ function gitlabGenerateApiToken() {
         local KC_RESTART=$(getHttpHeaderSetCookie $tmp/gitlab.kc.err KC_RESTART)
         local location=$(getHttpHeaderLocation $tmp/gitlab.kc.err)
 
-        curl -v "$uriLogin" -H 'authority: keycloak.${BASE_DOMAIN}' -H 'cache-control: max-age=0' -H "origin: https://keycloak.${BASE_DOMAIN}" -H 'upgrade-insecure-requests: 1' -H 'content-type: application/x-www-form-urlencoded' -H "$UA" -H "$headerAccept" -H "referer: $location" -H 'accept-encoding: gzip, deflate, br' -H "$headerAcceptLang" -H "Cookie:$AUTH_SESSION_ID;$KC_RESTART" --data-urlencode "username=${login}"  --data-urlencode "password=${password}" --compressed 2> $tmp/gitlab.kc.post.err > $tmp/gitlab.kc.post
+        curl -v "$uriLogin" -H "authority: keycloak.${BASE_DOMAIN}" -H 'cache-control: max-age=0' -H "origin: https://keycloak.${BASE_DOMAIN}" -H 'upgrade-insecure-requests: 1' -H 'content-type: application/x-www-form-urlencoded' -H "$UA" -H "$headerAccept" -H "referer: $location" -H 'accept-encoding: gzip, deflate, br' -H "$headerAcceptLang" -H "Cookie:$AUTH_SESSION_ID;$KC_RESTART" --data-urlencode "username=${login}"  --data-urlencode "password=${password}" --compressed 2> $tmp/gitlab.kc.post.err > $tmp/gitlab.kc.post
         local locationFinishLogin=$(getHttpHeaderLocation $tmp/gitlab.kc.post.err)
 
         curl -v -H "Cookie: $GA $GA_SESSION" $locationFinishLogin 2> $tmp/gitlab.finishLogin.err > $tmp/gitlab.finishLogin
@@ -919,14 +924,14 @@ function harborInitFirstConnexion() {
     local location=$(getHttpHeaderLocation $tmp/harbor.login.err)
     local cookieSID=$(getHttpHeaderSetCookie $tmp/harbor.login.err ".*")
     
-    curl -v "$location" -H 'authority: keycloak.${BASE_DOMAIN}' -H 'upgrade-insecure-requests: 1' -H "$UA" -H 'sec-fetch-mode: navigate' -H 'sec-fetch-site: none' -H "$headerAcceptLang" > $tmp/harbor.authenticate 2> $tmp/harbor.authenticate.err
+    curl -v "$location" -H "authority: keycloak.${BASE_DOMAIN}" -H 'upgrade-insecure-requests: 1' -H "$UA" -H 'sec-fetch-mode: navigate' -H 'sec-fetch-site: none' -H "$headerAcceptLang" > $tmp/harbor.authenticate 2> $tmp/harbor.authenticate.err
     
     local uriLogin=$(grep "action=" < $tmp/harbor.authenticate  | sed "s/.* action=\"\([^\"]*\)\".*/\1/" | sed 's/amp;//g' | tr -d '\r\n')
     local AUTH_SESSION_ID=$(getHttpHeaderSetCookie $tmp/harbor.authenticate.err AUTH_SESSION_ID)
     local KC_RESTART=$(getHttpHeaderSetCookie $tmp/harbor.authenticate.err KC_RESTART)
     local location=$(getHttpHeaderLocation $tmp/harbor.authenticate.err )
 
-    curl -v "$uriLogin" -H 'authority: keycloak.${BASE_DOMAIN}' -H 'cache-control: max-age=0' -H "origin: https://keycloak.${BASE_DOMAIN}" -H 'upgrade-insecure-requests: 1' -H 'content-type: application/x-www-form-urlencoded' -H "$UA" -H "$headerAccept" -H "referer: $location" -H "$headerAcceptLang" -H "Cookie:$AUTH_SESSION_ID;$KC_RESTART" --data-urlencode "username=${userLogin}"  --data-urlencode "password=${userPassword}" --compressed 2> $tmp/harbor.kc.post.err > $tmp/harbor.kc.post
+    curl -v "$uriLogin" -H "authority: keycloak.${BASE_DOMAIN}" -H 'cache-control: max-age=0' -H "origin: https://keycloak.${BASE_DOMAIN}" -H 'upgrade-insecure-requests: 1' -H 'content-type: application/x-www-form-urlencoded' -H "$UA" -H "$headerAccept" -H "referer: $location" -H "$headerAcceptLang" -H "Cookie:$AUTH_SESSION_ID;$KC_RESTART" --data-urlencode "username=${userLogin}"  --data-urlencode "password=${userPassword}" --compressed 2> $tmp/harbor.kc.post.err > $tmp/harbor.kc.post
     
     local locationFinishLogin=$(getHttpHeaderLocation $tmp/harbor.kc.post.err )
     

@@ -1,11 +1,38 @@
 # How to install KATHRA
-## Requirements
- - Kubernetes : between v1.9.11 and v1.15.1
- - Kubernetes client with full access
- - Kubernetes features :
-    - Traefik Ingress Controller (v1.7.9 or later) with SSL
-    - KubeDB v0.8.0
- - Domains names pointing to your public k8s :
+
+## Quickstart 
+
+### For testing - On local instance with Minikube
+
+#### Requirements
+- Computer with 8 CPU and 16 Go Memory
+- Large bandwidth : Only for images pulling
+- DNS Provider : For DNS Challing with Let's Encrypt
+- Ubuntu or Debian OS : Not tested on other distrib
+- Root access : For additionnals packages and DNS configuration
+
+#### Step 1. Install Minikube
+
+For the first installation, you have to make DNS Challenge with Let's Encrypt to generate TLS certificate (eg: For kathra.my-own-domain.org you have to add TXT record for domain _acme-challenge.kathra.my-own-domain.org with TOKEN provided by Let's Encrypt). 
+
+> ./install-minikube.sh --domain=kathra.my-own-domain.org --generateCertsDnsChallenge --cpus=8 --memory=16000 --verbose
+
+This procedure installs Minikube and configure somes features (Traefik, KubeDB and internal DNS).
+
+#### Step 2. Install Kathra and the software factory
+
+> ./install.sh --domain=kathra.my-own-domain.org --verbose
+
+By default, the login is 'user' and password '123'. You can override this configure during installation.
+
+### For production - On Kubernetes cluster
+
+#### Requirements
+ - Kubernetes version between v1.9.11 and v1.15.1
+
+#### Step 1. Ingress configuration
+ - Install Treafik as ingress controller (https://docs.traefik.io/getting-started/install-traefik/)
+ - Configure DNS and TLS certificates for domain names following :
     - dashboard.your-domain.xyz
     - appmanager.your-domain.xyz
     - plateform.your-domain.xyz
@@ -15,9 +42,22 @@
     - harbor.your-domain.xyz
     - nexus.your-domain.xyz
 
-## Quickstart
+#### Step 3. Install KubeDB
 
-To install KATHRA from scratch, execute :
+ - Install KubeDB v0.8.0 (https://kubedb.com/docs/0.8.0/setup/install/)
+
+#### Step 2. Install Kathra
+
+To install from scratch, you have two ways
+
+##### Way 1 - Quick install (recommended)
+
+> ./install.sh --domain=kathra.my-own-domain.org --verbose
+
+For more options
+> ./install.sh -h
+
+##### Way 2 - Interactive mode
 
 > install.sh --interactive --verbose
 
@@ -163,7 +203,19 @@ cat ~/.kathra_pwd
 }
 ```
 
-### Client setup
+
+#### Tunning your instance
+
+We recommand to increase number of deployment's replicas in deployment. 
+
+#### Backup your instance
+
+If you want to backup your kathra instance, we have to backup Kathra Database (ArangoDB) and factory tools (Keycloak, Gitlab, Nexus, Harbor, Jenkins) at the same time.
+
+You can use Velero with Restic (https://velero.io/docs/master/restic/)
+
+
+### Developers settings
 #### GitLab - SSH Agent
 To pull source repositories, you have to configure your SSH client to connect throught gitlab's NodePort.
 ```
@@ -214,11 +266,13 @@ docker login --username "jenkins.harbor" --password "$(cat ~/.kathra_pwd | jq -r
 
 ## Troubleshootings tips
 
+### Improve
+
 ### To Reinstall 
 Be careful, this command erases all services and storages (Kathra, Jenkins, Harbor, Nexus, GitLab, Keycloak)
 > install.sh --purge
 
-### GitLab-CE
+### GitLab-CE issues
 #### Unable to init ApiKey
 
 After GitLab-CE installation, somes operations are executed :
@@ -230,7 +284,11 @@ One of these operation can fails : the first cause, GitLab's initialization take
 Your cluster can be undersized.
  
 
-### Jenkins installation issues
+### Jenkins issues
+
+#### Kubernetes v1.16 and later
+Jenkins can be installed, but the plugin 'Kubernetes' have to be upgraded.
+
 #### Error: release factory-kathra-jenkins failed: timed out waiting for the condition
 
 
@@ -310,6 +368,8 @@ java.io.IOException: Configuration as Code Support Plugin version 1.15 failed to
 
 
 Solution: You have to retry later when updates.jenkins.io is avaliable
+
+
 
 
 ##  Factory products compatibilities

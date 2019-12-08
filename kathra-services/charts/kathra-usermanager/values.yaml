@@ -10,7 +10,7 @@ keycloak:
     clientSecret: <pwd>
 
 image: usermanager-keycloak
-version: 1.0.0-RC-SNAPSHOT-6a96c96-87
+version: 1.0.0
 resources:
   limits:
     cpu: 300m
