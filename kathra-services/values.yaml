@@ -17,7 +17,7 @@ global:
 
 kathra-appmanager:
   image: appmanager
-  version: 1.0.0-RC-SNAPSHOT
+  version: 1.0.0
   tls: true
   delete_zip_file: "true"
   image_registry_host: <harbor-host>
@@ -36,7 +36,7 @@ kathra-appmanager:
 
 kathra-binaryrepositorymanager:
   image: binaryrepositorymanager-harbor
-  version: 1.0.0-RC-SNAPSHOT
+  version: 1.0.0
   harbor:
     url: https://<harbor-host>/api
     username: jenkins.harbor
@@ -64,7 +64,7 @@ kathra-catalog-icons:
 
 kathra-catalog-updater:
   image: catalogupdater
-  version: 1.0.0-RC-SNAPSHOT
+  version: 1.0.0
   protocol: https
   repository:
     url: https://kathra-catalog-icons:_vi429_1RAAyezLv2wn9@git.kathra.org/KATHRA/kathra-catalog.git
@@ -72,7 +72,7 @@ kathra-catalog-updater:
 
 kathra-catalogmanager:
   image: catalogmanager-kube
-  version: 1.0.0-RC-SNAPSHOT
+  version: 1.0.0
   tls: true
   resources:
     limits:
@@ -84,7 +84,7 @@ kathra-catalogmanager:
 
 kathra-codegen:
   image: codegen-swagger
-  version: 1.0.0-RC-SNAPSHOT
+  version: 1.0.0
   tls: true
   resources:
     limits:
@@ -96,7 +96,7 @@ kathra-codegen:
 
 kathra-dashboard: 
   image: dashboard
-  version: 1.0.0-RC-SNAPSHOT
+  version: 1.0.0
   tls: true
   services_url:
     platform_manager: wss://platformmanager.<base-domain-name>/spm
@@ -113,7 +113,7 @@ kathra-dashboard:
 
 kathra-pipelinemanager:
   image: pipelinemanager-jenkins
-  version: 1.0.0-RC-SNAPSHOT
+  version: 1.0.0
   tls: true
   jenkins:
     url: https://<jenkins-host>
@@ -129,7 +129,7 @@ kathra-pipelinemanager:
 
 kathra-platformmanager:
   image: platformmanager-kube
-  version: 1.0.0-RC-SNAPSHOT
+  version: 1.0.0
   tls: true
   websocket:
     port: "8080"
@@ -148,7 +148,7 @@ kathra-platformmanager:
 
 kathra-resourcemanager:
   image: resourcemanager-arangodb
-  version: 1.0.0-RC-SNAPSHOT
+  version: 1.0.0
   tls: true
   arango:
     host: resource-db
@@ -158,7 +158,7 @@ kathra-resourcemanager:
     password: <undefined>
   resources:
     limits:
-      cpu: 500m
+      cpu: 1
       memory: 2Gi
     requests:
       cpu: 50m
@@ -169,7 +169,7 @@ db:
 
 kathra-sourcemanager:
   image: sourcemanager-gitlab
-  version: 1.0.0-RC-SNAPSHOT
+  version: 1.0.0
   tls: true
   temp_repos_folder: /tmp/kathra-sourcemanager-git-repos
   dir_creation_max_retry: "3"
@@ -192,7 +192,7 @@ kathra-sourcemanager:
 
 kathra-usermanager:
   image: usermanager-keycloak
-  version: 1.0.0-RC-SNAPSHOT
+  version: 1.0.0
   tls: true
   resources:
     limits:
@@ -210,7 +210,7 @@ kathra-sync:
     login: kathrausersynchronizer
     password: <undefined>
   image: users-sync
-  version: 1.0.0-RC-SNAPSHOT
+  version: 1.0.0
   resources:
     limits:
       cpu: 300m

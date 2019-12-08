@@ -8,7 +8,7 @@ metadata:
     impl: arangodb
     product: kathra
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: resourcemanager
@@ -89,7 +89,7 @@ spec:
               key: KEYCLOAK_CLIENT_SECRET
               name: kathra-keycloak-secret
         - name: JAVA_OPTS
-          value: "-XX:+UnlockExperimentalVMOptions  -XX:MaxRAMFraction=1 -Xms128M -Xmx512M"
+          value: "-XX:+UnlockExperimentalVMOptions  -XX:MaxRAMFraction=1 -Xms128M -Xmx1536M"
         ports:
         - containerPort: 8080
           name: web

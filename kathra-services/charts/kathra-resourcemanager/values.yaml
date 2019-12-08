@@ -12,7 +12,7 @@ global:
       secret: <kathra_services_client_secret>
 
 image: resourcemanager-arangodb
-version: 1.0.0-RC-SNAPSHOT-5d2af3a-11
+version: 1.0.0
 tls: true
 arango:
   host: resource-db
@@ -22,8 +22,7 @@ arango:
   password: <arango_password>
 resources:
   limits:
-    cpu: 500m
-    memory: 768Mi
-  requests:
+    cpu: 1
+    memory: 2Gi
     cpu: 50m
     memory: 128Mi

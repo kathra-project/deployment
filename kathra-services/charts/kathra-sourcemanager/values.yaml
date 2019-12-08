@@ -12,7 +12,7 @@ global:
       secret: <kathra_services_client_secret>
 
 image: sourcemanager-gitlab
-version: 1.0.0-RC-SNAPSHOT-4346772-49
+version: 1.0.0
 temp_repos_folder: /tmp/kathra-sourcemanager-git-repos
 dir_creation_max_retry: "3"
 delete_temp_folder: "true"

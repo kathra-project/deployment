@@ -12,7 +12,7 @@ global:
       secret: <kathra_services_client_secret>
 
 image: codegen-swagger
-version: 1.0.0-RC-SNAPSHOT-ad5ff7d-35
+version: 1.0.0
 tls: true
 repository:
   url: https://nexus.dev-irtsysx.fr

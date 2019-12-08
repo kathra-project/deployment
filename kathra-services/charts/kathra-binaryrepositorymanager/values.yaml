@@ -12,7 +12,7 @@ global:
       secret: <kathra_services_client_secret>
 
 image: binaryrepositorymanager-harbor
-version: 1.0.0-RC-SNAPSHOT-81d2276-4
+version: 1.0.0
 harbor:
   url: https://registry.hub.docker.com/api
   username: <harbor_svc_username>
