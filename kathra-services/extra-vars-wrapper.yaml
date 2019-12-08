@@ -126,7 +126,7 @@ kathra-pipelinemanager:
   resources:
     limits:
       cpu: 500m
-      memory: 256Mi
+      memory: 768Mi
     requests:
       cpu: 50m
       memory: 128Mi
@@ -162,11 +162,11 @@ kathra-resourcemanager:
     password: ${ARANGODB_PASSWORD}
   resources:
     limits:
-      cpu: 500m
+      cpu: 1
       memory: 2Gi
     requests:
       cpu: 50m
-      memory: 256Mi
+      memory: 128Mi
 
 db:
   db:

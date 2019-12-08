@@ -120,7 +120,7 @@ persistence:
 nexusBackup:
   enabled: false
   imageName: quay.io/travelaudience/docker-nexus-backup
-  imageTag: 1.0.0-RC-SNAPSHOT
+  imageTag: 1.0.0
   imagePullPolicy: IfNotPresent
   env:
     targetBucket:

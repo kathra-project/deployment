@@ -1,5 +1,5 @@
 image: registry.hub.docker.com/kathra/deploymanager-k8s
-tag: 1.0.0-RC-SNAPSHOT
+tag: 1.0.0
 mode: master
 targetCluster: interne
 domain: irtsystemx.org

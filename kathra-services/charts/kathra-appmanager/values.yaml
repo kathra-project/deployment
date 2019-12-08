@@ -13,7 +13,7 @@ global:
       secret: 184863e6-0b78-4df6-ae99-38b4003f6db5
 
 image: appmanager
-version: 1.0.0-RC-SNAPSHOT-644f4f0-175
+version: 1.0.0
 tls: true
 delete_zip_file: "true"
 image_registry_host: harbor.dev-irtsysx.fr

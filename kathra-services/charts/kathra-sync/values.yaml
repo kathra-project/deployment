@@ -10,7 +10,7 @@ keycloak:
     password: <pwd>
 
 image: users-sync
-version: 1.0.0-RC-SNAPSHOT
+version: 1.0.0
 resources:
   limits:
     cpu: 300m
