@@ -213,7 +213,7 @@ function main() {
     progressBar "24" "Generating password..." && initPasswords && printInfo "OK"
     
     
-    progressBar "25" "Install Keycloak..." && installKathraFactoryKeycloak && printInfo "OK" || printErrorExit "Unable to install Keycloak"
+    progressBar "25" "Install Keycloak..." && installKathraFactoryKeycloak && printInfo "OK" || printError "Unable to install Keycloak"
     #progressBar "30" "Install NFS-Server..." && installKathraFactoryChart "nfs" && printInfo "OK" || printErrorExit "Unable to install NFS-Server"
     #progressBar "40" "Install Jenkins..." && installJenkins && printInfo "OK" || printErrorExit "Unable to install Jenkins"
     #progressBar "50" "Install GitLab-CE..." && installGitlab && printInfo "OK" || printErrorExit "Unable to install GitLab"

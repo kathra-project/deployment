@@ -1,7 +1,7 @@
 Master:
   Name: jenkins-master
   Image: "jenkins/jenkins"
-  ImageTag: "2.164.3"
+  ImageTag: "2.208"
   ImagePullPolicy: "IfNotPresent"
   Component: "jenkins-master"
   UseSecurity: true
@@ -17,9 +17,13 @@ Master:
       cpu: "50m"
       memory: "256Mi"
     limits:
-      cpu: "500m"
+      cpu: "1000m"
       memory: "1024Mi"
-
+  HealthProbes: true
+  HealthProbesLivenessTimeout: 200
+  HealthProbesReadinessTimeout: 60
+  HealthProbeReadinessPeriodSeconds: 10
+  HealthProbeLivenessFailureThreshold: 12
   ContainerEnv:
     # Tell the plugin where to find its config. The '..data'
     # part is needed for now due to this bug:
@@ -38,26 +42,26 @@ Master:
   # List of plugins to be install during Jenkins master start
   # mind the last plugin in the list now ;)
   InstallPlugins:
-    - kubernetes:1.14.9
-    - kubernetes-credentials:0.4.0
+    - kubernetes:1.22.0
+    - kubernetes-credentials:0.4.1
     - workflow-aggregator:2.6
-    - workflow-job:2.32
-    - credentials-binding:1.18
-    - git:3.9.3
-    - oic-auth:1.6
+    - workflow-job:2.36
+    - credentials-binding:1.20
+    - git:3.12.1
+    - oic-auth:1.7
     - matrix-auth:2.4.2
-    - pipeline-utility-steps:2.3.0
-    - configuration-as-code:1.30
+    - pipeline-utility-steps:2.3.1
+    - configuration-as-code:1.34
     # You might also need this for a couple of third-party plugins (e.g. for setting credentials)
-    - configuration-as-code-support:1.30
+    - configuration-as-code-support:1.34
 
   InitScripts:
     - ""
 
   JCasC:
     enabled: true
-    PluginVersion: 1.30
-    SupportPluginVersion: 1.30
+    PluginVersion: 1.34
+    SupportPluginVersion: 1.34
     ConfigScripts:
       root-url: |
         unclassified:
