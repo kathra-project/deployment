@@ -213,14 +213,9 @@ function main() {
     progressBar "24" "Generating password..." && initPasswords && printInfo "OK"
     
     
-    progressBar "25" "Install Keycloak..." && installKathraFactoryKeycloak && printInfo "OK" || printErrorExit "Unable to install Keycloak"
-    #progressBar "30" "Install NFS-Server..." && installKathraFactoryChart "nfs" && printInfo "OK" || printErrorExit "Unable to install NFS-Server"
-    #progressBar "40" "Install Jenkins..." && installJenkins && printInfo "OK" || printErrorExit "Unable to install Jenkins"
-    #progressBar "50" "Install GitLab-CE..." && installGitlab && printInfo "OK" || printErrorExit "Unable to install GitLab"
-    #progressBar "60" "Install Nexus..." && installKathraFactoryChart "nexus" && printInfo "OK" || printErrorExit "Unable to install Nexus"
-    #progressBar "70" "Install Harbor..." && installKathraFactoryHarbor  && printInfo "OK" || printErrorExit "Unable to install Harbor"
-    #progressBar "80" "Install DeployManager..." && installKathraFactoryChart "kathra-deploymanager"  && printInfo "OK" || printErrorExit "Unable to install DeployManager"
-
+    progressBar "25" "Install Keycloak..." && installKathraFactoryKeycloak && printInfo "OK" || printError "Unable to install Keycloak"
+    progressBar "30" "Install NFS-Server..." && installKathraFactoryChart "nfs" && printInfo "OK" || printError "Unable to install NFS-Server"
+    
     cat > $tmp/commands_to_exec <<EOF
     printInfo "Install Jenkins... Pending" && installJenkins && printInfo "Install Jenkins... OK"
     printInfo "Install GitLab-CE... Pending" && installGitlab && printInfo "Install GitLab-CE... OK"
@@ -373,7 +368,7 @@ export -f checkTreafikInstall
 ### Install GitLab
 ###
 function installGitlab() {
-    [ $purge -eq 0 ] && checkChartDeployed "$helmFactoryKathraNS" "$helmFactoryKathraName-gitlab-ce" && printInfo "Gitlab-CE already deployed" && return 2
+    [ $purge -eq 0 ] && checkChartDeployed "$helmFactoryKathraNS" "$helmFactoryKathraName-gitlab-ce" && printInfo "Gitlab-CE already deployed" && return 0
     [ -f $tmp/gitlab.nodePort ] && rm $tmp/gitlab.nodePort
     findNodePortAvailable > $tmp/gitlab.nodePort || return 1
     export GITLAB_NODEPORT=$(cat $tmp/gitlab.nodePort)
@@ -426,7 +421,7 @@ export -f configureSSHConfig
 ### Install Jenkins
 ###
 function installJenkins() {
-    [ $purge -eq 0 ] && checkChartDeployed "$helmFactoryKathraNS" "$helmFactoryKathraName-jenkins" && printInfo "Jenkins already deployed" && return 2
+    [ $purge -eq 0 ] && checkChartDeployed "$helmFactoryKathraNS" "$helmFactoryKathraName-jenkins" && printInfo "Jenkins already deployed" && return 0
     NFS_SERVER=$(kubectl -n $helmFactoryKathraNS get services nfs-server -o json 2> /dev/null | jq -r -c '.spec.clusterIP' 2> /dev/null)
     [ "${NFS_SERVER}" == "" ] && printError "Unable to find service nfs-server into namespace $helmFactoryKathraNS" && exit 1
     installKathraFactoryChart "jenkins"
@@ -460,7 +455,7 @@ function cloneCharts() {
 ### Install Keycloak
 ###
 function installKathraFactoryKeycloak() {
-    [ $purge -eq 0 ] && checkChartDeployed "$helmFactoryKathraNS" "$helmFactoryKathraName-keycloak" && printInfo "Keycloak already deployed" && return 2
+    [ $purge -eq 0 ] && checkChartDeployed "$helmFactoryKathraNS" "$helmFactoryKathraName-keycloak" && printInfo "Keycloak already deployed" && return 0
     
     kubectl -n $helmFactoryKathraNS patch postgres.kubedb.com keycloak-postgres-kubedb -p '{"spec":{"doNotPause":false}}' --type="merge" 2> /dev/null > /dev/null
     kubectl -n $helmFactoryKathraNS delete postgres.kubedb.com keycloak-postgres-kubedb 2> /dev/null > /dev/null
@@ -494,7 +489,7 @@ export -f restartKeycloak
 ### Install Habor
 ###
 function installKathraFactoryHarbor() {
-    [ $purge -eq 0 ] && checkChartDeployed "$helmFactoryKathraNS" "$helmFactoryKathraName-harbor" && printInfo "Harbor already deployed" && return 2
+    [ $purge -eq 0 ] && checkChartDeployed "$helmFactoryKathraNS" "$helmFactoryKathraName-harbor" && printInfo "Harbor already deployed" && return 0
     
     kubectl -n $helmFactoryKathraNS delete jobs harbor-database-init harbor-ldap-config harbor-oicd-config 2> /dev/null > /dev/null
     kubectl -n $helmFactoryKathraNS delete pvc $helmFactoryKathraName-harbor-harbor-chartmuseum $helmFactoryKathraName-harbor-harbor-jobservice $helmFactoryKathraName-harbor-harbor-registry $helmFactoryKathraName-harbor-harbor-redis-0 2> /dev/null > /dev/null
@@ -524,7 +519,7 @@ function installKathraFactoryChart() {
     local name=$1
     printDebug "installKathraFactoryChart(name: $name)"
 
-    [ $purge -eq 0 ] && checkChartDeployed "$helmFactoryKathraNS" "$helmFactoryKathraName-${name}" && printInfo "${name} already deployed" && return 2
+    [ $purge -eq 0 ] && checkChartDeployed "$helmFactoryKathraNS" "$helmFactoryKathraName-${name}" && printInfo "${name} already deployed" && return 0
     [ -f $tmp/deployment/kathra-factory/${name}/extra-vars-wrapper.yaml ] && overrideEnvVar $tmp/deployment/kathra-factory/${name}/extra-vars-wrapper.yaml $tmp/deployment/kathra-factory/${name}/extra-vars-wrapper-configured.yaml || touch $tmp/deployment/kathra-factory/${name}/extra-vars-wrapper-configured.yaml
     
     $helmBin --tiller-namespace=$tillerNs delete $helmFactoryKathraName-${name} --purge 2> /dev/null > /dev/null 
@@ -551,7 +546,7 @@ function replaceVarName() {
 export -f replaceVarName
 
 function installKathraService() { 
-    [ $purge -eq 0 ] && checkChartDeployed "$helmAppKathraNS" "$helmAppKathraName" && printInfo "KATHRA already deployed" && return 2
+    [ $purge -eq 0 ] && checkChartDeployed "$helmAppKathraNS" "$helmAppKathraName" && printInfo "KATHRA already deployed" && return 0
     
     gitlabGenerateApiToken "$SYNCMANAGER_LOGIN" "$(readEntryIntoFile "SYNCMANAGER_PASSWORD" "${LOCAL_CONF_FILE}")" "$tmp/gitlab.tokenValue" 
     export GITLAB_API_TOKEN=$(cat $tmp/gitlab.tokenValue)
