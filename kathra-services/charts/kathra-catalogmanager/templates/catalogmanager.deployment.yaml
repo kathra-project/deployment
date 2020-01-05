@@ -1,7 +1,7 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: kathra-catalogmanager-kube
+  name: kathra-catalogmanager-helm
   labels:
 {{ include "kathra.labels" . | indent 4 }}
     project: kathra
@@ -27,13 +27,38 @@ spec:
       containers:
       - image: "{{ .Values.global.docker.registry.url }}/{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
         imagePullPolicy: Always
-        name: kathra-catalogmanager-kube
+        name: kathra-catalogmanager-helm
         env:
         - name: KUBERNETES_NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+        - name: KATHRA_REPO_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: catalogmanager-config
+              key: KATHRA_REPO_NAME
+        - name: KATHRA_REPO_URL
+            valueFrom:
+              configMapKeyRef:
+                name: catalogmanager-config
+                key: KATHRA_REPO_URL
+        - name: HELM_UPDATE_INTERVAL
+            valueFrom:
+              configMapKeyRef:
+                name: catalogmanager-config
+                key: HELM_UPDATE_INTERVAL
+        - name: KATHRA_REPO_CREDENTIAL_ID
+          valueFrom:
+            secretKeyRef:
+              name: catalogmanager-secret
+              key: KATHRA_REPO_CREDENTIAL_ID
+        - name: KATHRA_REPO_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: catalogmanager-secret
+              key: KATHRA_REPO_SECRET
         ports:
         - containerPort: 8080
           name: http

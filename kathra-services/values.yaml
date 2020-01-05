@@ -71,7 +71,7 @@ kathra-catalog-updater:
     revision: 23a6c71e86f2d854669b959d657e1a7b9e8a2e60
 
 kathra-catalogmanager:
-  image: catalogmanager-kube
+  image: catalogmanager-helm
   version: 1.0.0
   tls: true
   resources:

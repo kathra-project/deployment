@@ -34,12 +34,12 @@ spec:
         - name: KEYCLOAK_CLIENT_ID
           valueFrom:
             secretKeyRef:
-              name: kathra-keycloak-secret
+              name: keycloak-secret
               key: KEYCLOAK_CLIENT_ID
         - name: KEYCLOAK_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: kathra-keycloak-secret
+              name: keycloak-secret
               key: KEYCLOAK_CLIENT_SECRET
         - name: JAVA_OPTS
           value: "-XX:+UnlockExperimentalVMOptions  -XX:MaxRAMFraction=1 -Xms128M -Xmx512M"

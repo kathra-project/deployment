@@ -17,6 +17,8 @@ harbor:
   url: https://registry.hub.docker.com/api
   username: <harbor_svc_username>
   password: <harbor_svc_password>
+services_url:
+  resource_manager: <undefined>
 resources:
   limits:
     cpu: 300m

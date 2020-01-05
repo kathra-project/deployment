@@ -51,11 +51,16 @@ spec:
                 configMapKeyRef:
                   name: sync-config
                   key: USER_MANAGER_URL
-            - name: BINARY_REPOSITORY_MANAGER_URL
+            - name: BINARY_REPOSITORY_MANAGER_URL_HARBOR
               valueFrom:
                 configMapKeyRef:
                   name: sync-config
-                  key: BINARY_REPOSITORY_MANAGER_URL
+                  key: BINARY_REPOSITORY_MANAGER_URL_HARBOR
+            - name: BINARY_REPOSITORY_MANAGER_URL_NEXUS
+              valueFrom:
+                configMapKeyRef:
+                  name: sync-config
+                  key: BINARY_REPOSITORY_MANAGER_URL_NEXUS
             - name: USERNAME
               valueFrom:
                 secretKeyRef:
@@ -69,12 +74,12 @@ spec:
             - name: KEYCLOAK_CLIENT_ID
               valueFrom:
                 secretKeyRef:
-                  name: kathra-keycloak-secret
+                  name: keycloak-secret
                   key: KEYCLOAK_CLIENT_ID
             - name: KEYCLOAK_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: kathra-keycloak-secret
+                  name: keycloak-secret
                   key: KEYCLOAK_CLIENT_SECRET
             - name: JAVA_OPTS
               value: "-XX:+UnlockExperimentalVMOptions  -XX:MaxRAMFraction=1 -Xms128M -Xmx512M"

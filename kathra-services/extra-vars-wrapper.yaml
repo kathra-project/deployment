@@ -39,7 +39,7 @@ kathra-binaryrepositorymanager:
   image: binaryrepositorymanager-harbor
   version: ${KATHRA_IMAGE_TAG}
   harbor:
-    url: https://harbor.${BASE_DOMAIN}/api
+    url: https://harbor.${BASE_DOMAIN}
     username: ${HARBOR_ADMIN_LOGIN}
     password: ${HARBOR_ADMIN_PASSWORD}
   resources:
@@ -72,9 +72,14 @@ kathra-catalog-updater:
     revision: 23a6c71e86f2d854669b959d657e1a7b9e8a2e60
 
 kathra-catalogmanager:
-  image: catalogmanager-kube
+  image: catalogmanager-helm
   version: ${KATHRA_IMAGE_TAG}
   tls: true
+  helm:
+    repoName: kathra
+    url: https://harbor.${BASE_DOMAIN}
+    username: ${HARBOR_ADMIN_LOGIN}
+    password: ${HARBOR_ADMIN_PASSWORD}
   resources:
     limits:
       cpu: 500m
