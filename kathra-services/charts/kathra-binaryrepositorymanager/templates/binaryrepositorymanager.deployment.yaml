@@ -27,46 +27,61 @@ spec:
           containerPort: 8080
           protocol: TCP
         env:
-        - name: KUBERNETES_NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        - name: HARBOR_URL
-          valueFrom:
-            configMapKeyRef:
-              name: binaryrepositorymanager-config
-              key: HARBOR_URL
-        - name: HARBOR_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: binaryrepositorymanager-secret
-              key: HARBOR_USERNAME
-        - name: HARBOR_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: binaryrepositorymanager-secret
-              key: HARBOR_PASSWORD
-        - name: KEYCLOAK_AUTH_URL
-          valueFrom:
-            configMapKeyRef:
-              name: keycloak-config
-              key: KEYCLOAK_AUTH_URL
-        - name: KEYCLOAK_REALM
-          valueFrom:
-            configMapKeyRef:
-              name: keycloak-config
-              key: KEYCLOAK_REALM
-        - name: KEYCLOAK_CLIENT_ID
-          valueFrom:
-            secretKeyRef:
-              name: kathra-keycloak-secret
-              key: KEYCLOAK_CLIENT_ID
-        - name: KEYCLOAK_CLIENT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: kathra-keycloak-secret
-              key: KEYCLOAK_CLIENT_SECRET
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          - name: RESOURCE_MANAGER_URL
+            valueFrom:
+              configMapKeyRef:
+                key: RESOURCE_MANAGER_URL
+                name: binaryrepositorymanager-config
+          - name: HARBOR_URL
+            valueFrom:
+              configMapKeyRef:
+                key: HARBOR_URL
+                name: binaryrepositorymanager-config
+          - name: HARBOR_USERNAME
+            valueFrom:
+              secretKeyRef:
+                key: HARBOR_USERNAME
+                name: binaryrepositorymanager-secret
+          - name: HARBOR_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: HARBOR_PASSWORD
+                name: binaryrepositorymanager-secret
+          - name: USERNAME
+            valueFrom:
+              secretKeyRef:
+                key: USERNAME
+                name: binaryrepositorymanager-secret
+          - name: PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: PASSWORD
+                name: binaryrepositorymanager-secret
+          - name: KEYCLOAK_AUTH_URL
+            valueFrom:
+              configMapKeyRef:
+                key: KEYCLOAK_AUTH_URL
+                name: keycloak-config
+          - name: KEYCLOAK_REALM
+            valueFrom:
+              configMapKeyRef:
+                key: KEYCLOAK_REALM
+                name: keycloak-config
+          - name: KEYCLOAK_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                key: KEYCLOAK_CLIENT_ID
+                name: kathra-keycloak-secret
+          - name: KEYCLOAK_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                key: KEYCLOAK_CLIENT_SECRET
+                name: kathra-keycloak-secret
         - name: JAVA_OPTS
           value: "-XX:+UnlockExperimentalVMOptions  -XX:MaxRAMFraction=1 -Xms128M -Xmx512M"
 {{- if .Values.resources }}

@@ -29,6 +29,36 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+        - name: KEYCLOAK_ADMIN_REALM
+          valueFrom:
+            configMapKeyRef:
+              key: KEYCLOAK_ADMIN_REALM
+              name: keycloak-config
+        - name: KEYCLOAK_REALM
+          valueFrom:
+            configMapKeyRef:
+              key: KEYCLOAK_REALM
+              name: keycloak-config
+        - name: KEYCLOAK_ADMIN_AUTH_URL
+          valueFrom:
+            configMapKeyRef:
+              key: KEYCLOAK_ADMIN_AUTH_URL
+              name: keycloak-config
+        - name: KEYCLOAK_ADMIN_CLIENT_ID
+          valueFrom:
+            configMapKeyRef:
+              key: KEYCLOAK_ADMIN_CLIENT_ID
+              name: keycloak-config
+        - name: KEYCLOAK_ADMIN_USERNAME
+          valueFrom:
+            secretKeyRef:
+              key: KEYCLOAK_ADMIN_USERNAME
+              name: kathra-usermanager-secret
+        - name: KEYCLOAK_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: KEYCLOAK_ADMIN_PASSWORD
+              name: kathra-usermanager-secret
         - name: KEYCLOAK_AUTH_URL
           valueFrom:
             configMapKeyRef:
@@ -39,26 +69,6 @@ spec:
             configMapKeyRef:
               key: KEYCLOAK_REALM
               name: keycloak-config
-        - name: KEYCLOAK_ADMIN_AUTH_URL
-          valueFrom:
-            configMapKeyRef:
-              key: KEYCLOAK_AUTH_URL
-              name: keycloak-config
-        - name: KEYCLOAK_ADMIN_REALM
-          valueFrom:
-            configMapKeyRef:
-              key: KEYCLOAK_REALM
-              name: keycloak-config
-        - name: KEYCLOAK_ADMIN_CLIENT_ID
-          valueFrom:
-            secretKeyRef:
-              key: KEYCLOAK_ADMIN_CLIENT_ID
-              name: kathra-usermanager-secret
-        - name: KEYCLOAK_ADMIN_CLIENT_SECRET
-          valueFrom:
-            secretKeyRef:
-              key: KEYCLOAK_ADMIN_CLIENT_SECRET
-              name: kathra-usermanager-secret
         - name: KEYCLOAK_CLIENT_ID
           valueFrom:
             secretKeyRef:

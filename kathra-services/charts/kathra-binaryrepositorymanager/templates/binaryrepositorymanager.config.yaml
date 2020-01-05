@@ -9,3 +9,5 @@ metadata:
     app: binaryrepositorymanager
 data:
   HARBOR_URL: {{ .Values.harbor.url }}
+  RESOURCE_MANAGER_URL: {{ .Values.services_url.resource_manager }}
+  SCHEDULE_REFRESH_TOKEN_DELAY: "60s"
