@@ -8,6 +8,5 @@ metadata:
     project: kathra
     app: catalogmanager
 data:
-  KATHRA_REPO_NAME: {{ .Values.helm.repoName }}
-  KATHRA_REPO_URL: {{ .Values.helm.url }}
   HELM_UPDATE_INTERVAL: "* * * * *"
+  RESOURCE_MANAGER_URL: {{ .Values.services_url.resource_manager }}

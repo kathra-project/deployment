@@ -22,6 +22,7 @@ services_url:
   source_manager: sourcemanager/api/v1
   pipeline_manager: pipelinemanager/api/v1
   resource_manager: resourcemanager/api/v1
+  catalogmanager: catalogmanager/api/v1
 resources:
   limits:
     cpu: 300m

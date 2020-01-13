@@ -6,24 +6,27 @@ metadata:
 {{ include "kathra.labels" . | indent 4 }}
     project: kathra
     app: catalogmanager
-    impl: kube
+    impl: helm
 spec:
   replicas: 1
   selector:
     matchLabels:
       project: kathra
       app: catalogmanager
-      impl: kube
+      impl: helm
   template:
     metadata:
       labels:
         project: kathra
         app: catalogmanager
-        impl: kube
+        impl: helm
     spec:
-      serviceAccountName: catalogmanager
       imagePullSecrets:
       - name: regcred
+      volumes:
+      - name: catalogmanager-secret
+        secret:
+          secretName: catalogmanager-secret
       containers:
       - image: "{{ .Values.global.docker.registry.url }}/{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
         imagePullPolicy: Always
@@ -34,31 +37,52 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        - name: KATHRA_REPO_NAME
+        - name: HELM_UPDATE_INTERVAL
           valueFrom:
             configMapKeyRef:
+              key: HELM_UPDATE_INTERVAL
               name: catalogmanager-config
-              key: KATHRA_REPO_NAME
-        - name: KATHRA_REPO_URL
-            valueFrom:
-              configMapKeyRef:
-                name: catalogmanager-config
-                key: KATHRA_REPO_URL
-        - name: HELM_UPDATE_INTERVAL
-            valueFrom:
-              configMapKeyRef:
-                name: catalogmanager-config
-                key: HELM_UPDATE_INTERVAL
-        - name: KATHRA_REPO_CREDENTIAL_ID
+        - name: REPOSITORIES_CONFIG
+          value: "/tmp/catalogmanager-secret/repositories.yaml"
+        - name: RESOURCE_MANAGER_URL
+          valueFrom:
+            configMapKeyRef:
+              key: RESOURCE_MANAGER_URL
+              name: catalogmanager-config
+        - name: USERNAME
           valueFrom:
             secretKeyRef:
+              key: USERNAME
               name: catalogmanager-secret
-              key: KATHRA_REPO_CREDENTIAL_ID
-        - name: KATHRA_REPO_SECRET
+        - name: PASSWORD
           valueFrom:
             secretKeyRef:
+              key: PASSWORD
               name: catalogmanager-secret
-              key: KATHRA_REPO_SECRET
+        - name: KEYCLOAK_AUTH_URL
+          valueFrom:
+            configMapKeyRef:
+              key: KEYCLOAK_AUTH_URL
+              name: keycloak-config
+        - name: KEYCLOAK_REALM
+          valueFrom:
+            configMapKeyRef:
+              key: KEYCLOAK_REALM
+              name: keycloak-config
+        - name: KEYCLOAK_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              key: KEYCLOAK_CLIENT_ID
+              name: kathra-keycloak-secret
+        - name: KEYCLOAK_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: KEYCLOAK_CLIENT_SECRET
+              name: kathra-keycloak-secret
+        volumeMounts:
+          - mountPath: "/tmp/catalogmanager-secret"
+            name: catalogmanager-secret
+            readOnly: true
         ports:
         - containerPort: 8080
           name: http

@@ -67,12 +67,12 @@ spec:
           valueFrom:
             secretKeyRef:
               key: KEYCLOAK_CLIENT_ID
-              name: keycloak-secret
+              name: kathra-keycloak-secret
         - name: KEYCLOAK_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
               key: KEYCLOAK_CLIENT_SECRET
-              name: keycloak-secret
+              name: kathra-keycloak-secret
         ports:
         - containerPort: 8080
           name: web

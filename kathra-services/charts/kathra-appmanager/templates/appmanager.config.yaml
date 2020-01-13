@@ -8,6 +8,7 @@ metadata:
     project: kathra
     app: appmanager
 data:
+  KATHRA_APPMANAGER_CATALOGMANAGER_URL: {{ .Values.services_url.catalogmanager }}
   KATHRA_APPMANAGER_CODEGEN_URL: {{ .Values.services_url.codegen }}
   KATHRA_APPMANAGER_SOURCEMANAGER_URL: {{ .Values.services_url.source_manager }}
   KATHRA_APPMANAGER_PIPELINEMANAGER_URL: {{ .Values.services_url.pipeline_manager }}

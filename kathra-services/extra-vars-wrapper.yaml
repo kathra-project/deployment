@@ -27,6 +27,7 @@ kathra-appmanager:
     source_manager: sourcemanager/api/v1
     pipeline_manager: pipelinemanager/api/v1
     resource_manager: resourcemanager/api/v1
+    catalogmanager: catalogmanager/api/v1
   resources:
     limits:
       cpu: 900m
@@ -75,9 +76,11 @@ kathra-catalogmanager:
   image: catalogmanager-helm
   version: ${KATHRA_IMAGE_TAG}
   tls: true
+  services_url:
+    resource_manager: http://resourcemanager.<base-domain-name>/api/v1
   helm:
     repoName: kathra
-    url: https://harbor.${BASE_DOMAIN}
+    url: https://harbor.${BASE_DOMAIN}/chartrepo
     username: ${HARBOR_ADMIN_LOGIN}
     password: ${HARBOR_ADMIN_PASSWORD}
   resources:
