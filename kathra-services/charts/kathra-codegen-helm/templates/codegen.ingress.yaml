@@ -1,7 +1,7 @@
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: codegen-swagger
+  name: codegen-helm
   annotations:
     kubernetes.io/ingress.class: traefik
   labels:
@@ -9,9 +9,9 @@ metadata:
     ingress: "{{ if .Values.tls }}tls{{ else }}plain{{ end }}"
 spec:
   rules:
-  - host: "codegen-swagger.{{ .Values.global.domain }}"
+  - host: "codegen-helm.{{ .Values.global.domain }}"
     http:
       paths:
       - backend:
-          serviceName: codegen-swagger
+          serviceName: codegen-helm
           servicePort: 80
