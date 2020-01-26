@@ -32,11 +32,16 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        - name: KATHRA_APPMANAGER_CODEGEN_URL
+         - name: KATHRA_APPMANAGER_CODEGEN_HELM_URL
+         valueFrom:
+           configMapKeyRef:
+             name: appmanager-config
+             key: KATHRA_APPMANAGER_CODEGEN_HELM_URL
+        - name: KATHRA_APPMANAGER_CODEGEN_SWAGGER_URL
           valueFrom:
             configMapKeyRef:
               name: appmanager-config
-              key: KATHRA_APPMANAGER_CODEGEN_URL
+              key: KATHRA_APPMANAGER_CODEGEN_SWAGGER_URL
         - name: KATHRA_APPMANAGER_SOURCEMANAGER_URL
           valueFrom:
             configMapKeyRef:
@@ -47,6 +52,16 @@ spec:
             configMapKeyRef:
               name: appmanager-config
               key: KATHRA_APPMANAGER_PIPELINEMANAGER_URL
+         - name: KATHRA_APPMANAGER_BINARYMANAGER_HARBOR_URL
+           valueFrom:
+            configMapKeyRef:
+             name: appmanager-config
+             key: KATHRA_APPMANAGER_BINARYMANAGER_HARBOR_URL
+        - name: KATHRA_PIPELINE_WEBHOOK_URL
+          valueFrom:
+            configMapKeyRef:
+              name: appmanager-config
+              key: KATHRA_PIPELINE_WEBHOOK_URL
         - name: KATHRA_APPMANAGER_RESOURCEMANAGER_URL
           valueFrom:
             configMapKeyRef:

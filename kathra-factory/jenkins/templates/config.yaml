@@ -233,6 +233,7 @@ data:
               <yaml></yaml>
               <podRetention class="org.csanchez.jenkins.plugins.kubernetes.pod.retention.Default"/>
             </org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
+
             <org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
               <inheritFrom>docker</inheritFrom>
               <name>npm</name>
@@ -295,6 +296,64 @@ data:
               <yaml></yaml>
               <podRetention class="org.csanchez.jenkins.plugins.kubernetes.pod.retention.Default"/>
             </org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
+
+            <org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
+              <inheritFrom>helm</inheritFrom>
+              <name>helm</name>
+              <namespace>{{.Release.Namespace}}</namespace>
+              <privileged>false</privileged>
+              <capOnlyOnAlivePods>false</capOnlyOnAlivePods>
+              <alwaysPullImage>false</alwaysPullImage>
+              <instanceCap>2147483647</instanceCap>
+              <slaveConnectTimeout>100</slaveConnectTimeout>
+              <idleMinutes>0</idleMinutes>
+              <activeDeadlineSeconds>0</activeDeadlineSeconds>
+              <label>helm</label>
+              <nodeSelector></nodeSelector>
+              <nodeUsageMode>NORMAL</nodeUsageMode>
+              <customWorkspaceVolumeEnabled>false</customWorkspaceVolumeEnabled>
+              <workspaceVolume class="org.csanchez.jenkins.plugins.kubernetes.volumes.workspace.EmptyDirWorkspaceVolume">
+                <memory>false</memory>
+              </workspaceVolume>
+              <volumes>
+                <org.csanchez.jenkins.plugins.kubernetes.volumes.SecretVolume>
+                  <mountPath>/etc/ssh</mountPath>
+                  <secretName>sshconfig</secretName>
+                </org.csanchez.jenkins.plugins.kubernetes.volumes.SecretVolume>
+              </volumes>
+              <containers>
+                <org.csanchez.jenkins.plugins.kubernetes.ContainerTemplate>
+                  <name>helm</name>
+                  <image>kathra/helm-builder:latest</image>
+                  <privileged>false</privileged>
+                  <alwaysPullImage>false</alwaysPullImage>
+                  <workingDir>/home/jenkins</workingDir>
+                  <command>/bin/sh -c</command>
+                  <args>cat</args>
+                  <ttyEnabled>true</ttyEnabled>
+                  <resourceRequestCpu></resourceRequestCpu>
+                  <resourceRequestMemory></resourceRequestMemory>
+                  <resourceLimitCpu></resourceLimitCpu>
+                  <resourceLimitMemory></resourceLimitMemory>
+                  <ports/>
+                  <livenessProbe>
+                    <execArgs></execArgs>
+                    <timeoutSeconds>0</timeoutSeconds>
+                    <initialDelaySeconds>0</initialDelaySeconds>
+                    <failureThreshold>0</failureThreshold>
+                    <periodSeconds>0</periodSeconds>
+                    <successThreshold>0</successThreshold>
+                  </livenessProbe>
+                </org.csanchez.jenkins.plugins.kubernetes.ContainerTemplate>
+              </containers>
+              <envVars/>
+              <annotations/>
+              <imagePullSecrets/>
+              <nodeProperties/>
+              <yaml></yaml>
+              <podRetention class="org.csanchez.jenkins.plugins.kubernetes.pod.retention.Default"/>
+            </org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
+
             <org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
               <inheritFrom>docker</inheritFrom>
               <name>pip</name>

@@ -9,9 +9,12 @@ metadata:
     app: appmanager
 data:
   KATHRA_APPMANAGER_CATALOGMANAGER_URL: {{ .Values.services_url.catalogmanager }}
-  KATHRA_APPMANAGER_CODEGEN_URL: {{ .Values.services_url.codegen }}
+  KATHRA_APPMANAGER_BINARYMANAGER_HARBOR_URL: {{ .Values.services_url.binaryrepository_harbor }}
+  KATHRA_APPMANAGER_CODEGEN_SWAGGER_URL: {{ .Values.services_url.codegen_swagger }}
+  KATHRA_APPMANAGER_CODEGEN_HELM_URL: {{ .Values.services_url.codegen_helm }}
   KATHRA_APPMANAGER_SOURCEMANAGER_URL: {{ .Values.services_url.source_manager }}
   KATHRA_APPMANAGER_PIPELINEMANAGER_URL: {{ .Values.services_url.pipeline_manager }}
   KATHRA_APPMANAGER_RESOURCEMANAGER_URL: {{ .Values.services_url.resource_manager }}
   KATHRA_APPMANAGER_DELETE_ZIP_FILE: {{ .Values.delete_zip_file | quote }}
+  KATHRA_PIPELINE_WEBHOOK_URL: {{ .Values.services_url.pipeline_webhook }}
   IMAGE_REGISTRY_HOST: {{ .Values.image_registry_host }}
