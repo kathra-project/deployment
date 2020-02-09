@@ -223,6 +223,8 @@ kathra-usermanager:
   keycloak:
     clientId: user-manager
     clientSecret: a375446d-7fec-421f-ae8e-65d523afa0b8
+    username: kathrausersynchronizer
+    password: <undefined>
 
 kathra-sync:
   keycloak:

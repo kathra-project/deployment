@@ -8,6 +8,8 @@ global:
 keycloak:
     clientId: <admin-keycloak>
     clientSecret: <pwd>
+    username: <username>
+    password: <password>
 
 image: usermanager-keycloak
 version: 1.0.0
