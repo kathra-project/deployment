@@ -38,7 +38,7 @@ kathra-appmanager:
       cpu: "50m"
       memory: "256Mi"
 
-kathra-binaryrepositorymanager:
+kathra-binaryrepositorymanager-harbor:
   image: binaryrepositorymanager-harbor
   version: 1.0.0
   harbor:
@@ -88,7 +88,7 @@ kathra-catalogmanager:
       cpu: 50m
       memory: 256Mi
 
-kathra-codegen:
+kathra-codegen-swagger:
   image: codegen-swagger
   version: 1.0.0
   tls: true
@@ -99,6 +99,19 @@ kathra-codegen:
     requests:
       cpu: 50m
       memory: 256Mi
+
+
+kathra-codegen-helm:
+  image: codegen-helm
+  version: 1.0.0
+  tls: true
+  resources:
+    limits:
+      cpu: 300m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
 
 kathra-dashboard: 
   image: dashboard
