@@ -42,10 +42,15 @@ kathra-appmanager:
 kathra-binaryrepositorymanager-harbor:
   image: binaryrepositorymanager-harbor
   version: ${KATHRA_IMAGE_TAG}
+  services_url:
+    resource_manager: resourcemanager/api/v1
   harbor:
     url: https://harbor.${BASE_DOMAIN}
     username: ${HARBOR_ADMIN_LOGIN}
     password: ${HARBOR_ADMIN_PASSWORD}
+  keycloak:
+    username: ${SYNCMANAGER_LOGIN}
+    password: ${SYNCMANAGER_PASSWORD}
   resources:
     limits:
       cpu: 500m
@@ -60,7 +65,7 @@ kathra-catalogmanager:
   version: ${KATHRA_IMAGE_TAG}
   tls: true
   services_url:
-    resource_manager: http://resourcemanager.<base-domain-name>/api/v1
+    resource_manager: resourcemanager/api/v1
   helm:
     repoName: kathra
     url: https://harbor.${BASE_DOMAIN}/chartrepo

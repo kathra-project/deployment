@@ -46,22 +46,22 @@ spec:
             valueFrom:
               secretKeyRef:
                 key: HARBOR_USERNAME
-                name: binaryrepositorymanager-secret
+                name: binaryrepositorymanager-harbor-secret
           - name: HARBOR_PASSWORD
             valueFrom:
               secretKeyRef:
                 key: HARBOR_PASSWORD
-                name: binaryrepositorymanager-secret
+                name: binaryrepositorymanager-harbor-secret
           - name: USERNAME
             valueFrom:
               secretKeyRef:
                 key: USERNAME
-                name: binaryrepositorymanager-secret
+                name: binaryrepositorymanager-harbor-secret
           - name: PASSWORD
             valueFrom:
               secretKeyRef:
                 key: PASSWORD
-                name: binaryrepositorymanager-secret
+                name: binaryrepositorymanager-harbor-secret
           - name: KEYCLOAK_AUTH_URL
             valueFrom:
               configMapKeyRef:
@@ -82,8 +82,8 @@ spec:
               secretKeyRef:
                 key: KEYCLOAK_CLIENT_SECRET
                 name: keycloak-secret
-        - name: JAVA_OPTS
-          value: "-XX:+UnlockExperimentalVMOptions  -XX:MaxRAMFraction=1 -Xms128M -Xmx512M"
+          - name: JAVA_OPTS
+            value: "-XX:+UnlockExperimentalVMOptions  -XX:MaxRAMFraction=1 -Xms128M -Xmx512M"
 {{- if .Values.resources }}
         resources:
 {{ toYaml .Values.resources | indent 10 }}

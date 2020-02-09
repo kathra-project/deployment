@@ -41,9 +41,14 @@ kathra-appmanager:
 kathra-binaryrepositorymanager-harbor:
   image: binaryrepositorymanager-harbor
   version: 1.0.0
+  services_url:
+    resource_manager: resourcemanager/api/v1
   harbor:
     url: https://<harbor-host>/api
     username: jenkins.harbor
+    password: <undefined>
+  keycloak:
+    username: <undefined>
     password: <undefined>
   resources:
     limits:
@@ -58,7 +63,7 @@ kathra-catalogmanager:
   version: 1.0.0
   tls: true
   services_url:
-    resource_manager: http://resourcemanager.<base-domain-name>/api/v1
+    resource_manager: resourcemanager/api/v1
     username: <undefined>
     password: <undefined>
   keycloak:
