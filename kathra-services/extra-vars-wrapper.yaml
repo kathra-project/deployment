@@ -54,26 +54,6 @@ kathra-binaryrepositorymanager-harbor:
       cpu: 50m
       memory: 128Mi
 
-kathra-catalog-icons:
-  tls: true
-  repository: 
-    url: https://kathra-catalog-icons:_vi429_1RAAyezLv2wn9@git.kathra.org/KATHRA/kathra-catalog.git
-    revision: 23a6c71e86f2d854669b959d657e1a7b9e8a2e60
-  resources:
-    limits:
-      cpu: 200m
-      memory: 256Mi
-    requests:
-      cpu: 50m
-      memory: 128Mi
-
-kathra-catalog-updater:
-  image: catalogupdater
-  version: ${KATHRA_IMAGE_TAG}
-  protocol: https
-  repository:
-    url: https://kathra-catalog-icons:_vi429_1RAAyezLv2wn9@git.kathra.org/KATHRA/kathra-catalog.git
-    revision: 23a6c71e86f2d854669b959d657e1a7b9e8a2e60
 
 kathra-catalogmanager:
   image: catalogmanager-helm
@@ -84,8 +64,11 @@ kathra-catalogmanager:
   helm:
     repoName: kathra
     url: https://harbor.${BASE_DOMAIN}/chartrepo
-    username: ${HARBOR_ADMIN_LOGIN}
+    login: ${HARBOR_ADMIN_LOGIN}
     password: ${HARBOR_ADMIN_PASSWORD}
+  keycloak:
+    username: ${SYNCMANAGER_LOGIN}
+    password: ${SYNCMANAGER_PASSWORD}
   resources:
     limits:
       cpu: 500m
