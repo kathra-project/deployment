@@ -219,10 +219,10 @@ kathra-usermanager:
       cpu: 50m
       memory: 256Mi
   keycloak:
-    clientId: kathra-user-manager
-    clientSecret: a375446d-7fec-421f-ae8e-65d523afa0b8
-    username: ${SYNCMANAGER_LOGIN}
-    password: ${SYNCMANAGER_PASSWORD}
+      adminRealm: master
+      adminClientId: admin-cli
+      adminUsername: ${KEYCLOAK_ADMIN_LOGIN}
+      adminPassword: ${KEYCLOAK_ADMIN_PASSWORD}
 
 kathra-sync:
   keycloak:

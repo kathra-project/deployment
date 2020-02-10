@@ -31,9 +31,9 @@ spec:
               fieldPath: metadata.namespace
         - name: KEYCLOAK_ADMIN_REALM
           valueFrom:
-            configMapKeyRef:
+            secretKeyRef:
               key: KEYCLOAK_ADMIN_REALM
-              name: keycloak-config
+              name: usermanager-secret
         - name: KEYCLOAK_REALM
           valueFrom:
             configMapKeyRef:
