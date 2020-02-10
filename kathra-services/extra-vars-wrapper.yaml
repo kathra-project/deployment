@@ -25,7 +25,7 @@ kathra-appmanager:
   services_url:
     codegen_helm: codegen-helm/api/v1
     codegen_swagger: codegen-swagger/api/v1
-    binaryrepository_harbor: binaryrepository_harbor/api/v1
+    binaryrepository_harbor: binaryrepositorymanager-harbor/api/v1
     source_manager: sourcemanager/api/v1
     pipeline_manager: pipelinemanager/api/v1
     resource_manager: resourcemanager/api/v1
