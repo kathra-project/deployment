@@ -16,4 +16,4 @@ data:
   RESOURCE_MANAGER_URL: "http://resourcemanager/api/v1"
   USER_MANAGER_URL: "http://usermanager/api/v1"
   BINARY_REPOSITORY_MANAGER_URL_NEXUS: "http://binaryrepositorymanager/api/v1"
-  BINARY_REPOSITORY_MANAGER_URL_HARBOR: "http://binaryrepositorymanager-harbor/v1"
+  BINARY_REPOSITORY_MANAGER_URL_HARBOR: "http://binaryrepositorymanager-harbor/api/v1"

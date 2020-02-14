@@ -1,7 +1,7 @@
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: kathra-catalogmanager
+  name: catalogmanager
   annotations:
     kubernetes.io/ingress.class: traefik
   labels:
@@ -14,5 +14,5 @@ spec:
       paths:
       - path: /
         backend:
-          serviceName: kathra-catalogmanager
+          serviceName: catalogmanager
           servicePort: 80

@@ -156,7 +156,7 @@ data:
               <containers>
                 <org.csanchez.jenkins.plugins.kubernetes.ContainerTemplate>
                   <name>maven</name>
-                  <image>registry.hub.docker.com/kathra/maven-builder:1.0.0</image>
+                  <image>registry.hub.docker.com/kathra/maven-builder:dev</image>
                   <privileged>false</privileged>
                   <alwaysPullImage>false</alwaysPullImage>
                   <workingDir>/home/jenkins</workingDir>
