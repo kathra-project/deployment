@@ -298,7 +298,7 @@ data:
             </org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
 
             <org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
-              <inheritFrom>helm</inheritFrom>
+              <inheritFrom>docker</inheritFrom>
               <name>helm</name>
               <namespace>{{.Release.Namespace}}</namespace>
               <privileged>false</privileged>
