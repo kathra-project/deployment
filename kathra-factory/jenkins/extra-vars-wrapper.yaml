@@ -38,8 +38,8 @@ Master:
   # List of plugins to be install during Jenkins master start
   # mind the last plugin in the list now ;)
   InstallPlugins:
-    - kubernetes:1.23.3
-    - kubernetes-credentials:0.6.2
+    - kubernetes:1.14.9
+    - kubernetes-credentials:0.4.0
     - workflow-aggregator:2.6
     - workflow-job:2.32
     - credentials-binding:1.18
@@ -138,7 +138,7 @@ Master:
           globalLibraries:
             libraries:
               - allowVersionOverride: true
-                defaultVersion: feature/catalogManager
+                defaultVersion: master
                 implicit: true
                 includeInChangesets: false
                 name: kathra-pipeline-library
