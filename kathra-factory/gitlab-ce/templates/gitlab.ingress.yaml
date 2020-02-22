@@ -4,6 +4,7 @@ metadata:
   name: gitlab
   annotations:
     kubernetes.io/ingress.class: traefik
+{{ include ".Values.ingress.annotations" . | indent 4 }}
   labels:
     ingress: tls
 spec:
@@ -15,3 +16,4 @@ spec:
         backend:
           serviceName: gitlab
           servicePort: 80
+{{ include ".Values.ingress.tls" . | indent 2 }}
