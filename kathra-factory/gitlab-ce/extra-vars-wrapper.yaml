@@ -9,7 +9,7 @@ ingress:
   tls:
   - hosts:
     - gitlab.${BASE_DOMAIN}
-    secretName: gitlab
+    secretName: gitlab-cert
 # OIDC Config
 oidc:
   providerUrl: https://keycloak.${BASE_DOMAIN}

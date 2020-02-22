@@ -33,7 +33,7 @@ resource "kubernetes_namespace" "kubedb" {
 }
 
 resource "helm_release" "kubedb" {
-  name       = "kubedb"
+  name       = "kubedb-operator"
   repository = data.helm_repository.stable.metadata[0].name
   chart      = "appscode/kubedb"
   version    = var.version_chart

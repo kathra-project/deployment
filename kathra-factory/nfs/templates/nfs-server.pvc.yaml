@@ -10,7 +10,7 @@ metadata:
     app: nfs-server
   name: nfs-pod-data
 spec:
-  storageClassName: standard
+  storageClassName: default
   accessModes:
   - ReadWriteOnce
   resources:

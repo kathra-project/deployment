@@ -18,4 +18,4 @@ ingress:
   tls:
     enabled: true
     usesSecret: true
-    secretName: nexus-tls
+    secretName: nexus-cert
