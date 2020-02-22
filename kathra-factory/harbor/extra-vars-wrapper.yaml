@@ -7,8 +7,9 @@ harborAdminPassword: ${HARBOR_ADMIN_PASSWORD}
 
 expose:
   tls:
-    enabled: false
-    secretName: gitlab-cert
+    enabled: true
+    secretName: harbor-cert
+    notarySecretName: harbor-cert-notary
   ingress:
     labels:
       ingress: tls

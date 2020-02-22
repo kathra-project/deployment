@@ -2,9 +2,10 @@ apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: gitlab
+{{- with .Values.ingress.annotations }}
   annotations:
-    kubernetes.io/ingress.class: traefik
-{{ include ".Values.ingress.annotations" . | indent 4 }}
+{{ toYaml . | indent 4 }}
+{{- end }}
   labels:
     ingress: tls
 spec:
@@ -16,4 +17,7 @@ spec:
         backend:
           serviceName: gitlab
           servicePort: 80
-{{ include ".Values.ingress.tls" . | indent 2 }}
+{{- with .Values.ingress.tls }}
+  tls:
+{{ toYaml . | indent 4 }}
+{{- end }}
