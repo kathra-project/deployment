@@ -6,7 +6,7 @@ variable "k8s_client_secret" {
 }
 
 variable "agent_count" {
-    default = 3
+    default = 2
 }
 
 variable "ssh_public_key" {
@@ -29,7 +29,7 @@ variable location {
     default = "East US"
 }
 variable "kubernetes_version" {
-    default = "1.15.1"
+    default = "1.14.8"
 }
 
 provider "azurerm" {
@@ -54,7 +54,7 @@ resource "azurerm_kubernetes_cluster" "k8s" {
     default_node_pool {
         name            = "agentpool"
         node_count      = var.agent_count
-        vm_size         = "Standard_DS2_v2"
+        vm_size         = "Standard_B4ms"
     }
 
     service_principal {

@@ -50,9 +50,12 @@ resource "helm_release" "cert-manager" {
   }
 }
 
-resource "null_resource" "postConfigure" {
+resource "null_resource" "postInstall" {
   provisioner "local-exec" {
-    command = "kubectl --kubeconfig=$CONFIG apply -f $MANIFEST --namespace traefik --validate=false --overwrite"
+    command = <<EOT
+      kubectl --kubeconfig=$CONFIG apply -f $MANIFEST --namespace traefik --validate=false --overwrite || exit 1
+      kubectl --kubeconfig=$CONFIG label namespace traefik certmanager.k8s.io/disable-validation=true --overwrite || exit 1
+   EOT
     environment = {
       CONFIG = var.kube_config_file
       MANIFEST = var.cluster_issuers_file
@@ -60,11 +63,3 @@ resource "null_resource" "postConfigure" {
   }
 }
 
-resource "null_resource" "postConfigure_2" {
-  provisioner "local-exec" {
-    command = "kubectl --kubeconfig=$CONFIG label namespace traefik certmanager.k8s.io/disable-validation=true --overwrite"
-    environment = {
-      CONFIG = var.kube_config_file
-    }
-  }
-}

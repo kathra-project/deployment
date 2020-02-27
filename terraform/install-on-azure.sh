@@ -1,20 +1,21 @@
 #/bin/bash
 export SCRIPT_DIR=$(realpath $(dirname `which $0`))
-declare KUBECONFIG=$SCRIPT_DIR/kube_config
-export tmp=/tmp/kathra.azure.wrapper
+export tmp=/tmp/kathra.azure.Wrapper
 [ ! -d $tmp ] && mkdir $tmp
+declare KUBECONFIG=$tmp/kube_config
 
 cd $SCRIPT_DIR
 export debug=1
 
-#kathra.az.boubechtoula.ovh
+
 export domain=""
 export azureGroupName="kathra"
 export azureLocation="East US"
 export terraformVersion="0.12.21"
 export traefikChartVersion="1.85.0"
 export kubeDbVersion="0.8.0"
-export kubernetesVersion="1.15.5"
+export kubernetesVersion="1.14.8"
+export kathraChartVersion="feature/terraform"
 
 function showHelp() {
     findInArgs "deploy" $* > /dev/null && showHelpDeploy $* && exit 0
@@ -80,6 +81,10 @@ function main() {
 function deploy() {
     printDebug "deploy()"
     [ "$domain" == "" ] && printError "Domain undefined" && showHelpDeploy && exit 1
+    [ "$ARM_SUBSCRIPTION_ID" == "" ] && printError "ARM_SUBSCRIPTION_ID undefined" && showHelpDeploy && exit 1
+    [ "$ARM_CLIENT_ID" == "" ] && printError "ARM_CLIENT_ID undefined" && showHelpDeploy && exit 1
+    [ "$ARM_CLIENT_SECRET" == "" ] && printError "ARM_CLIENT_SECRET undefined" && showHelpDeploy && exit 1
+    [ "$ARM_TENANT_ID" == "" ] && printError "ARM_TENANT_ID undefined" && showHelpDeploy && exit 1
 
     sudo apt-get install curl jq unzip -y > /dev/null 2> /dev/null  
     installAzureCli
@@ -90,8 +95,10 @@ function deploy() {
     installKubernetes
     installTraefik
     installKubeDB
+    printInfo "Please, add DNS entry *.$domain -> $INGRESS_PUBLIC_IP"
     waitPublicIpIsResolvedByDns "$domain" "$INGRESS_PUBLIC_IP"
     installCertManager
+    installKathra
     
     return $?
 }
@@ -105,6 +112,12 @@ function destroy() {
     return $?
 }
 export -f destroy
+
+function installKathra() {
+    export TF_VAR_kathra_version="$kathraChartVersion"
+    export TF_VAR_kathra_domain="$domain"
+    installTerraformModule $SCRIPT_DIR/terraform_modules/kathra
+}
 
 function installAzureCli() {
     printDebug "installAzureCli()"
@@ -143,11 +156,12 @@ export -f installTerraform
 
 function installKubernetes() {
     printDebug "installKubernetes()"
-    cd $SCRIPT_DIR/terraform_modules/kubernetes
+    local modulePath=$SCRIPT_DIR/terraform_modules/kubernetes-azure
+    cd $modulePath
     export TF_VAR_k8s_client_id="$ARM_CLIENT_ID"
     export TF_VAR_k8s_client_secret="$ARM_CLIENT_SECRET"
     export TF_VAR_kubernetes_version="$kubernetesVersion"
-    installTerraformModule $SCRIPT_DIR/terraform_modules/kubernetes
+    installTerraformModule $modulePath
     terraform output kube_config > $KUBECONFIG
     export TF_VAR_kube_config_file="$KUBECONFIG"
     kubectl --kubeconfig=$KUBECONFIG get nodes || printErrorAndExit "Unable to connect Kubernetes"
@@ -156,12 +170,14 @@ export -f installKubernetes
 
 function uninstallKubernetes() {
     printDebug "uninstallKubernetes()"
-    cd $SCRIPT_DIR/terraform_modules/kubernetes
+    local modulePath=$SCRIPT_DIR/terraform_modules/kubernetes-azure
+    cd $modulePath
     terraform init
     terraform destroy
     rm $SCRIPT_DIR/terraform_modules/helm-packages/kubedb/terraform.*
     rm $SCRIPT_DIR/terraform_modules/helm-packages/cert-manager/terraform.*
     rm $SCRIPT_DIR/terraform_modules/helm-packages/traefik/terraform.*
+    rm $SCRIPT_DIR/terraform_modules/kathra/terraform.*
 }
 export -f uninstallKubernetes
 

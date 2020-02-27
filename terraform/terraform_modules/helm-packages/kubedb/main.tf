@@ -22,7 +22,7 @@ provider "kubernetes" {
 
 
 data "helm_repository" "stable" {
-  name = "stable"
+  name = "appscode"
   url  = "https://charts.appscode.com/stable/"
 }
 
