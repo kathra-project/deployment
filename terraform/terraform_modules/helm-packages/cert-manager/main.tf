@@ -23,7 +23,7 @@ data "helm_repository" "jetstack" {
   name = "jetstack"
   url  = "https://charts.jetstack.io"
 }
-
+/*
 resource "null_resource" "preConfigure" {
   provisioner "local-exec" {
     command = "kubectl --kubeconfig=$CONFIG apply --validate=false -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.12/deploy/manifests/00-crds.yaml --namespace traefik"
@@ -32,7 +32,7 @@ resource "null_resource" "preConfigure" {
     }
   }
 }
-
+*/
 resource "helm_release" "cert-manager" {
   name       = "cert-manager"
   repository = data.helm_repository.jetstack.metadata[0].name
@@ -49,7 +49,7 @@ resource "helm_release" "cert-manager" {
     value = var.issuer_name_default
   }
 }
-
+/*
 resource "null_resource" "postInstall" {
   provisioner "local-exec" {
     command = <<EOT
@@ -62,4 +62,4 @@ resource "null_resource" "postInstall" {
     }
   }
 }
-
+*/

@@ -6,6 +6,14 @@ variable "kube_config_file" {
     default =  ""
 }
 
+variable "load_balancer_ip" {
+    default =  ""
+}
+variable "group" {
+    default =  "kathra"
+}
+
+
 provider "helm" {
   kubernetes {
     config_path = var.kube_config_file
@@ -52,5 +60,14 @@ resource "helm_release" "traefik" {
   set {
     name  = "ssl.permanentRedirect"
     value = "true"
+  }
+  set {
+    name  = "loadBalancerIP"
+    value = var.load_balancer_ip
+  }
+
+  set {
+    name = "service.annotations.\"service\\.beta\\.kubernetes\\.io/azure-load-balancer-resource-group\""
+    value = var.group
   }
 }

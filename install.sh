@@ -18,7 +18,7 @@ export purge=0
 export debug=0
 
 # Helm to wrappe
-export helmVersion=2.14.3
+export helmVersion=2.15.1
 export helmPlateform=linux-amd64
 export helmBin=$tmp/helm-local/$helmPlateform/helm
 export tillerNs=kube-system

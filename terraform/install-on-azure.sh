@@ -9,6 +9,7 @@ export debug=1
 
 
 export domain=""
+export domainLabel=""
 export azureGroupName="kathra"
 export azureLocation="East US"
 export terraformVersion="0.12.21"
@@ -32,7 +33,8 @@ function showHelpDeploy() {
     printInfo "KATHRA Azure Install Wrapper"
     printInfo ""
     printInfo "Deploy options : "
-    printInfo "--domain=<my-domain.xyz>                       :        Base domain"
+    printInfo "--domain=<my-domain.xyz>                       :        Full base domain"
+    printInfo "--domainLabel=<my-azure-dns-label>             :        Prefix domain using Azure DNS label (eg:my-custom-label.eastus.cloudapp.azure.com)"
     printInfo "--azure-group-name=<group-name>                :        Azure Group Name [default: $azureGroupName]"
     printInfo "--azure-location=<location>                    :        Azure Location [default: $azureLocation]"
     printInfo "--azure-subscribtion-id=<ARM_SUBSCRIPTION_ID>  :        Azure ARM_SUBSCRIPTION_ID [default: $ARM_SUBSCRIPTION_ID]"
@@ -57,6 +59,7 @@ function parseArgs() {
         local key=${argument%%=*}
         local value=${argument#*=}
         case "$key" in
+            --domainLabel)                  domainLabel=$value;;
             --domain)                       domain=$value;;
             --azure-group-name)             azureGroupName=$value;;
             --azure-location)               azureLocation=$value;;
@@ -80,7 +83,7 @@ function main() {
 
 function deploy() {
     printDebug "deploy()"
-    [ "$domain" == "" ] && printError "Domain undefined" && showHelpDeploy && exit 1
+    [ "$domain" == "" ] && printError "Domain and Azure Domain Label are undefined" && showHelpDeploy && exit 1
     [ "$ARM_SUBSCRIPTION_ID" == "" ] && printError "ARM_SUBSCRIPTION_ID undefined" && showHelpDeploy && exit 1
     [ "$ARM_CLIENT_ID" == "" ] && printError "ARM_CLIENT_ID undefined" && showHelpDeploy && exit 1
     [ "$ARM_CLIENT_SECRET" == "" ] && printError "ARM_CLIENT_SECRET undefined" && showHelpDeploy && exit 1
@@ -91,15 +94,19 @@ function deploy() {
     installTerraform
     installKubectl
 
-    ## install 
-    installKubernetes
-    installTraefik
-    installKubeDB
-    printInfo "Please, add DNS entry *.$domain -> $INGRESS_PUBLIC_IP"
-    waitPublicIpIsResolvedByDns "$domain" "$INGRESS_PUBLIC_IP"
-    installCertManager
-    installKathra
+
+    ## CONFIGURE IP and DNS 
+    reverseStaticIp
     
+    ## INSTALL KUBERNETES
+    installKubernetes
+    [ ! "$domain" == "" ] && printInfo "Please, add DNS entry *.$domain -> $INGRESS_PUBLIC_IP" && waitPublicIpIsResolvedByDns "$domain" "$INGRESS_PUBLIC_IP"
+    [ ! "$DOMAIN_NAME_AZURE" == "" ] && waitPublicIpIsResolvedByDns "$DOMAIN_NAME_AZURE" "$INGRESS_PUBLIC_IP"
+    installTraefik
+    installCertManager
+    installKubeDB
+    [ ! "$domain" == "" ] && installKathra "$domain" || installKathra "$DOMAIN_NAME_AZURE"
+
     return $?
 }
 export -f deploy
@@ -114,8 +121,10 @@ function destroy() {
 export -f destroy
 
 function installKathra() {
+    printDebug "installKathra(domainName: $1)"
+    local domainName=$1
     export TF_VAR_kathra_version="$kathraChartVersion"
-    export TF_VAR_kathra_domain="$domain"
+    export TF_VAR_kathra_domain="$domainName"
     installTerraformModule $SCRIPT_DIR/terraform_modules/kathra
 }
 
@@ -154,6 +163,26 @@ function installTerraform() {
 }
 export -f installTerraform
 
+function reverseStaticIp() {
+    printDebug "reverseStaticIp()"
+    [ ! "$domain_name_label" == "" ]  && export TF_VAR_domain_name_label=$domainLabel
+    installTerraformModule $SCRIPT_DIR/terraform_modules/public-ip/azure
+    printDebug "Wait until static IP is defined..."
+    checkCommandAndRetry "terraform refresh && terraform output public_ip_address | grep -E '[0-9]*.[0-9]*.[0-9]*.[0-9]*'"
+    terraform output public_ip_address > $tmp/public_ip_address 
+    export INGRESS_PUBLIC_IP=$(cat $tmp/public_ip_address)
+    printInfo "Your public IP is $INGRESS_PUBLIC_IP "
+
+    if [ ! "$domain_name_label" == "" ]
+    then
+        printDebug "Wait until static domain label is defined..."
+        checkCommandAndRetry "terraform refresh && terraform output domain_name_label | grep -E '.+'"
+        terraform output domain_name_label > $tmp/domain_name_label 
+        export DOMAIN_NAME_AZURE="$(cat $tmp/domain_name_label).$(echo $azureLocation | tr -d ' ' | tr '[:upper:]' '[:lower:]').cloudapp.azure.com"
+        printInfo "Your domainName is $DOMAIN_NAME_AZURE"
+    fi
+}
+
 function installKubernetes() {
     printDebug "installKubernetes()"
     local modulePath=$SCRIPT_DIR/terraform_modules/kubernetes-azure
@@ -174,10 +203,10 @@ function uninstallKubernetes() {
     cd $modulePath
     terraform init
     terraform destroy
-    rm $SCRIPT_DIR/terraform_modules/helm-packages/kubedb/terraform.*
-    rm $SCRIPT_DIR/terraform_modules/helm-packages/cert-manager/terraform.*
-    rm $SCRIPT_DIR/terraform_modules/helm-packages/traefik/terraform.*
-    rm $SCRIPT_DIR/terraform_modules/kathra/terraform.*
+    rm $SCRIPT_DIR/terraform_modules/helm-packages/kubedb/terraform.* 2> /dev/null > /dev/null
+    rm $SCRIPT_DIR/terraform_modules/helm-packages/cert-manager/terraform.* 2> /dev/null > /dev/null
+    rm $SCRIPT_DIR/terraform_modules/helm-packages/traefik/terraform.* 2> /dev/null > /dev/null
+    rm $SCRIPT_DIR/terraform_modules/kathra/terraform.* 2> /dev/null > /dev/null
 }
 export -f uninstallKubernetes
 
@@ -192,12 +221,12 @@ export -f installTerraformModule
 function installTraefik() {
     printDebug "installTraefik()"
     export TF_VAR_version_chart=$traefikChartVersion
+    export TF_VAR_load_balancer_ip=$INGRESS_PUBLIC_IP
     installTerraformModule $SCRIPT_DIR/terraform_modules/helm-packages/traefik
     
     checkCommandAndRetry "kubectl --kubeconfig=$KUBECONFIG -n traefik get svc traefik -o json | jq -r '.status.loadBalancer.ingress[0].ip' | grep -v null > /dev/null " 
-    export INGRESS_PUBLIC_IP=$(kubectl --kubeconfig=$KUBECONFIG -n traefik get svc traefik -o json | jq -r '.status.loadBalancer.ingress[0].ip' | grep -v null)
-
-    printInfo "Public IP Ingress $INGRESS_PUBLIC_IP"
+    [ ! "$domain" == "" ] && export INGRESS_PUBLIC_IP=$(kubectl --kubeconfig=$KUBECONFIG -n traefik get svc traefik -o json | jq -r '.status.loadBalancer.ingress[0].ip' | grep -v null)
+    [ ! "$domain" == "" ] && printInfo "Public IP Ingress $INGRESS_PUBLIC_IP"
     return $?
 }
 export -f installTraefik
@@ -216,7 +245,9 @@ function waitPublicIpIsResolvedByDns() {
     printDebug "waitPublicIpIsResolvedByDns($*)"
     local dnsEntry=$1
     local ipExpected=$2
-    checkCommandAndRetry "kubectl --kubeconfig=$KUBECONFIG run -it --rm --restart=Never --image=infoblox/dnstools:latest dnstools -- '-c' \"host test.$dnsEntry\" | grep \"test.$dnsEntry has address $ipExpected\" > /dev/null" || printErrorAndExit "Unable to run pod dnstools and check hostname"
+    local subDomain=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1)
+    kubectl --kubeconfig=$KUBECONFIG delete pods dnstools 2> /dev/null > /dev/null
+    checkCommandAndRetry "kubectl --kubeconfig=$KUBECONFIG run -it --rm --restart=Never --image=infoblox/dnstools:latest dnstools -- '-c' \"host $subDomain.$dnsEntry\" | grep \"$subDomain.$dnsEntry has address $ipExpected\" > /dev/null" || printErrorAndExit "Unable to run pod dnstools and check hostname"
     return $?
 }
 export -f waitPublicIpIsResolvedByDns
@@ -246,7 +277,7 @@ metadata:
   name: $clusterIssuerName
 spec:
   acme:
-    server: https://acme-v02.api.letsencrypt.org/directory
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
     email: contact@$domain
     privateKeySecretRef:
       name: $clusterIssuerName
