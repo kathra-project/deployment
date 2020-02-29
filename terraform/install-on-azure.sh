@@ -1,8 +1,8 @@
 #/bin/bash
 export SCRIPT_DIR=$(realpath $(dirname `which $0`))
 export tmp=/tmp/kathra.azure.Wrapper
+export KUBECONFIG=$tmp/kube_config
 [ ! -d $tmp ] && mkdir $tmp
-declare KUBECONFIG=$tmp/kube_config
 
 cd $SCRIPT_DIR
 export debug=1
@@ -89,22 +89,26 @@ function deploy() {
     [ "$ARM_CLIENT_SECRET" == "" ] && printError "ARM_CLIENT_SECRET undefined" && showHelpDeploy && exit 1
     [ "$ARM_TENANT_ID" == "" ] && printError "ARM_TENANT_ID undefined" && showHelpDeploy && exit 1
 
+    # Install package and client
     sudo apt-get install curl jq unzip -y > /dev/null 2> /dev/null  
     installAzureCli
     installTerraform
     installKubectl
 
-
-    ## CONFIGURE IP and DNS 
-    reverseStaticIp
+    ## Configure IP and DNS 
+    reserveStaticIP
     
-    ## INSTALL KUBERNETES
+    ## Install kubernetes
     installKubernetes
     [ ! "$domain" == "" ] && printInfo "Please, add DNS entry *.$domain -> $INGRESS_PUBLIC_IP" && waitPublicIpIsResolvedByDns "$domain" "$INGRESS_PUBLIC_IP"
     [ ! "$DOMAIN_NAME_AZURE" == "" ] && waitPublicIpIsResolvedByDns "$DOMAIN_NAME_AZURE" "$INGRESS_PUBLIC_IP"
+    
+    ## Configure http ingress, ssl and features
     installTraefik
     installCertManager
     installKubeDB
+
+    # Install kathra
     [ ! "$domain" == "" ] && installKathra "$domain" || installKathra "$DOMAIN_NAME_AZURE"
 
     return $?
@@ -116,6 +120,10 @@ function destroy() {
     sudo apt-get install curl jq unzip -y > /dev/null 2> /dev/null  
     installAzureCli
     uninstallKubernetes
+    rm $SCRIPT_DIR/terraform_modules/helm-packages/kubedb/terraform.* 2> /dev/null > /dev/null
+    rm $SCRIPT_DIR/terraform_modules/helm-packages/cert-manager/terraform.* 2> /dev/null > /dev/null
+    rm $SCRIPT_DIR/terraform_modules/helm-packages/traefik/terraform.* 2> /dev/null > /dev/null
+    rm $SCRIPT_DIR/terraform_modules/kathra/terraform.* 2> /dev/null > /dev/null
     return $?
 }
 export -f destroy
@@ -163,8 +171,8 @@ function installTerraform() {
 }
 export -f installTerraform
 
-function reverseStaticIp() {
-    printDebug "reverseStaticIp()"
+function reserveStaticIP() {
+    printDebug "reserveStaticIP()"
     [ ! "$domain_name_label" == "" ]  && export TF_VAR_domain_name_label=$domainLabel
     installTerraformModule $SCRIPT_DIR/terraform_modules/public-ip/azure
     printDebug "Wait until static IP is defined..."
@@ -203,18 +211,16 @@ function uninstallKubernetes() {
     cd $modulePath
     terraform init
     terraform destroy
-    rm $SCRIPT_DIR/terraform_modules/helm-packages/kubedb/terraform.* 2> /dev/null > /dev/null
-    rm $SCRIPT_DIR/terraform_modules/helm-packages/cert-manager/terraform.* 2> /dev/null > /dev/null
-    rm $SCRIPT_DIR/terraform_modules/helm-packages/traefik/terraform.* 2> /dev/null > /dev/null
-    rm $SCRIPT_DIR/terraform_modules/kathra/terraform.* 2> /dev/null > /dev/null
 }
 export -f uninstallKubernetes
 
 function installTerraformModule() {
     printDebug "installTerraformModule($*)"
     local dir=$1
-    cd $dir && terraform init && terraform apply -auto-approve 
-    [ $? -ne 0 ] && printErrorAndExit "Unable to terraform apply : $dir"
+    local attemptMax=3
+    cd $dir
+    for attempt in {1..$attemptMax}; do terraform init && terraform apply -auto-approve && return 0 || printWarn "Unable to terraform apply, retry ($attempt/$attemptMax)"; done
+    printErrorAndExit "Unable to terraform apply, too many attempts : $dir"
 }
 export -f installTerraformModule
 
@@ -245,9 +251,8 @@ function waitPublicIpIsResolvedByDns() {
     printDebug "waitPublicIpIsResolvedByDns($*)"
     local dnsEntry=$1
     local ipExpected=$2
-    local subDomain=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1)
     kubectl --kubeconfig=$KUBECONFIG delete pods dnstools 2> /dev/null > /dev/null
-    checkCommandAndRetry "kubectl --kubeconfig=$KUBECONFIG run -it --rm --restart=Never --image=infoblox/dnstools:latest dnstools -- '-c' \"host $subDomain.$dnsEntry\" | grep \"$subDomain.$dnsEntry has address $ipExpected\" > /dev/null" || printErrorAndExit "Unable to run pod dnstools and check hostname"
+    checkCommandAndRetry "subDomain=\$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1) && kubectl --kubeconfig=$KUBECONFIG run -it --rm --restart=Never --image=infoblox/dnstools:latest dnstools -- '-c' \"host \$subDomain.$dnsEntry\" | grep \"\$subDomain.$dnsEntry has address $ipExpected\" > /dev/null" || printErrorAndExit "Unable to run pod dnstools and check hostname"
     return $?
 }
 export -f waitPublicIpIsResolvedByDns
@@ -277,7 +282,7 @@ metadata:
   name: $clusterIssuerName
 spec:
   acme:
-    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    server: https://acme-v02.api.letsencrypt.org/directory
     email: contact@$domain
     privateKeySecretRef:
       name: $clusterIssuerName

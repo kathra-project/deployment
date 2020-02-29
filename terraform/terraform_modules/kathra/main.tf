@@ -14,6 +14,7 @@ resource "null_resource" "kathraInstaller" {
       export KUBECONFIG=$CONFIG
       [ -d /tmp/kathra-deployment-tf ] && rm -rf /tmp/kathra-deployment-tf
       git clone https://gitlab.com/kathra/deployment.git /tmp/kathra-deployment-tf || exit 1
+      cd /tmp/kathra-deployment-tf && git checkout $VERSION || exit 1
       /tmp/kathra-deployment-tf/install.sh --domain=$DOMAIN --chart-version=$VERSION --enable-tls-ingress --verbose || exit 1
    EOT
     environment = {
