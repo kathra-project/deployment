@@ -41,7 +41,6 @@ data:
       <clouds>
         <org.csanchez.jenkins.plugins.kubernetes.KubernetesCloud plugin="kubernetes@{{ template "jenkins.kubernetes-version" . }}">
           <name>kubernetes</name>
-          <serverUrl>https://kubernetes.default:443</serverUrl>
           <templates>
             <org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
               <inheritFrom></inheritFrom>
@@ -451,7 +450,7 @@ data:
             </org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
 {{- end -}}
           </templates>
-          <serverUrl>https://kubernetes.default</serverUrl>
+          <serverUrl>https://kubernetes.default:443</serverUrl>
           <skipTlsVerify>false</skipTlsVerify>
           <namespace>{{ default .Release.Namespace .Values.Master.SlaveKubernetesNamespace }}</namespace>
 {{- if .Values.Master.SlaveKubernetesNamespace }}
