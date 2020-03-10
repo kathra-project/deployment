@@ -5,9 +5,6 @@ variable "version_chart" {
 variable "kube_config_file" {
     default =  ""
 }
-variable "apiserver_ca" {
-    default =  ""
-}
 
 provider "helm" {
   kubernetes {
@@ -31,6 +28,9 @@ resource "kubernetes_namespace" "kubedb" {
     name = "kubedb"
   }
 }
+data "external" "apiserver_ca" {
+    program = ["sh", "${path.module}/get-ca.sh"]
+}
 
 resource "helm_release" "kubedb" {
   name       = "kubedb-operator"
@@ -45,7 +45,7 @@ resource "helm_release" "kubedb" {
   }
   set {
     name  = "apiserver.ca"
-    value = var.apiserver_ca
+    value = data.external.apiserver_ca.result["cert"]
   }
   set {
     name  = "apiserver.enableMutatingWebhook"

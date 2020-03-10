@@ -6,8 +6,6 @@ export KUBECONFIG=$tmp/kube_config
 
 cd $SCRIPT_DIR
 export debug=1
-
-
 export domain=""
 export domainLabel=""
 export azureGroupName="kathra"
@@ -17,6 +15,7 @@ export traefikChartVersion="1.85.0"
 export kubeDbVersion="0.8.0"
 export kubernetesVersion="1.14.8"
 export kathraChartVersion="feature/terraform"
+export veleroVersion="1.2.0"
 
 function showHelp() {
     findInArgs "deploy" $* > /dev/null && showHelpDeploy $* && exit 0
@@ -26,6 +25,7 @@ function showHelp() {
     printInfo "Usage: "
     printInfo "deploy : Deploy on Azure"
     printInfo "destroy : Destroy on Azure"
+    printInfo "backup-install : Configure backup on Azure"
 }
 export -f showHelp
 
@@ -53,6 +53,15 @@ function showHelpDestroy() {
 }
 export -f showHelpDestroy
 
+function showHelpConfigureBackup() {
+    printInfo "KATHRA Azure Install Wrapper"
+    printInfo ""
+    printInfo "backup-install options : "
+    printInfo "--azure-username=<username>                :        Azure Username or AZURE_USERNAME as env var"
+    printInfo "--azure-password=<location>                :        Azure Password or AZURE_PASSWORD as env var"
+}
+export -f showHelpConfigureBackup
+
 function parseArgs() {
     for argument in "$@" 
     do
@@ -67,6 +76,8 @@ function parseArgs() {
             --azure-client-id)              ARM_CLIENT_ID=$value;;
             --azure-client-secret)          ARM_CLIENT_SECRET=$value;;
             --azure-tenant-id)              ARM_TENANT_ID=$value;;
+            --azure-username)               AZURE_USERNAME=$value;;
+            --azure-password)               AZURE_PASSWORD=$value;;
             --verbose)                      debug=1;;
             --help|-h)                      showHelp $*;;
         esac    
@@ -79,6 +90,7 @@ function main() {
     export TF_VAR_location="$azureLocation"
     findInArgs "deploy" $* > /dev/null && deploy $* && return 0
     findInArgs "destroy" $* > /dev/null && destroy $* && return 0
+    findInArgs "backup-install" $* > /dev/null && backupConfigure $* && return 0
 }
 
 function deploy() {
@@ -131,6 +143,8 @@ export -f destroy
 function installKathra() {
     printDebug "installKathra(domainName: $1)"
     local domainName=$1
+    kubectl --kubeconfig=$KUBECONFIG  -n kube-system delete pods -l name=tiller
+    kubectl --kubeconfig=$KUBECONFIG  -n kube-system delete pods -l k8s-app=metrics-server
     export TF_VAR_kathra_version="$kathraChartVersion"
     export TF_VAR_kathra_domain="$domainName"
     installTerraformModule $SCRIPT_DIR/terraform_modules/kathra
@@ -193,25 +207,28 @@ function reserveStaticIP() {
 
 function installKubernetes() {
     printDebug "installKubernetes()"
-    local modulePath=$SCRIPT_DIR/terraform_modules/kubernetes-azure
+    local modulePath=$SCRIPT_DIR/terraform_modules/kubernetes/azure
     cd $modulePath
     export TF_VAR_k8s_client_id="$ARM_CLIENT_ID"
     export TF_VAR_k8s_client_secret="$ARM_CLIENT_SECRET"
-    export TF_VAR_kubernetes_version="$kubernetesVersion"
+    export TF_VAR_kubernete
     installTerraformModule $modulePath
     terraform output kube_config > $KUBECONFIG
-    export TF_VAR_kube_config_file="$KUBECONFIG"
+
+    export TF_VAR_kube_config_file=$KUBECONFIG
     kubectl --kubeconfig=$KUBECONFIG get nodes || printErrorAndExit "Unable to connect Kubernetes"
 }
 export -f installKubernetes
 
 function uninstallKubernetes() {
     printDebug "uninstallKubernetes()"
-    local modulePath=$SCRIPT_DIR/terraform_modules/kubernetes-azure
+    local modulePath=$SCRIPT_DIR/terraform_modules/kubernetes/azure
     cd $modulePath
     terraform init
     terraform destroy
 }
+export tmp=/tmp/kathra.azure.Wrapper
+export KUBECONFIG=$tmp/kube_config
 export -f uninstallKubernetes
 
 function installTerraformModule() {
@@ -219,7 +236,7 @@ function installTerraformModule() {
     local dir=$1
     local attemptMax=3
     cd $dir
-    for attempt in {1..$attemptMax}; do terraform init && terraform apply -auto-approve && return 0 || printWarn "Unable to terraform apply, retry ($attempt/$attemptMax)"; done
+    for attempt in $(seq 1 $attemptMax); do terraform init && terraform apply -auto-approve && return 0 || printWarn "Unable to terraform apply, retry ($attempt/$attemptMax)"; done
     printErrorAndExit "Unable to terraform apply, too many attempts : $dir"
 }
 export -f installTerraformModule
@@ -274,38 +291,88 @@ export -f checkCommandAndRetry
 
 function installCertManager() {
     printDebug "installCertManager()"
-    local clusterIssuerName="letsencrypt-prod"
-
-    echo "apiVersion: cert-manager.io/v1alpha2
-kind: ClusterIssuer
-metadata:
-  name: $clusterIssuerName
-spec:
-  acme:
-    server: https://acme-v02.api.letsencrypt.org/directory
-    email: contact@$domain
-    privateKeySecretRef:
-      name: $clusterIssuerName
-    solvers:
-      - http01:
-          ingress:
-            class: traefik
-  " > /tmp/clusterissuer.yaml
-
-    export TF_VAR_apiserver_ca=$(onessl get kube-ca)
     export TF_VAR_version_chart="v0.12.0"
-    export TF_VAR_issuer_name_default=$clusterIssuerName
-    export TF_VAR_cluster_issuers_file=/tmp/clusterissuer.yaml
-
-    kubectl --kubeconfig=$KUBECONFIG apply --validate=false -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.12/deploy/manifests/00-crds.yaml --namespace traefik
     installTerraformModule $SCRIPT_DIR/terraform_modules/helm-packages/cert-manager
-    kubectl --kubeconfig=$KUBECONFIG apply -f /tmp/clusterissuer.yaml --namespace traefik --validate=false --overwrite
-    kubectl --kubeconfig=$KUBECONFIG label namespace traefik certmanager.k8s.io/disable-validation=true --overwrite
     printInfo "CertManager Installed"
     return $?
 
 }
 export -f installCertManager
+
+function installAndConfigureBackup() {
+    printDebug "installAndConfigureBackup()"
+    export TF_VAR_client_secret=$ARM_CLIENT_SECRET
+    export TF_VAR_subscribtion=$ARM_SUBSCRIPTION_ID
+    installTerraformModule $SCRIPT_DIR/terraform_modules/backup/azure
+}
+export -f installAndConfigureBackup
+
+function installVeleroCli() {
+    printDebug "installVeleroCli()"
+    curl -L https://github.com/vmware-tanzu/velero/releases/download/v$veleroVersion/velero-v$veleroVersion-linux-amd64.tar.gz > $tmp/velero.tar.gz
+    mkdir $tmp/velero
+    tar -xvf $tmp/velero.tar.gz -C $tmp/velero
+    chmod +x tmp/velero/velero-v$veleroVersion-linux-amd64/velero
+    export PATH=$PATH:$tmp/velero/velero-v$veleroVersion-linux-amd64/ 
+}
+export -f installVeleroCli
+
+function backupConfigure() {
+    printDebug "backupConfigure()"
+
+    [ "$AZURE_USERNAME" == "" ] && printError "AZURE_USERNAME undefined" && showHelpConfigureBackup && exit 1
+    [ "$AZURE_PASSWORD" == "" ] && printError "AZURE_PASSWORD undefined" && showHelpConfigureBackup && exit 1
+
+    export VELERO_RESOURCE_GROUP_NAME="kathra-backup" # Resource group where storage account will be created and used to store a backups
+    export VELERO_STORAGE_ACCOUNT_NAME="kathrabackupaccountname" # Storage account name for Velero backups 
+    export VELERO_BLOB_CONTAINER_NAME="kathrabackupcontainer" # Blob container for Velero backups
+    export LOCATION="eastus" # Azure region for your resources
+    export VELERO_SP_NAME="KathraSpVelero" # A name for Velero Azure AD service principal name
+    export AKS_RESOURCE_GROUP="MC_kathra_kathra-k8s_eastus" # Name of the auto-generated resource group that is created when you provision your cluster in Azure
+    
+    az login --username $AZURE_USERNAME --password $AZURE_PASSWORD
+    az account set --subscription $ARM_SUBSCRIPTION_ID
+
+    # Create and configure storage
+    az group create --location $LOCATION --name $VELERO_RESOURCE_GROUP_NAME
+    az storage account create --name $VELERO_STORAGE_ACCOUNT_NAME --resource-group $VELERO_RESOURCE_GROUP_NAME --location $LOCATION --kind StorageV2 --sku Standard_LRS --encryption-services blob --https-only true --access-tier Hot
+    az storage container create --name $VELERO_BLOB_CONTAINER_NAME --public-access off --account-name $VELERO_STORAGE_ACCOUNT_NAME
+    
+    # Create a credentials file for Velero
+    echo "AZURE_SUBSCRIPTION_ID=$ARM_SUBSCRIPTION_ID" > $tmp/credentials-velero
+    echo "AZURE_TENANT_ID=$ARM_TENANT_ID" >> $tmp/credentials-velero
+    echo "AZURE_CLIENT_ID=$ARM_CLIENT_ID" >> $tmp/credentials-velero
+    echo "AZURE_CLIENT_SECRET=$ARM_CLIENT_SECRET" >> $tmp/credentials-velero
+    echo "AZURE_RESOURCE_GROUP=$AKS_RESOURCE_GROUP" >> $tmp/credentials-velero
+    echo "AZURE_CLOUD_NAME=AzurePublicCloud" >> $tmp/credentials-velero
+    
+    helm repo add vmware-tanzu https://vmware-tanzu.github.io/helm-charts
+    helm repo update
+    helm install --name velero2 --namespace velero \
+    --set configuration.provider=azure \
+    --set-file credentials.secretContents.cloud=$tmp/credentials-velero \
+    --set configuration.backupStorageLocation.name=azure \
+    --set configuration.backupStorageLocation.bucket=$VELERO_BLOB_CONTAINER_NAME \
+    --set configuration.backupStorageLocation.config.storageAccount=$VELERO_STORAGE_ACCOUNT_NAME \
+    --set configuration.backupStorageLocation.config.resourceGroup=$VELERO_RESOURCE_GROUP_NAME \
+    --set configuration.volumeSnapshotLocation.name=azure \
+    --set configuration.volumeSnapshotLocation.bucket=$VELERO_BLOB_CONTAINER_NAME \
+    --set configuration.volumeSnapshotLocation.config.storageAccount=$VELERO_STORAGE_ACCOUNT_NAME \
+    --set configuration.volumeSnapshotLocation.config.resourceGroup=$VELERO_RESOURCE_GROUP_NAME \
+    --set image.repository=velero/velero \
+    --set image.tag=v$veleroVersion \
+    --set image.pullPolicy=IfNotPresent \
+    --set initContainers[0].name=velero-plugin-for-microsoft-azure \
+    --set initContainers[0].image=velero/velero-plugin-for-microsoft-azure:v1.0.0 \
+    --set initContainers[0].volumeMounts[0].mountPath=/target \
+    --set initContainers[0].volumeMounts[0].name=plugins \
+    vmware-tanzu/velero
+
+    installVeleroCli
+
+    velero version && printInfo "Velero is installed"
+}
+export -f backupConfigure
 
 function printErrorAndExit(){
     echo -e "\033[31;1m $* \033[0m" 1>&2 && exit 1
