@@ -16,6 +16,7 @@ export kubeDbVersion="0.8.0"
 export kubernetesVersion="1.14.8"
 export kathraChartVersion="feature/terraform"
 export veleroVersion="1.2.0"
+export veleroBin=$tmp/velero/velero-v$veleroVersion-linux-amd64/ 
 
 function showHelp() {
     findInArgs "deploy" $* > /dev/null && showHelpDeploy $* && exit 0
@@ -312,16 +313,20 @@ function installVeleroCli() {
     curl -L https://github.com/vmware-tanzu/velero/releases/download/v$veleroVersion/velero-v$veleroVersion-linux-amd64.tar.gz > $tmp/velero.tar.gz
     mkdir $tmp/velero
     tar -xvf $tmp/velero.tar.gz -C $tmp/velero
-    chmod +x tmp/velero/velero-v$veleroVersion-linux-amd64/velero
-    export PATH=$PATH:$tmp/velero/velero-v$veleroVersion-linux-amd64/ 
+    chmod +x $veleroBin
 }
 export -f installVeleroCli
 
 function backupConfigure() {
     printDebug "backupConfigure()"
 
-    [ "$AZURE_USERNAME" == "" ] && printError "AZURE_USERNAME undefined" && showHelpConfigureBackup && exit 1
-    [ "$AZURE_PASSWORD" == "" ] && printError "AZURE_PASSWORD undefined" && showHelpConfigureBackup && exit 1
+    #[ "$AZURE_USERNAME" == "" ] && printError "AZURE_USERNAME undefined" && showHelpConfigureBackup && exit 1
+    #[ "$AZURE_PASSWORD" == "" ] && printError "AZURE_PASSWORD undefined" && showHelpConfigureBackup && exit 1
+
+    [ "$ARM_SUBSCRIPTION_ID" == "" ] && printError "ARM_SUBSCRIPTION_ID undefined" && showHelpDeploy && exit 1
+    [ "$ARM_CLIENT_ID" == "" ] && printError "ARM_CLIENT_ID undefined" && showHelpDeploy && exit 1
+    [ "$ARM_CLIENT_SECRET" == "" ] && printError "ARM_CLIENT_SECRET undefined" && showHelpDeploy && exit 1
+    [ "$ARM_TENANT_ID" == "" ] && printError "ARM_TENANT_ID undefined" && showHelpDeploy && exit 1
 
     export VELERO_RESOURCE_GROUP_NAME="kathra-backup" # Resource group where storage account will be created and used to store a backups
     export VELERO_STORAGE_ACCOUNT_NAME="kathrabackupaccountname" # Storage account name for Velero backups 
@@ -330,7 +335,7 @@ function backupConfigure() {
     export VELERO_SP_NAME="KathraSpVelero" # A name for Velero Azure AD service principal name
     export AKS_RESOURCE_GROUP="MC_kathra_kathra-k8s_eastus" # Name of the auto-generated resource group that is created when you provision your cluster in Azure
     
-    az login --username $AZURE_USERNAME --password $AZURE_PASSWORD
+    az login 
     az account set --subscription $ARM_SUBSCRIPTION_ID
 
     # Create and configure storage
@@ -370,7 +375,7 @@ function backupConfigure() {
 
     installVeleroCli
 
-    velero version && printInfo "Velero is installed"
+    $veleroBin version && printInfo "Velero is installed"
 }
 export -f backupConfigure
 
@@ -412,6 +417,3 @@ export -f findInArgs
 main $*
 
 exit $?
-
-
-
