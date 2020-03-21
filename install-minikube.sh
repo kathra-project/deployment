@@ -21,11 +21,11 @@ export nodePortHTTPS=30443
 export minikubeCpus=6
 export minikubeMemory=16384
 export minikubeDiskSize="50000mb"
-export minikubeVersion="1.3.1"
+export minikubeVersion="1.8.2"
 export minikubeVmDriver="virtualbox"
-export kubernetesVersion="1.15.1"
-export helmVersion="2.14.3"
-export kubeDbVersion="0.8.0"
+export kubernetesVersion="1.16.8"
+export helmVersion="2.16.3"
+export kubeDbVersion="0.9.0"
 export traefikChartVersion="1.78.2"
 export sudo=""
 
