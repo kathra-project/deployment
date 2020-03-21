@@ -1,0 +1,12 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: catalogmanager-config
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    project: kathra
+    app: catalogmanager
+data:
+  HELM_UPDATE_INTERVAL: "* * * * *"
+  RESOURCE_MANAGER_URL: {{ .Values.services_url.resource_manager }}

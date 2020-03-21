@@ -220,7 +220,7 @@ function main() {
     printInfo "Install Jenkins... Pending" && installJenkins && printInfo "Install Jenkins... OK"
     printInfo "Install GitLab-CE... Pending" && installGitlab && printInfo "Install GitLab-CE... OK"
     printInfo "Install Nexus... Pending" && installKathraFactoryChart "nexus" && printInfo "Install Nexus... OK"
-    printInfo "Install Harbor... Pending" && installKathraFactoryHarbor && printInfo "OK"
+    printInfo "Install Harbor... Pending" && installKathraFactoryHarbor && printInfo "Install Harbor... OK"
     printInfo "Install DeployManager... Pending" && installKathraFactoryChart "kathra-deploymanager" && printInfo "Install DeployManager... OK"
 EOF
     cat $tmp/commands_to_exec | xargs -I{} -n 1 -P 5  bash -c {}
@@ -685,11 +685,11 @@ function keycloakInitPermission() {
     [ $? -ne 0 ] && printError "Unable to Allow Remote Resource Management into Keycloak" && exit 1
     
     keycloakCreateScope "kathra:scope:component:delete" "${clientUUID}" $tmp/keycloak.scope.component.delete.uuid
-	keycloakCreateScope "kathra:scope:component:read" "${clientUUID}" $tmp/keycloak.scope.component.read.uuid
-	keycloakCreateScope "kathra:scope:component:update" "${clientUUID}" $tmp/keycloak.scope.component.update.uuid
-	keycloakCreateScope "kathra:scope:implementation:delete" "${clientUUID}" $tmp/keycloak.scope.implementation.delete.uuid
-	keycloakCreateScope "kathra:scope:implementation:read" "${clientUUID}" $tmp/keycloak.scope.implementation.read.uuid
-	keycloakCreateScope "kathra:scope:implementation:update" "${clientUUID}" $tmp/keycloak.scope.implementation.update.uuid
+    keycloakCreateScope "kathra:scope:component:read" "${clientUUID}" $tmp/keycloak.scope.component.read.uuid
+    keycloakCreateScope "kathra:scope:component:update" "${clientUUID}" $tmp/keycloak.scope.component.update.uuid
+    keycloakCreateScope "kathra:scope:implementation:delete" "${clientUUID}" $tmp/keycloak.scope.implementation.delete.uuid
+    keycloakCreateScope "kathra:scope:implementation:read" "${clientUUID}" $tmp/keycloak.scope.implementation.read.uuid
+    keycloakCreateScope "kathra:scope:implementation:update" "${clientUUID}" $tmp/keycloak.scope.implementation.update.uuid
     
     keycloakCreatePermissionScopeBased "Only users from shared group can read components" "${clientUUID}" "$(cat $tmp/keycloak.scope.component.read.uuid | tr -d '\n')" "${policyUUID}" $tmp/keycloak.permission.component.read.uuid
     keycloakCreatePermissionScopeBased "Only users from shared group can update components" "${clientUUID}" "$(cat $tmp/keycloak.scope.component.update.uuid | tr -d '\n')" "${policyUUID}" $tmp/keycloak.permission.component.update.uuid

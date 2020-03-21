@@ -1,7 +1,7 @@
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: icons
+  name: codegen-swagger
   annotations:
     kubernetes.io/ingress.class: traefik
   labels:
@@ -9,10 +9,9 @@ metadata:
     ingress: "{{ if .Values.tls }}tls{{ else }}plain{{ end }}"
 spec:
   rules:
-  - host: "icons.{{ .Values.global.domain }}"
+  - host: "codegen-swagger.{{ .Values.global.domain }}"
     http:
       paths:
-      - path: /
-        backend:
-          serviceName: catalog-icons
+      - backend:
+          serviceName: codegen-swagger
           servicePort: 80

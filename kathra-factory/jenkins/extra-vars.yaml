@@ -38,8 +38,8 @@ Master:
   # List of plugins to be install during Jenkins master start
   # mind the last plugin in the list now ;)
   InstallPlugins:
-    - kubernetes:1.14.9
-    - kubernetes-credentials:0.4.0
+    - kubernetes:1.23.3
+    - kubernetes-credentials:0.6.2
     - workflow-aggregator:2.6
     - workflow-job:2.32
     - credentials-binding:1.18
@@ -47,17 +47,17 @@ Master:
     - oic-auth:1.6
     - matrix-auth:2.4.2
     - pipeline-utility-steps:2.3.0
-    - configuration-as-code:1.30
+    - configuration-as-code:1.35
     # You might also need this for a couple of third-party plugins (e.g. for setting credentials)
-    - configuration-as-code-support:1.30
+    - configuration-as-code-support:1.18
 
   InitScripts:
     - ""
 
   JCasC:
     enabled: true
-    PluginVersion: 1.30
-    SupportPluginVersion: 1.30
+    PluginVersion: 1.35
+    SupportPluginVersion: 1.18
     ConfigScripts:
       root-url: |
         unclassified:

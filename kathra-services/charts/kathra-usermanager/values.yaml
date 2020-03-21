@@ -6,8 +6,10 @@ global:
       secret_b64: <base64_k8s_dockerconfig_secret>
 
 keycloak:
-    clientId: <admin-keycloak>
-    clientSecret: <pwd>
+  adminRealm: <adminRealm>
+  adminClientId: <admin-keycloak>
+  adminUsername: <adminUsername>
+  adminPassword: <passwordPassword>
 
 image: usermanager-keycloak
 version: 1.0.0

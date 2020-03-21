@@ -1,48 +1,91 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: kathra-catalogmanager-kube
+  name: kathra-catalogmanager-helm
   labels:
 {{ include "kathra.labels" . | indent 4 }}
     project: kathra
     app: catalogmanager
-    impl: kube
+    impl: helm
 spec:
   replicas: 1
   selector:
     matchLabels:
       project: kathra
       app: catalogmanager
-      impl: kube
+      impl: helm
   template:
     metadata:
       labels:
         project: kathra
         app: catalogmanager
-        impl: kube
+        impl: helm
     spec:
-      serviceAccountName: catalogmanager
       imagePullSecrets:
       - name: regcred
+      volumes:
+      - name: catalogmanager-secret
+        secret:
+          secretName: catalogmanager-secret
       containers:
       - image: "{{ .Values.global.docker.registry.url }}/{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
         imagePullPolicy: Always
-        name: kathra-catalogmanager-kube
+        name: kathra-catalogmanager-helm
         env:
         - name: KUBERNETES_NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+        - name: HELM_UPDATE_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              key: HELM_UPDATE_INTERVAL
+              name: catalogmanager-config
+        - name: REPOSITORIES_CONFIG
+          value: "/tmp/catalogmanager-secret/repositories.yaml"
+        - name: RESOURCE_MANAGER_URL
+          valueFrom:
+            configMapKeyRef:
+              key: RESOURCE_MANAGER_URL
+              name: catalogmanager-config
+        - name: USERNAME
+          valueFrom:
+            secretKeyRef:
+              key: USERNAME
+              name: catalogmanager-secret
+        - name: PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: PASSWORD
+              name: catalogmanager-secret
+        - name: KEYCLOAK_AUTH_URL
+          valueFrom:
+            configMapKeyRef:
+              key: KEYCLOAK_AUTH_URL
+              name: keycloak-config
+        - name: KEYCLOAK_REALM
+          valueFrom:
+            configMapKeyRef:
+              key: KEYCLOAK_REALM
+              name: keycloak-config
+        - name: KEYCLOAK_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              key: KEYCLOAK_CLIENT_ID
+              name: keycloak-secret
+        - name: KEYCLOAK_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: KEYCLOAK_CLIENT_SECRET
+              name: keycloak-secret
+        volumeMounts:
+          - mountPath: "/tmp/catalogmanager-secret"
+            name: catalogmanager-secret
+            readOnly: true
         ports:
         - containerPort: 8080
           name: http
-          protocol: TCP
-        - containerPort: 9779
-          name: prometheus
-          protocol: TCP
-        - containerPort: 8778
-          name: jolokia
           protocol: TCP
 {{- if .Values.resources }}
         resources:

@@ -23,10 +23,14 @@ kathra-appmanager:
   delete_zip_file: "true"
   image_registry_host: harbor.dev-irtsysx.fr
   services_url:
-    codegen: codegen/api/v1
+    codegen_helm: codegen-helm/api/v1
+    codegen_swagger: codegen-swagger/api/v1
+    binaryrepository_harbor: binaryrepositorymanager-harbor/api/v1
     source_manager: sourcemanager/api/v1
     pipeline_manager: pipelinemanager/api/v1
     resource_manager: resourcemanager/api/v1
+    catalogmanager: catalogmanager/api/v1
+    pipeline_webhook: https://appmanager.${BASE_DOMAIN}/api/v1/webhook
   resources:
     limits:
       cpu: 900m
@@ -35,13 +39,18 @@ kathra-appmanager:
       cpu: 50m
       memory: 128Mi
 
-kathra-binaryrepositorymanager:
+kathra-binaryrepositorymanager-harbor:
   image: binaryrepositorymanager-harbor
   version: ${KATHRA_IMAGE_TAG}
+  services_url:
+    resource_manager: resourcemanager/api/v1
   harbor:
-    url: https://harbor.${BASE_DOMAIN}/api
+    url: https://harbor.${BASE_DOMAIN}
     username: ${HARBOR_ADMIN_LOGIN}
     password: ${HARBOR_ADMIN_PASSWORD}
+  keycloak:
+    username: ${SYNCMANAGER_LOGIN}
+    password: ${SYNCMANAGER_PASSWORD}
   resources:
     limits:
       cpu: 500m
@@ -50,31 +59,21 @@ kathra-binaryrepositorymanager:
       cpu: 50m
       memory: 128Mi
 
-kathra-catalog-icons:
-  tls: true
-  repository: 
-    url: https://kathra-catalog-icons:_vi429_1RAAyezLv2wn9@git.kathra.org/KATHRA/kathra-catalog.git
-    revision: 23a6c71e86f2d854669b959d657e1a7b9e8a2e60
-  resources:
-    limits:
-      cpu: 200m
-      memory: 256Mi
-    requests:
-      cpu: 50m
-      memory: 128Mi
-
-kathra-catalog-updater:
-  image: catalogupdater
-  version: ${KATHRA_IMAGE_TAG}
-  protocol: https
-  repository:
-    url: https://kathra-catalog-icons:_vi429_1RAAyezLv2wn9@git.kathra.org/KATHRA/kathra-catalog.git
-    revision: 23a6c71e86f2d854669b959d657e1a7b9e8a2e60
 
 kathra-catalogmanager:
-  image: catalogmanager-kube
+  image: catalogmanager-helm
   version: ${KATHRA_IMAGE_TAG}
   tls: true
+  services_url:
+    resource_manager: http://resourcemanager/api/v1
+  helm:
+    repoName: kathra
+    url: https://harbor.${BASE_DOMAIN}/chartrepo
+    login: ${HARBOR_ADMIN_LOGIN}
+    password: ${HARBOR_ADMIN_PASSWORD}
+  keycloak:
+    username: ${SYNCMANAGER_LOGIN}
+    password: ${SYNCMANAGER_PASSWORD}
   resources:
     limits:
       cpu: 500m
@@ -83,7 +82,7 @@ kathra-catalogmanager:
       cpu: 50m
       memory: 128Mi
 
-kathra-codegen:
+kathra-codegen-swagger:
   image: codegen-swagger
   version: ${KATHRA_IMAGE_TAG}
   tls: true
@@ -97,6 +96,20 @@ kathra-codegen:
     requests:
       cpu: 50m
       memory: 128Mi
+
+
+kathra-codegen-helm:
+  image: codegen-helm
+  version: ${KATHRA_IMAGE_TAG}
+  tls: true
+  resources:
+    limits:
+      cpu: 300m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
 
 kathra-dashboard: 
   image: dashboard
@@ -206,8 +219,10 @@ kathra-usermanager:
       cpu: 50m
       memory: 256Mi
   keycloak:
-    clientId: kathra-user-manager
-    clientSecret: a375446d-7fec-421f-ae8e-65d523afa0b8
+      adminRealm: master
+      adminClientId: admin-cli
+      adminUsername: ${KEYCLOAK_ADMIN_LOGIN}
+      adminPassword: ${KEYCLOAK_ADMIN_PASSWORD}
 
 kathra-sync:
   keycloak:

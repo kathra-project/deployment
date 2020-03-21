@@ -1,0 +1,90 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: "binaryrepositorymanager-harbor"
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    product: kathra
+    app: binaryrepositorymanager
+    impl: "harbor"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        product: kathra
+        app: binaryrepositorymanager
+        impl: harbor
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: binaryrepositorymanager-harbor
+        image: "{{ .Values.global.docker.registry.url }}/{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
+        imagePullPolicy: Always
+        ports:
+        - name: web
+          containerPort: 8080
+          protocol: TCP
+        env:
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          - name: RESOURCE_MANAGER_URL
+            valueFrom:
+              configMapKeyRef:
+                key: RESOURCE_MANAGER_URL
+                name: binaryrepositorymanager-config
+          - name: HARBOR_URL
+            valueFrom:
+              configMapKeyRef:
+                key: HARBOR_URL
+                name: binaryrepositorymanager-config
+          - name: HARBOR_USERNAME
+            valueFrom:
+              secretKeyRef:
+                key: HARBOR_USERNAME
+                name: binaryrepositorymanager-harbor-secret
+          - name: HARBOR_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: HARBOR_PASSWORD
+                name: binaryrepositorymanager-harbor-secret
+          - name: USERNAME
+            valueFrom:
+              secretKeyRef:
+                key: USERNAME
+                name: binaryrepositorymanager-harbor-secret
+          - name: PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: PASSWORD
+                name: binaryrepositorymanager-harbor-secret
+          - name: KEYCLOAK_AUTH_URL
+            valueFrom:
+              configMapKeyRef:
+                key: KEYCLOAK_AUTH_URL
+                name: keycloak-config
+          - name: KEYCLOAK_REALM
+            valueFrom:
+              configMapKeyRef:
+                key: KEYCLOAK_REALM
+                name: keycloak-config
+          - name: KEYCLOAK_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                key: KEYCLOAK_CLIENT_ID
+                name: keycloak-secret
+          - name: KEYCLOAK_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                key: KEYCLOAK_CLIENT_SECRET
+                name: keycloak-secret
+          - name: JAVA_OPTS
+            value: "-XX:+UnlockExperimentalVMOptions  -XX:MaxRAMFraction=1 -Xms128M -Xmx512M"
+{{- if .Values.resources }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+{{- end }}

@@ -29,6 +29,36 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+        - name: KEYCLOAK_ADMIN_REALM
+          valueFrom:
+            secretKeyRef:
+              key: KEYCLOAK_ADMIN_REALM
+              name: usermanager-secret
+        - name: KEYCLOAK_REALM
+          valueFrom:
+            configMapKeyRef:
+              key: KEYCLOAK_REALM
+              name: keycloak-config
+        - name: KEYCLOAK_ADMIN_AUTH_URL
+          valueFrom:
+            configMapKeyRef:
+              key: KEYCLOAK_ADMIN_AUTH_URL
+              name: keycloak-config
+        - name: KEYCLOAK_ADMIN_CLIENT_ID
+          valueFrom:
+            configMapKeyRef:
+              key: KEYCLOAK_ADMIN_CLIENT_ID
+              name: keycloak-config
+        - name: KEYCLOAK_ADMIN_USERNAME
+          valueFrom:
+            secretKeyRef:
+              key: KEYCLOAK_ADMIN_USERNAME
+              name: usermanager-secret
+        - name: KEYCLOAK_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: KEYCLOAK_ADMIN_PASSWORD
+              name: usermanager-secret
         - name: KEYCLOAK_AUTH_URL
           valueFrom:
             configMapKeyRef:
@@ -39,36 +69,16 @@ spec:
             configMapKeyRef:
               key: KEYCLOAK_REALM
               name: keycloak-config
-        - name: KEYCLOAK_ADMIN_AUTH_URL
-          valueFrom:
-            configMapKeyRef:
-              key: KEYCLOAK_AUTH_URL
-              name: keycloak-config
-        - name: KEYCLOAK_ADMIN_REALM
-          valueFrom:
-            configMapKeyRef:
-              key: KEYCLOAK_REALM
-              name: keycloak-config
-        - name: KEYCLOAK_ADMIN_CLIENT_ID
-          valueFrom:
-            secretKeyRef:
-              key: KEYCLOAK_ADMIN_CLIENT_ID
-              name: kathra-usermanager-secret
-        - name: KEYCLOAK_ADMIN_CLIENT_SECRET
-          valueFrom:
-            secretKeyRef:
-              key: KEYCLOAK_ADMIN_CLIENT_SECRET
-              name: kathra-usermanager-secret
         - name: KEYCLOAK_CLIENT_ID
           valueFrom:
             secretKeyRef:
               key: KEYCLOAK_CLIENT_ID
-              name: kathra-keycloak-secret
+              name: keycloak-secret
         - name: KEYCLOAK_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
               key: KEYCLOAK_CLIENT_SECRET
-              name: kathra-keycloak-secret
+              name: keycloak-secret
         - name: JAVA_OPTS
           value: "-XX:+UnlockExperimentalVMOptions  -XX:MaxRAMFraction=1 -Xms128M -Xmx512M"
         image: "{{ .Values.global.docker.registry.url }}/{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"

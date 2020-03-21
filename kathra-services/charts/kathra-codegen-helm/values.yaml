@@ -11,9 +11,13 @@ global:
       id: <kathra_services_client_id>
       secret: <kathra_services_client_secret>
 
-image: catalogupdater
-version: 1.0.1-SNAPSHOT
-protocol: https
-repository:
-  url: https://catalog-puller:4nmg_PeHxcbUQjtCGvU3@git.kathra.org/KATHRA/kathra-catalog.git
-  revision: f2d2c4950a733cac0a1a7c12852cefdf9ceba80c
+image: codegen-helm
+version: 1.0.0
+tls: true
+resources:
+  limits:
+    cpu: 300m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
