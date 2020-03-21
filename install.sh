@@ -18,7 +18,7 @@ export purge=0
 export debug=0
 
 # Helm to wrappe
-export helmVersion=2.13.1
+export helmVersion=2.15.1
 export helmPlateform=linux-amd64
 export helmBin=$tmp/helm-local/$helmPlateform/helm
 export tillerNs=kube-system
@@ -36,6 +36,7 @@ export helmFactoryKathraNS=kathra-factory
 # Domain's name
 export BASE_DOMAIN
 export NFS_SERVER
+export ENABLE_TLS_INGRESS=0
 
 # Keycloak
 export KEYCLOAK_ADMIN_LOGIN=keycloak
@@ -95,6 +96,9 @@ function showHelp() {
     printInfo "--chart-version=<branch/tag>:    Clone specific version chart [default: $KATHRA_CHART_VERSION]"
     printInfo "--kathra-image-tag=<tag>:        Deploy specific tag images [default: $KATHRA_IMAGE_TAG]"
     printInfo ""
+    printInfo "Password file"
+    printInfo "--password-file=<file_path>:     Password file [default: $LOCAL_CONF_FILE]"
+    printInfo ""
     printInfo "User options"
     printInfo "--user-login=<username>:         User's login [default: $USER_LOGIN]"
     printInfo "--user-password=<password>:      User's password [default: $USER_PASSWORD]"
@@ -107,6 +111,7 @@ function showHelp() {
     printInfo "--kathra-ns=<namespace>:         Kathra K8S namespace [default: $helmAppKathraNS]"
     printInfo "--purge -p:                      Clean previous install (delete all persistent data)"
     printInfo "--tiller-ns:                     Tiller namespace"
+    printInfo "--enable-tls-ingress:            Enable ingress TLS (useless if your using global certificate on your ingress controller)"
     printInfo ""
     printInfo "LDAP settings (disabled by default)"
     printInfo "--ldap-server=<value>:           LDAP server [default: $LDAP_DOMAIN]"
@@ -128,6 +133,7 @@ function parseArgs() {
             --user-password)                USER_PASSWORD=$value;;
             --user-public-key)              USER_PUBLIC_SSH_KEY=$value;;
             --user-team)                    TEAM_NAME=$value;;
+            --password-file)                LOCAL_CONF_FILE=$value;;
             --interactive|-i)               ASK_PARAMETERS=1;;
             --factory-ns)                   helmFactoryKathraNS=$value;;
             --kathra-ns)                    helmAppKathraNS=$value;;
@@ -136,6 +142,7 @@ function parseArgs() {
             --tiller-ns)                    tillerNs=$value;;
             --chart-version)                KATHRA_CHART_VERSION=$value;;
             --kathra-image-tag)             KATHRA_IMAGE_TAG=$value;;
+            --enable-tls-ingress)           ENABLE_TLS_INGRESS=1;;
             --purge|-p)
                                             purge=1
                                             echo -e "\e[41m All existing data into PV and PVC will be deleted \033[0m" 1>&2
@@ -219,8 +226,8 @@ function main() {
     cat > $tmp/commands_to_exec <<EOF
     printInfo "Install Jenkins... Pending" && installJenkins && printInfo "Install Jenkins... OK"
     printInfo "Install GitLab-CE... Pending" && installGitlab && printInfo "Install GitLab-CE... OK"
-    printInfo "Install Nexus... Pending" && installKathraFactoryChart "nexus" && printInfo "Install Nexus... OK"
-    printInfo "Install Harbor... Pending" && installKathraFactoryHarbor && printInfo "Install Harbor... OK"
+    printInfo "Install Nexus... Pending" && installNexus && printInfo "Install Nexus... OK"
+    printInfo "Install Harbor... Pending" && installKathraFactoryHarbor && printInfo "OK"
     printInfo "Install DeployManager... Pending" && installKathraFactoryChart "kathra-deploymanager" && printInfo "Install DeployManager... OK"
 EOF
     cat $tmp/commands_to_exec | xargs -I{} -n 1 -P 5  bash -c {}
@@ -364,6 +371,19 @@ function checkTreafikInstall() {
     exit 1
 }
 export -f checkTreafikInstall
+
+function installNexus() {
+    touch $tmp/installNexus.extra.conf 
+    [ "$ENABLE_TLS_INGRESS" == "0" ] && cat > $tmp/installNexus.extra.conf <<EOF
+ingress:
+    tls:
+        enabled: false
+EOF
+     installKathraFactoryChart "nexus"  $tmp/installNexus.extra.conf 
+     return $?
+}
+export -f installNexus
+
 ###
 ### Install GitLab
 ###
@@ -372,7 +392,15 @@ function installGitlab() {
     [ -f $tmp/gitlab.nodePort ] && rm $tmp/gitlab.nodePort
     findNodePortAvailable > $tmp/gitlab.nodePort || return 1
     export GITLAB_NODEPORT=$(cat $tmp/gitlab.nodePort)
-    installKathraFactoryChart "gitlab-ce"
+
+    touch $tmp/installGitlab.extra.conf 
+    [ "$ENABLE_TLS_INGRESS" == "0" ] && cat > $tmp/installGitlab.extra.conf <<EOF
+ingress:
+    tls:
+    -
+EOF
+
+    installKathraFactoryChart "gitlab-ce" $tmp/installGitlab.extra.conf 
     gitlabResetAdminPwd "$SYNCMANAGER_PASSWORD"
     
     gitlabGenerateApiToken "$USER_LOGIN" "$USER_PASSWORD" "$tmp/gitlab.user.tokenValue" 
@@ -424,7 +452,16 @@ function installJenkins() {
     [ $purge -eq 0 ] && checkChartDeployed "$helmFactoryKathraNS" "$helmFactoryKathraName-jenkins" && printInfo "Jenkins already deployed" && return 0
     NFS_SERVER=$(kubectl -n $helmFactoryKathraNS get services nfs-server -o json 2> /dev/null | jq -r -c '.spec.clusterIP' 2> /dev/null)
     [ "${NFS_SERVER}" == "" ] && printError "Unable to find service nfs-server into namespace $helmFactoryKathraNS" && exit 1
-    installKathraFactoryChart "jenkins"
+
+    touch $tmp/installJenkins.extra.conf 
+    [ "$ENABLE_TLS_INGRESS" == "0" ] && cat > $tmp/installJenkins.extra.conf <<EOF
+Master:
+  ingress:
+    tls:
+    -
+EOF
+
+    installKathraFactoryChart "jenkins" $tmp/installJenkins.extra.conf 
     return $?
 }
 export -f installJenkins
@@ -460,7 +497,15 @@ function installKathraFactoryKeycloak() {
     kubectl -n $helmFactoryKathraNS patch postgres.kubedb.com keycloak-postgres-kubedb -p '{"spec":{"doNotPause":false}}' --type="merge" 2> /dev/null > /dev/null
     kubectl -n $helmFactoryKathraNS delete postgres.kubedb.com keycloak-postgres-kubedb 2> /dev/null > /dev/null
     kubectl -n $helmFactoryKathraNS delete pvc data-keycloak-postgres-kubedb-0 2> /dev/null > /dev/null
-    installKathraFactoryChart "keycloak"
+    touch $tmp/installKathraFactoryKeycloak.extra.conf
+    [ "$ENABLE_TLS_INGRESS" == "0" ] && cat > $tmp/installKathraFactoryKeycloak.extra.conf <<EOF
+keycloak:
+    ingress:
+        tls: 
+        - hosts:
+EOF
+
+    installKathraFactoryChart "keycloak" $tmp/installKathraFactoryKeycloak.extra.conf
     keycloakInitToken
     keycloakCreateGroup "kathra-projects" $tmp/group.kathra-projects
     keycloakCreateGroup "${TEAM_NAME}" $tmp/group.default "$(cat $tmp/group.kathra-projects | tr -d '\r')"
@@ -499,7 +544,14 @@ function installKathraFactoryHarbor() {
     [ ! "$redisPVC" == "" ] && kubectl -n $helmFactoryKathraNS delete pvc $redisPVC 2> /dev/null > /dev/null
     [ ! "$dbPVC" == "" ] && kubectl -n $helmFactoryKathraNS delete pvc $dbPVC 2> /dev/null > /dev/null
     
-    installKathraFactoryChart "harbor" || return 1
+    touch $tmp/installKathraFactoryHarbor.extra.conf 
+    [ "$ENABLE_TLS_INGRESS" == "0" ] && cat > $tmp/installKathraFactoryHarbor.extra.conf <<EOF
+expose:
+  tls:
+    enabled: false
+EOF
+
+    installKathraFactoryChart "harbor" $tmp/installKathraFactoryHarbor.extra.conf  || return 1
     #harborDefineAccountAsAdmin "$HARBOR_USER_LOGIN" "$HARBOR_USER_PASSWORD" "$HARBOR_ADMIN_LOGIN" "$HARBOR_ADMIN_PASSWORD" || return 1
 
     #harborInitCliSecret $HARBOR_ADMIN_LOGIN $HARBOR_ADMIN_PASSWORD $HARBOR_USER_LOGIN "$tmp/harbor.tokenValue"
@@ -517,14 +569,18 @@ export -f checkChartDeployed
 
 function installKathraFactoryChart() {
     local name=$1
-    printDebug "installKathraFactoryChart(name: $name)"
+    local overrideFile=$2
+    printDebug "installKathraFactoryChart($*)"
 
     [ $purge -eq 0 ] && checkChartDeployed "$helmFactoryKathraNS" "$helmFactoryKathraName-${name}" && printInfo "${name} already deployed" && return 0
-    [ -f $tmp/deployment/kathra-factory/${name}/extra-vars-wrapper.yaml ] && overrideEnvVar $tmp/deployment/kathra-factory/${name}/extra-vars-wrapper.yaml $tmp/deployment/kathra-factory/${name}/extra-vars-wrapper-configured.yaml || touch $tmp/deployment/kathra-factory/${name}/extra-vars-wrapper-configured.yaml
-    
-    $helmBin --tiller-namespace=$tillerNs delete $helmFactoryKathraName-${name} --purge 2> /dev/null > /dev/null 
-    $helmBin --tiller-namespace=$tillerNs install --namespace $helmFactoryKathraNS --timeout $helmInstallTimeout --name $helmFactoryKathraName-${name} $tmp/deployment/kathra-factory/${name}/ --wait -f $tmp/deployment/kathra-factory/${name}/extra-vars-wrapper-configured.yaml 2>&1 > $tmp/log.installKathraFactoryChart.$name
 
+    local fileExtraVar=$tmp/deployment/kathra-factory/${name}/extra-vars-wrapper.yaml
+    [ -f $fileExtraVar ] && overrideEnvVar $fileExtraVar $fileExtraVar.configured.yaml || touch $fileExtraVar.configured.yaml
+    [ "$overrideFile" != "" ] && mv $overrideFile $fileExtraVar.extra.yaml || touch $fileExtraVar.extra.yaml
+
+    $helmBin --tiller-namespace=$tillerNs delete $helmFactoryKathraName-${name} --purge 2> /dev/null > /dev/null 
+
+    $helmBin --tiller-namespace=$tillerNs install --namespace $helmFactoryKathraNS --timeout $helmInstallTimeout --name $helmFactoryKathraName-${name} $tmp/deployment/kathra-factory/${name}/ --wait -f $fileExtraVar.configured.yaml -f $fileExtraVar.extra.yaml 2>&1 > $tmp/log.installKathraFactoryChart.$name
     [ $? -ne 0 ] && printError "Unable to install ${name} $(cat $tmp/log.installKathraFactoryChart.$name)" && exit 1
     return 0
 }
@@ -562,10 +618,25 @@ function installKathraService() {
     [ "${GITLAB_API_TOKEN}" == "" ] && defineVar "GITLAB_API_TOKEN" "Please generate a GitLab's Api Token from (https://gitlab.${BASE_DOMAIN}/profile/personal_access_tokens)"
     #[ "${HARBOR_USER_SECRET_CLI}" == "" ] && defineVar "HARBOR_USER_SECRET_CLI" "Please generate a Harbor's Api Token from (https://harbor.${BASE_DOMAIN})"
     
+    
+    touch $tmp/installKathraService.extra.conf 
+    [ "$ENABLE_TLS_INGRESS" == "0" ] && cat > $tmp/installKathraService.extra.conf <<EOF
+kathra-appmanager:
+    ingress:
+        tls:
+        - hosts:
+        -
+kathra-dashboard:
+    ingress:
+        tls:
+        - hosts:
+        -
+EOF
+
     overrideEnvVar $tmp/deployment/kathra-services/extra-vars-wrapper.yaml $tmp/deployment/kathra-services/extra-vars-wrapper-configured.yaml
 
     $helmBin --tiller-namespace=$tillerNs delete $helmAppKathraName --purge 2> /dev/null > /dev/null
-    $helmBin --tiller-namespace=$tillerNs install --timeout $helmInstallTimeout --namespace $helmAppKathraNS --name $helmAppKathraName -f $tmp/deployment/kathra-services/extra-vars-wrapper-configured.yaml $tmp/deployment/kathra-services/ 2>&1 > $tmp/log.installKathraService.$name
+    $helmBin --tiller-namespace=$tillerNs install --timeout $helmInstallTimeout --namespace $helmAppKathraNS --name $helmAppKathraName -f $tmp/deployment/kathra-services/extra-vars-wrapper-configured.yaml -f $tmp/installKathraService.extra.conf $tmp/deployment/kathra-services/ 2>&1 > $tmp/log.installKathraService.$name
     [ $? -ne 0 ] && printError "Unable to install Kathra Services $(cat $tmp/log.installKathraService.$name)" && exit 1
     waitUntilJobSyncIsSucceeded || exit 1
     return 0

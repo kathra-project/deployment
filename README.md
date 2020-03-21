@@ -2,6 +2,12 @@
 
 ## Quickstart 
 
+Three ways are availables to install Kathra.
+You can install Kathra on :
+ * your workstation for testing usage 
+ * your cloud provider (using Terraform)
+ * your own Kubernetes cluster
+
 ### For testing - On local instance with Minikube
 
 #### Requirements
@@ -24,6 +30,38 @@ This procedure installs Minikube and configure somes features (Traefik, KubeDB a
 > ./install.sh --domain=kathra.my-own-domain.org --verbose
 
 By default, the login is 'user' and password '123'. You can override this configure during installation.
+
+### For production - On Azure
+
+#### Requirements
+- DNS Provider : For Cert-Manager
+- Azure account with credentials
+
+#### Init credential with env. variable
+
+> export ARM_SUBSCRIPTION_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+> export ARM_CLIENT_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+> export ARM_CLIENT_SECRET="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+> export ARM_TENANT_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+#### Deploy on Azure
+
+> ./terraform/install-on-azure.sh deploy --domain=kathra.my-own-domain.org
+
+During the deploing, you have to registrer add DNS Record on *.kathra.my-own-domain.org targeting on your ingress controller exposed.
+Password are stored on your local desktop. 
+You can connect to dashboard with default login/password (user/123)
+
+For more details :
+> ./terraform/install-on-azure.sh deploy -h
+
+
+#### Destroy on Azure
+
+> ./terraform/install-on-azure.sh destroy
 
 ### For production - On Kubernetes cluster
 

@@ -26,7 +26,18 @@ function change_admin_password() {
     curl -v -X DELETE -u ${NEXUS_USER}:${NEXUS_PWD} ${NEXUS_URL}/service/rest/v1/script/${name}  || return 1 
     return 0
 }
-curl --fail -v $NEXUS_URL
+
+declare retrySecondInterval=5
+declare attemptCounter=0
+declare maxAttempts=100
+while true; do
+    curl --fail $NEXUS_URL > /dev/null 2> /dev/null && break
+    [ $attemptCounter -eq $maxAttempts ] && echo "[ERROR] Wait Nexus is not available" && exit 1
+    attemptCounter=$(($attemptCounter+1))
+    echo "[INFO] Wait Nexus is available $NEXUS_URL, attempt ($attemptCounter/$maxAttempts)"
+    sleep $retrySecondInterval
+done
+
 if [ $? -eq 0 ]
 then
     change_admin_password "$NEXUS_URL" "admin123" "$NEXUS_PWD" || exit 1

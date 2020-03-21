@@ -9,6 +9,7 @@ export debug=0
 export tmp=/tmp/kathra.minikube.wrapper
 [ ! -d $tmp ] && mkdir $tmp
 
+
 ## Default values
 export domain=
 export tlsCert=
@@ -85,6 +86,9 @@ function parseArgs() {
 ###     * Forward TCP 80,443 from host machine to specific Minikube's nodePorts 
 ###
 function main() {
+    ## check OS
+    lsb_release -a 2> /dev/null | grep -E "Ubuntu|Debian" > /dev/null || printErrorAndExit "Only for Ubuntu or Debian Distrib"
+
     printDebug "main()"
     parseArgs $*
 
@@ -118,7 +122,10 @@ function main() {
     
     # Configure CoreDNS
     coreDnsAddRecords $domain  $hostIP
-    
+
+    # Configure default StorageClass
+    configureDefaultStorageClass
+
     # install Tiller
     installTiller
 
@@ -345,6 +352,25 @@ function generateCertsDnsChallenge() {
     return 0
 }
 export -f generateCertsDnsChallenge
+
+function configureDefaultStorageClass() {
+    printInfo "configureDefaultStorageClass"
+cat > $tmp/storageclass.default.yaml <<EOF
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  labels:
+    addonmanager.kubernetes.io/mode: EnsureExists
+  name: default
+provisioner: k8s.io/minikube-hostpath
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+EOF
+
+    kubectl apply -f $tmp/storageclass.default.yaml && printDebug "Default storage class configured"
+
+    return $?
+}
 
 function printErrorAndExit(){
     echo -e "\033[31;1m $* \033[0m" 1>&2 && exit 1

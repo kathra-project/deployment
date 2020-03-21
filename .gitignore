@@ -3,3 +3,7 @@
 .settings
 .classpath
 target
+**/.terraform
+**/terraform.*
+**/.terraform.tfstate.lock.info
+kube_config

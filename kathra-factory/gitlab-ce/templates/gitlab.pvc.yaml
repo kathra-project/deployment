@@ -2,7 +2,7 @@ apiVersion: "v1"
 kind: "PersistentVolumeClaim"
 metadata:
   annotations:
-    volume.beta.kubernetes.io/storage-class: "standard"
+    volume.beta.kubernetes.io/storage-class: "default"
   labels:
     project: "gitlab"
   name: "gitlab-config"
@@ -21,7 +21,7 @@ apiVersion: "v1"
 kind: "PersistentVolumeClaim"
 metadata:
   annotations:
-    volume.beta.kubernetes.io/storage-class: "standard"
+    volume.beta.kubernetes.io/storage-class: "default"
   finalizers: []
   labels:
     project: "gitlab"
@@ -40,7 +40,7 @@ apiVersion: "v1"
 kind: "PersistentVolumeClaim"
 metadata:
   annotations:  
-    volume.beta.kubernetes.io/storage-class: "standard"
+    volume.beta.kubernetes.io/storage-class: "default"
   labels:
     project: "gitlab"
   name: "gitlab-logs"
@@ -59,7 +59,7 @@ apiVersion: "v1"
 kind: "PersistentVolumeClaim"
 metadata:
   annotations:  
-    volume.beta.kubernetes.io/storage-class: "standard"
+    volume.beta.kubernetes.io/storage-class: "default"
   labels:
     project: "gitlab"
   name: "gitlab-backup"
