@@ -18,7 +18,7 @@ export purge=0
 export debug=0
 
 # Helm to wrappe
-export helmVersion=2.15.1
+export helmVersion=2.14.3
 export helmPlateform=linux-amd64
 export helmBin=$tmp/helm-local/$helmPlateform/helm
 export tillerNs=kube-system
@@ -527,6 +527,7 @@ function restartKeycloak() {
     checkCommandAndRetry "curl --output /dev/null --silent --head --fail https://keycloak.${BASE_DOMAIN}"
     [ $? -ne 0 ] && printError "https://keycloak.${BASE_DOMAIN} is not ready" && exit 1
     printDebug "Keycloak is ready"
+    return $?
 }
 export -f restartKeycloak
 
