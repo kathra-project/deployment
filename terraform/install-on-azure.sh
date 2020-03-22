@@ -14,7 +14,10 @@ export terraformVersion="0.12.21"
 export traefikChartVersion="1.85.0"
 export kubeDbVersion="0.8.0"
 export kubernetesVersion="1.14.8"
-export kathraChartVersion="feature/terraform"
+
+export kathraChartVersion="master"
+export kathraImagesTag="stable"
+
 export veleroVersion="1.2.0"
 export veleroBin=$tmp/velero/velero-v$veleroVersion-linux-amd64/ 
 
@@ -36,13 +39,19 @@ function showHelpDeploy() {
     printInfo "Deploy options : "
     printInfo "--domain=<my-domain.xyz>                       :        Full base domain"
     printInfo "--domainLabel=<my-azure-dns-label>             :        Prefix domain using Azure DNS label (eg:my-custom-label.eastus.cloudapp.azure.com)"
+    printInfo ""
+    printInfo "--charts-version=<branch|tag>                  :        Charts version [default: $kathraChartsVersion]"
+    printInfo "--images-tag=<tag>                             :        Images tags [default: $kathraImagesTag]"
+    printInfo ""
     printInfo "--azure-group-name=<group-name>                :        Azure Group Name [default: $azureGroupName]"
     printInfo "--azure-location=<location>                    :        Azure Location [default: $azureLocation]"
     printInfo "--azure-subscribtion-id=<ARM_SUBSCRIPTION_ID>  :        Azure ARM_SUBSCRIPTION_ID [default: $ARM_SUBSCRIPTION_ID]"
     printInfo "--azure-client-id=<ARM_CLIENT_ID>              :        Azure ARM_CLIENT_ID [default: $ARM_CLIENT_ID]"
     printInfo "--azure-client-secret=<ARM_CLIENT_SECRET>      :        Azure ARM_CLIENT_SECRET [default: $ARM_CLIENT_SECRET]"
     printInfo "--azure-tenant-id=<ARM_TENANT_ID>              :        Azure ARM_TENANT_ID [default: $ARM_TENANT_ID]"
+    printInfo ""
     printInfo "--kubernetes-version=<version>                 :        Kubernetes Version [default: $kubernetesVersion]"
+    printInfo ""
     printInfo "--verbose                                      :        Enable DEBUG log level"
 }
 export -f showHelpDeploy
@@ -71,6 +80,8 @@ function parseArgs() {
         case "$key" in
             --domainLabel)                  domainLabel=$value;;
             --domain)                       domain=$value;;
+            --charts-version)               kathraChartsVersion=$value;;
+            --images-tag)                   kathraImagesTag=$value;;
             --azure-group-name)             azureGroupName=$value;;
             --azure-location)               azureLocation=$value;;
             --azure-subscribtion-id)        ARM_SUBSCRIPTION_ID=$value;;
@@ -122,7 +133,7 @@ function deploy() {
     installKubeDB
 
     # Install kathra
-    [ ! "$domain" == "" ] && installKathra "$domain" || installKathra "$DOMAIN_NAME_AZURE"
+    [ ! "$domain" == "" ] && installKathra "$domain" "$kathraChartsVersion" "$kathraImagesTag" || installKathra "$DOMAIN_NAME_AZURE" "$kathraChartsVersion" "$kathraImagesTag"
 
     return $?
 }
@@ -142,12 +153,18 @@ function destroy() {
 export -f destroy
 
 function installKathra() {
-    printDebug "installKathra(domainName: $1)"
+    printDebug "installKathra(domainName: $1, chartsVersion: $2, imagesTag: $3)"
     local domainName=$1
+    local chartsVersion=$2
+    local imagesTag=$2
     kubectl --kubeconfig=$KUBECONFIG  -n kube-system delete pods -l name=tiller
     kubectl --kubeconfig=$KUBECONFIG  -n kube-system delete pods -l k8s-app=metrics-server
-    export TF_VAR_kathra_version="$kathraChartVersion"
-    export TF_VAR_kathra_domain="$domainName"
+
+    export TF_VAR_charts_version="$chartsVersion"
+    export TF_VAR_images_tag="$imagesTag"
+    export TF_VAR_domain="$domainName"
+    export TF_VAR_kube_config_file="$KUBECONFIG"
+
     installTerraformModule $SCRIPT_DIR/terraform_modules/kathra
 }
 

@@ -16,8 +16,11 @@ variable "client_id" {
 variable "client_secret" {
     
 }
-variable "kathra_version" {
-    default = "1.0.0"
+variable "kathra_charts_version" {
+    
+}
+variable "kathra_images_tag" {
+    
 }
 
 module "static_ip" {
@@ -74,8 +77,9 @@ module "cert-manager" {
 
 module "kathra" {
     source  = "../terraform_modules/kathra"
-    kathra_domain = var.domain
-    kathra_version = var.kathra_version
+    domain = var.domain
+    charts_version = var.kathra_charts_version
+    images_tag = var.kathra_images_tag
     kube_config_file = local_file.kube_config.filename
 }
 

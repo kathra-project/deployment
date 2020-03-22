@@ -21,13 +21,18 @@ You can install Kathra on :
 
 For the first installation, you have to make DNS Challenge with Let's Encrypt to generate TLS certificate (eg: For kathra.my-own-domain.org you have to add TXT record for domain _acme-challenge.kathra.my-own-domain.org with TOKEN provided by Let's Encrypt). 
 
-> ./install-minikube.sh --domain=kathra.my-own-domain.org --generateCertsDnsChallenge --cpus=8 --memory=16000 --verbose
+```
+./install-minikube.sh --domain=kathra.my-own-domain.org --generateCertsDnsChallenge --cpus=8 --memory=16000 --verbose
+```
 
 This procedure installs Minikube and configure somes features (Traefik, KubeDB and internal DNS).
 
 #### Step 2. Install Kathra and the software factory
 
-> ./install.sh --domain=kathra.my-own-domain.org --verbose
+
+```
+./install.sh --domain=kathra.my-own-domain.org --verbose
+```
 
 By default, the login is 'user' and password '123'. You can override this configure during installation.
 
@@ -39,29 +44,39 @@ By default, the login is 'user' and password '123'. You can override this config
 
 #### Init credential with env. variable
 
-> export ARM_SUBSCRIPTION_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-
-> export ARM_CLIENT_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-
-> export ARM_CLIENT_SECRET="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-
-> export ARM_TENANT_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+```
+export ARM_SUBSCRIPTION_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+export ARM_CLIENT_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+export ARM_CLIENT_SECRET="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+export ARM_TENANT_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+```
 
 #### Deploy on Azure
 
-> ./terraform/install-on-azure.sh deploy --domain=kathra.my-own-domain.org
 
+```
+./terraform/install-on-azure.sh deploy --domain=kathra.my-own-domain.org
+```
 During the deploing, you have to registrer add DNS Record on *.kathra.my-own-domain.org targeting on your ingress controller exposed.
 Password are stored on your local desktop. 
 You can connect to dashboard with default login/password (user/123)
 
 For more details :
-> ./terraform/install-on-azure.sh deploy -h
+```
+./terraform/install-on-azure.sh deploy -h
+```
 
+Kubernetes config :
+```
+kubectl --kubeconfig=/tmp/kathra.azure.wrapper/kube_config get nodes
+```
 
 #### Destroy on Azure
 
-> ./terraform/install-on-azure.sh destroy
+
+```
+./terraform/install-on-azure.sh destroy
+```
 
 ### For production - On Kubernetes cluster
 
@@ -90,14 +105,20 @@ To install from scratch, you have two ways
 
 ##### Way 1 - Quick install (recommended)
 
-> ./install.sh --domain=kathra.my-own-domain.org --verbose
+```
+./install.sh --domain=kathra.my-own-domain.org --verbose
+```
 
 For more options
-> ./install.sh -h
+```
+./install.sh -h
+```
 
 ##### Way 2 - Interactive mode
 
-> install.sh --interactive --verbose
+```
+install.sh --interactive --verbose
+```
 
 The procedure asks arguments bellow :
  - K8S namespace for factory (Gitlab, Jenkins, Nexus, Harbor)
@@ -414,7 +435,7 @@ Solution: You have to retry later when updates.jenkins.io is avaliable
 
 | Product 	      | Recommended version 	|
 |--------------	|---------------------	|
-| Kubernetes   	| 1.51.1             	|
+| Kubernetes   	| 1.15.1             	|
 | Treafik      	| 1.7.9               	|
 | KubeDb       	| 0.8.0               	|
 | Keycloak     	| 4.2.1               	|
