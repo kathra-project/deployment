@@ -582,7 +582,7 @@ function installKathraFactoryChart() {
     $helmBin --tiller-namespace=$tillerNs delete $helmFactoryKathraName-${name} --purge 2> /dev/null > /dev/null 
 
     $helmBin --tiller-namespace=$tillerNs install --namespace $helmFactoryKathraNS --timeout $helmInstallTimeout --name $helmFactoryKathraName-${name} $tmp/deployment/kathra-factory/${name}/ --wait -f $fileExtraVar.configured.yaml -f $fileExtraVar.extra.yaml 2>&1 > $tmp/log.installKathraFactoryChart.$name
-    [ $? -ne 0 ] && printError "Unable to install ${name} $(cat $tmp/log.installKathraFactoryChart.$name)" && exit 1
+    [ $? -ne 0 ] && printError "Unable to install ${name} $(cat $tmp/log.installKathraFactoryChart.$name), delete the release (helm delete --purge $helmFactoryKathraName-${name}) and retry install" && exit 1
     return 0
 }
 export -f installKathraFactoryChart
