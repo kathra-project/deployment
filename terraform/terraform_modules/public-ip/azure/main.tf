@@ -1,17 +1,8 @@
 variable "group" {
-    default = "kathra"
 }
-
 variable location {
-    default = "East US"
 }
-
-variable domain_name_label {
-    default = null
-}
-
-provider "azurerm" {
-    version = "~>1.5"
+variable domain {
 }
 
 resource "azurerm_public_ip" "public_ip" {
@@ -19,7 +10,21 @@ resource "azurerm_public_ip" "public_ip" {
   location            = var.location
   resource_group_name = var.group
   allocation_method   = "Static"
-  domain_name_label   = var.domain_name_label
+}
+
+
+resource "null_resource" "check_dns_resolution" {
+    provisioner "local-exec" {
+      command = <<EOT
+          echo "Trying to resolv DNS test.$DOMAIN  -> $IP"
+          for attempt in $(seq 1 100); do sleep 5 && nslookup test.$DOMAIN | grep "$IP" && exit 0 || echo "Unable to resolv DNS *.$DOMAIN -> $IP ($attempt/100)"; done
+          exit 1
+    EOT
+      environment = {
+        IP = data.azurerm_public_ip.public_ip.ip_address
+        DOMAIN = var.domain
+      }
+    }
 }
 
 data "azurerm_public_ip" "public_ip" {

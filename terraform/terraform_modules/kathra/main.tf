@@ -7,11 +7,19 @@ variable "domain" {
 }
 variable "kube_config_file" {
 }
+variable "ingress_controller" {
+  default = "traefik"
+}
 
 resource "null_resource" "kathraInstaller" {
   provisioner "local-exec" {
     command = <<EOT
-      export KUBECONFIG=$CONFIG
+      echo "CONFIG:$CONFIG"
+      echo "DOMAIN:$DOMAIN"
+      echo "CHARTS_VERSION:$CHARTS_VERSION"
+      echo "IMAGES_TAG:$IMAGES_TAG"
+      export KUBECONFIG="$(pwd)/$CONFIG"
+
       [ -d /tmp/kathra-deployment-tf ] && rm -rf /tmp/kathra-deployment-tf
       git clone https://gitlab.com/kathra/deployment.git /tmp/kathra-deployment-tf || exit 1
       cd /tmp/kathra-deployment-tf && git checkout $CHARTS_VERSION || exit 1

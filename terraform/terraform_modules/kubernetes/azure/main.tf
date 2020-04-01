@@ -1,39 +1,25 @@
 variable "k8s_client_id" {
-    default = ""
 }
 variable "k8s_client_secret" {
-    default = ""
 }
-
 variable "agent_count" {
     default = 2
 }
-
 variable "ssh_public_key" {
     default = "~/.ssh/id_rsa.pub"
 }
-
 variable "dns_prefix" {
     default = "kathra-k8s"
 }
-
 variable "group" {
-    default = "kathra"
 }
-
 variable cluster_name {
     default = "kathra-k8s"
 }
-
 variable location {
-    default = "East US"
 }
 variable "kubernetes_version" {
-    default = "1.14.8"
-}
-
-provider "azurerm" {
-    version = "~>1.5"
+    default = "1.15.10"
 }
 
 resource "azurerm_kubernetes_cluster" "k8s" {
@@ -54,7 +40,7 @@ resource "azurerm_kubernetes_cluster" "k8s" {
     default_node_pool {
         name            = "agentpool"
         node_count      = var.agent_count
-        vm_size         = "Standard_B4ms"
+        vm_size         = "Standard_DS3_v2"
     }
 
     service_principal {

@@ -5,6 +5,9 @@ variable "version_chart" {
 variable "kube_config_file" {
     default =  ""
 }
+variable "tiller_ns" {
+    default =  "kube-system"
+}
 
 variable "load_balancer_ip" {
     default =  ""
@@ -19,6 +22,7 @@ provider "helm" {
     config_path = var.kube_config_file
   }
   version = "0.10.4"
+  namespace = var.tiller_ns
 }
 
 provider "kubernetes" {
@@ -62,12 +66,21 @@ resource "helm_release" "traefik" {
     value = "true"
   }
   set {
+    name  = "rbac.enabled"
+    value = "true"
+  }
+  set {
     name  = "loadBalancerIP"
     value = var.load_balancer_ip
   }
-
   set {
     name = "service.annotations.\"service\\.beta\\.kubernetes\\.io/azure-load-balancer-resource-group\""
     value = var.group
   }
+}
+output "ingress_controller" {
+  value = "treafik"
+}
+output "namespace" {
+  value = helm_release.traefik.namespace
 }
