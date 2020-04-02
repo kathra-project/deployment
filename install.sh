@@ -8,7 +8,7 @@
 # Kathra version to install
 export KATHRA_CHART_VERSION="master"
 export KATHRA_IMAGE_REGISTRY="registry.hub.docker.com"
-export KATHRA_IMAGE_TAG="1.0.0"
+export KATHRA_IMAGE_TAG="1"
 export DEPLOYMENT_GIT_SSH="https://gitlab.com/kathra/deployment.git"
 export KATHRA_CLI_GIT="https://gitlab.com/kathra/kathra/kathra-cli.git"
 export tmp=/tmp/kathra-install
