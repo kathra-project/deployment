@@ -13,8 +13,6 @@ provider "helm" {
   kubernetes {
     config_path = var.kube_config_file
   }
-  version   = "0.10.4"
-  namespace = var.tiller_ns
 }
 
 provider "kubernetes" {

@@ -14,15 +14,12 @@ export domainLabel=""
 export kathraChartVersion="master"
 export kathraImagesTag="stable"
 
-export veleroVersion="1.2.0"
-export veleroBin=$tmp/velero/velero-v$veleroVersion-linux-amd64/velero
-
 export terraformModules=$SCRIPT_DIR/../terraform_modules
 export gcpStackModule=$SCRIPT_DIR
 
 export gcpProjectName="kathra-project"
-export gcpServiceAccount="kathra-sa"
-export gcpCredentials="/tmp/terraform-gke-keyfile.json"
+export gcpServiceAccount="kathra-sa-test"
+export gcpCredentials="/$HOME/terraform-gke-keyfile.json"
 export gcpRegion="us-central1"
 export gcpZone="us-central1-a"
 
@@ -150,6 +147,7 @@ export -f initTfVars
 
 function configureServiceAccount() {
     #gcloud init
+    [ -f $gcpCredentials ] && return
 
     # enable services
     gcloud services enable compute.googleapis.com && printInfo "Enable service compute.googleapis.com"                              || printErrorAndExit "Unable to enable service compute.googleapis.com "
@@ -159,8 +157,8 @@ function configureServiceAccount() {
 
     # create service acount
     local iamAccount=$gcpServiceAccount@$gcpProjectName.iam.gserviceaccount.com
-    gcloud iam service-accounts list --filter email=$iamAccount > /dev/null || gcloud iam service-accounts create $gcpServiceAccount
-    gcloud iam service-accounts list --filter email=$iamAccount > /dev/null || printErrorAndExit "Unable to create service account $iamAccount"
+    gcloud iam service-accounts list --filter email=$iamAccount | grep $iamAccount || gcloud iam service-accounts create $gcpServiceAccount
+    gcloud iam service-accounts list --filter email=$iamAccount | grep $iamAccount || printErrorAndExit "Unable to create service account $iamAccount"
 
     # create key if not exist
     [ ! -f $gcpCredentials ] && gcloud iam service-accounts keys create $gcpCredentials --iam-account=$iamAccount
@@ -171,7 +169,6 @@ function configureServiceAccount() {
     gcloud projects add-iam-policy-binding $gcpProjectName --member serviceAccount:$iamAccount --role roles/iam.serviceAccountUser          > /dev/null || printErrorAndExit "Unable to add role roles/iam.serviceAccountUser to $iamAccount"
     gcloud projects add-iam-policy-binding $gcpProjectName --member serviceAccount:$iamAccount --role roles/resourcemanager.projectIamAdmin > /dev/null || printErrorAndExit "Unable to add role roles/resourcemanager.projectIamAdmin to $iamAccount"
 
-    gcloud iam service-accounts keys create $gcpCredentials --iam-account=$iamAccount
 }
 export -f configureServiceAccount
 

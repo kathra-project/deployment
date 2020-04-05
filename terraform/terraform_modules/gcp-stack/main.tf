@@ -28,13 +28,13 @@ module "static_ip" {
     source              = "../public-ip/gcp"
     domain              = var.domain
 }
-/*
+
 module "kubedb" {
     source              = "../helm-packages/kubedb"
     kube_config_file    = module.kubernetes.kubeconfig_path
     tiller_ns           = module.kubernetes.tiller_ns
 }
-*/
+
 module "treafik" {
     source              = "../helm-packages/traefik"
     kube_config_file    = module.kubernetes.kubeconfig_path

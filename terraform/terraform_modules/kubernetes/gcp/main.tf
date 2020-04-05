@@ -3,7 +3,7 @@ variable "project_name" {
 variable location {
 }
 variable "node_count" {
-    default = 2
+    default = 4
 }
 variable "kubernetes_version" {
     default = "1.15.10"
