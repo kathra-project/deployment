@@ -2,9 +2,13 @@ variable "k8s_client_id" {
 }
 variable "k8s_client_secret" {
 }
-variable "agent_count" {
+variable "node_count" {
     default = 2
 }
+variable "node_size" {
+    default = "Standard_DS3_v2"
+}
+
 variable "ssh_public_key" {
     default = "~/.ssh/id_rsa.pub"
 }
@@ -14,7 +18,7 @@ variable "dns_prefix" {
 variable "group" {
 }
 variable cluster_name {
-    default = "kathra-k8s"
+    default = "k8s-instance"
 }
 variable location {
 }
@@ -39,8 +43,8 @@ resource "azurerm_kubernetes_cluster" "k8s" {
 
     default_node_pool {
         name            = "agentpool"
-        node_count      = var.agent_count
-        vm_size         = "Standard_DS3_v2"
+        node_count      = var.node_count
+        vm_size         = var.node_size
     }
 
     service_principal {

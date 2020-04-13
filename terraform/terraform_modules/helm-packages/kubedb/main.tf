@@ -2,10 +2,6 @@ variable "version_chart" {
     default = "0.8.0"
 }
 variable "kube_config_file" {
-    default =  ""
-}
-variable "tiller_ns" {
-    default =  "kube-system"
 }
 
 
@@ -17,6 +13,13 @@ provider "helm" {
 
 provider "kubernetes" {
   config_path = var.kube_config_file
+}
+
+
+resource "kubernetes_namespace" "kubedb" {
+  metadata {
+    name = "kubedb"
+  }
 }
 
 data "helm_repository" "stable" {

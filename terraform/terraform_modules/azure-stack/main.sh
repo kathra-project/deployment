@@ -1,5 +1,5 @@
 #/bin/bash
-export SCRIPT_DIR=$(realpath $(dirname `which $0`))
+export SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 export tmp=/tmp/kathra.azure.Wrapper
 export KUBECONFIG=$tmp/kube_config
 [ ! -d $tmp ] && mkdir $tmp
@@ -332,6 +332,15 @@ function findInArgs() {
     return 1
 }
 export -f findInArgs
+
+function installKeycloakProviderPlugin() {
+    local version=1.17.1
+    git clone https://github.com/mrparkers/terraform-provider-keycloak.git /tmp/terraform-provider-keycloak
+    cd /tmp/terraform-provider-keycloak
+    git checkout $version
+    go build -o terraform-provider-keycloak
+    mv terraform-provider-keycloak $SCRIPT_DIR/.terraform/plugins/terraform-provider-keycloak_v$version
+}
 
 main $*
 

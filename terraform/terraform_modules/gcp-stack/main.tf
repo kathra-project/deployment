@@ -29,25 +29,19 @@ module "static_ip" {
     domain              = var.domain
 }
 
-module "kubedb" {
-    source              = "../helm-packages/kubedb"
-    kube_config_file    = module.kubernetes.kubeconfig_path
-    tiller_ns           = module.kubernetes.tiller_ns
+module "kubernetes_addons" {
+    source              = "../kubernetes_addons"
+    kube_config_file    = local_file.kube_config.filename
+    public_ip = module.static_ip.public_ip_address
+    aks_group = azurerm_resource_group.kathra.name
 }
 
-module "treafik" {
-    source              = "../helm-packages/traefik"
-    kube_config_file    = module.kubernetes.kubeconfig_path
-    load_balancer_ip    = module.static_ip.public_ip_address
-    tiller_ns           = module.kubernetes.tiller_ns
-    group               = ""
-}
-
-module "cert-manager" {
-    source              = "../helm-packages/cert-manager"
-    kube_config_file    = module.kubernetes.kubeconfig_path
-    namespace           = module.treafik.namespace
-    tiller_ns           = module.kubernetes.tiller_ns
+module "factory" {
+    source              = "../factory"
+    ingress_class       = module.kubernetes_addons.ingress_controller
+    domain              = var.domain
+    namespace           = "factory"
+    kube_config_file     = local_file.kube_config.filename
 }
 
 output "kubernetes" {

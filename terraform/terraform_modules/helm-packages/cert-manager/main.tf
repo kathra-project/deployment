@@ -2,10 +2,6 @@ variable "version_chart" {
     default = "v0.12.0"
 }
 variable "kube_config_file" {
-    default =  ""
-}
-variable "tiller_ns" {
-    default =  "kube-system"
 }
 variable "namespace" {
     default =  "treafik"
@@ -42,7 +38,7 @@ data "helm_repository" "jetstack" {
 
 resource "null_resource" "preConfigure" {
   provisioner "local-exec" {
-    command = "kubectl --kubeconfig=$CONFIG apply --validate=false -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.12/deploy/manifests/00-crds.yaml --namespace ${var.namespace}"
+    command = "kubectl --kubeconfig=${var.kube_config_file} apply --validate=false -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.12/deploy/manifests/00-crds.yaml --namespace ${var.namespace}"
     environment = {
       CONFIG = var.kube_config_file
     }
@@ -68,8 +64,8 @@ resource "helm_release" "cert_manager" {
 resource "null_resource" "postInstall" {
   provisioner "local-exec" {
     command = <<EOT
-      kubectl --kubeconfig=$CONFIG apply -f $MANIFEST --namespace ${var.namespace} --validate=false --overwrite || exit 1
-      kubectl --kubeconfig=$CONFIG label namespace ${var.namespace} certmanager.k8s.io/disable-validation=true --overwrite || exit 1
+      kubectl --kubeconfig=${var.kube_config_file} apply -f ${local_file.clusterIssuer.filename} --namespace ${var.namespace} --validate=false --overwrite || exit 1
+      kubectl --kubeconfig=${var.kube_config_file} label namespace ${var.namespace} certmanager.k8s.io/disable-validation=true --overwrite || exit 1
    EOT
     environment = {
       CONFIG = var.kube_config_file

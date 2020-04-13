@@ -1,18 +1,12 @@
 variable "version_chart" {
     default = "1.86.1"
 }
-
 variable "kube_config_file" {
-    default =  ""
 }
-variable "tiller_ns" {
-    default =  "kube-system"
-}
-
 variable "load_balancer_ip" {
     default =  ""
 }
-variable "group" {
+variable "aks_group" {
     default =  "kathra"
 }
 
@@ -73,11 +67,11 @@ resource "helm_release" "traefik" {
   }
   set {
     name = "service.annotations.\"service\\.beta\\.kubernetes\\.io/azure-load-balancer-resource-group\""
-    value = var.group
+    value = var.aks_group
   }
 }
 output "ingress_controller" {
-  value = "treafik"
+  value = "traefik"
 }
 output "namespace" {
   value = helm_release.traefik.namespace
