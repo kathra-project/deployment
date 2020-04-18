@@ -15,18 +15,27 @@ export azureStackModule=$SCRIPT_DIR
 
 export azureGroupName="kathra"
 export azureLocation="eastus"
+export azureK8SNodeSize="Standard_DS3_v2"
+export azureK8SNodeCount="3"
 
 export terraformVersion="0.12.21"
+export terraformBin=$tmp/terraform
+
 export traefikChartVersion="1.85.0"
 
 export kubernetesVersion="1.15.10"
 
-export kathraChartVersion="master"
+export kathraChartsVersion="master"
 export kathraImagesTag="stable"
 
 export veleroVersion="1.2.0"
 export veleroBin=$tmp/velero/velero-v$veleroVersion-linux-amd64/velero
 
+export helmVersion=2.14.3
+export helmPlateform=linux-amd64
+export helmBin=$tmp/helm-local/$helmPlateform/helm
+
+export kubectlBin=$tmp/kubectl
 
 function showHelp() {
     findInArgs "deploy" $* > /dev/null && showHelpDeploy $* && exit 0
@@ -56,7 +65,9 @@ function showHelpDeploy() {
     printInfo "--azure-client-secret=<ARM_CLIENT_SECRET>      :        Azure ARM_CLIENT_SECRET [default: $ARM_CLIENT_SECRET]"
     printInfo "--azure-tenant-id=<ARM_TENANT_ID>              :        Azure ARM_TENANT_ID [default: $ARM_TENANT_ID]"
     printInfo ""
-    printInfo "--kubernetes-version=<version>                 :        Kubernetes Version [default: $kubernetesVersion]"
+    printInfo "--kubernetes-version=<version>                 :        Kubernetes version [default: $kubernetesVersion]"
+    printInfo "--kubernetes-node-type=<azure_vm>              :        Kubernetes node type [default: $azureK8SNodeSize]"
+    printInfo "--kubernetes-node-count=<int>                  :        Kubernetes node count [default: $azureK8SNodeCount]"
     printInfo ""
     printInfo "--verbose                                      :        Enable DEBUG log level"
 }
@@ -127,6 +138,8 @@ function initTfVars() {
     echo "k8s_client_id = \"$ARM_CLIENT_ID\"" >> $file
     echo "k8s_client_secret = \"$ARM_CLIENT_SECRET\"" >> $file
     echo "k8s_version = \"$kubernetesVersion\"" >> $file
+    echo "k8s_node_count = \"$azureK8SNodeCount\"" >> $file
+    echo "k8s_node_size = \"$azureK8SNodeSize\"" >> $file
 }
 
 function deploy() {
@@ -134,42 +147,59 @@ function deploy() {
     checkDependencies
 
     # Deploy Kubernetes and configure
-    terraform init || printErrorAndExit "Terraform : Unable to init"
-    terraform apply -auto-approve || printErrorAndExit "Terraform : Unable to apply"
-    terraform output kubeconfig_content > $KUBECONFIG  || printErrorAndExit "Terraform : Unable to get kubeconfig_content"
+    $terraformBin init                                      || printErrorAndExit "$terraformBin : Unable to init"
+    $terraformBin apply -auto-approve                       || printErrorAndExit "$terraformBin : Unable to apply"
+    $terraformBin output kubeconfig_content > $KUBECONFIG   || printErrorAndExit "$terraformBin : Unable to get kubeconfig_content"
 
-    kubectl get nodes || printErrorAndExit "Unable to connect to Kubernetes server"
+    export KUBECONFIG=$KUBECONFIG
+    $kubectlBin get nodes || printErrorAndExit "Unable to connect to Kubernetes server"
+
+    # Install Tiller
+    installTiller || printErrorAndExit "Unable to install Tiller"
 
     # Deploy Kathra
-    export KUBECONFIG=$KUBECONFIG
-    printInfo "Force to restart kubedb and kube-system pods [ aks issues ]"
-    kubectl -n kube-system delete pods --all
-    kubectl -n kubedb delete pods --all
     printInfo "export KUBECONFIG=$KUBECONFIG"
-    printInfo "install.sh --domain=$domain --chart-version=$kathraChartsVersion --kathra-image-tag=$kathraImagesTag --enable-tls-ingress --verbose"
-    $SCRIPT_DIR/../install.sh --domain=$domain --chart-version=$kathraChartsVersion --kathra-image-tag=$kathraImagesTag --enable-tls-ingress --verbose
+    local scriptInstall=$SCRIPT_DIR/../../../install.sh
+    printInfo "Prevent KubeDB issues, restart pods " && $kubectlBin -n kubedb delete pods --all 
+    printInfo "$scriptInstall --domain=$domain --chart-version=$kathraChartsVersion --kathra-image-tag=$kathraImagesTag --enable-tls-ingress --verbose"
+    $scriptInstall --domain=$domain --chart-version=$kathraChartsVersion --kathra-image-tag=$kathraImagesTag --enable-tls-ingress --verbose
     return $?
 }
 export -f deploy
 
+
+function installTiller() {
+    printDebug "installTiller()"
+    $helmBin version && return
+    printInfo "Helm 2 install Tiller"
+    $kubectlBin --namespace kube-system create sa tiller
+    $kubectlBin create    clusterrolebinding tiller \
+                    --clusterrole cluster-admin \
+                    --serviceaccount=kube-system:tiller
+    $helmBin init --service-account tiller --upgrade
+    $helmBin version
+    while [ $? -ne 0 ]; do printInfo "Check Helm tiller" && $helmBin version; done
+    $helmBin version && printInfo "Tiller installed" || return 1
+}
+export -f installTiller
+
 function destroy() {
     printDebug "destroy()"
     checkDependencies
-    terraform init 
-    terraform destroy
+    $terraformBin init 
+    $terraformBin destroy
     return $?
 }
 export -f destroy
 
-
 function checkDependencies() {
     printDebug "checkDependencies()"
-    which curl > /dev/null || sudo apt-get install curl -y > /dev/null 2> /dev/null 
-    which jq >  /dev/null || sudo apt-get install jq -y > /dev/null 2> /dev/null 
-    which unzip > /dev/null || sudo apt-get install unzip -y > /dev/null 2> /dev/null 
-    which az > /dev/null || installAzureCli
-    which kubectl > /dev/null || installKubectl
-    which terraform > /dev/null || installTerraform
+    which curl > /dev/null          || sudo apt-get install curl -y > /dev/null 2> /dev/null 
+    which jq >  /dev/null           || sudo apt-get install jq -y > /dev/null 2> /dev/null 
+    which unzip > /dev/null         || sudo apt-get install unzip -y > /dev/null 2> /dev/null 
+    which az > /dev/null            || installAzureCli
+    installKubectl
+    which $terraformBin > /dev/null     || installTerraform
 }
 export -f checkDependencies
 
@@ -188,23 +218,36 @@ function installAzureCli() {
 }
 export -f installAzureCli
 
+###
+### Download helm wrapper
+###
+function installHelm() {
+    [ -f $helmBin ] && return
+    local uriHelm="https://storage.googleapis.com/kubernetes-helm/helm-v${helmVersion}-${helmPlateform}.tar.gz"
+    curl ${uriHelm} > $tmp/helm-local.tar.gz 2> /dev/null
+    [ $? -ne 0 ] && printError "Unable to get ${uriHelm}" && exit 1
+    [ ! -d  $tmp/helm-local/ ] && mkdir $tmp/helm-local/ 
+    tar xvzf $tmp/helm-local.tar.gz -C $tmp/helm-local/ 2>&1 > /dev/null && chmod +x $tmp/helm-local/$helmPlateform/*
+    return $?
+}
+export -f installHelm
+
 function installKubectl() {
     printDebug "installKubectl()"
-    which kubectl > /dev/null 2> /dev/null && return 0
-    sudo curl -L -o $tmp/kubectl https://storage.googleapis.com/kubernetes-release/release/v$kubernetesVersion/bin/linux/amd64/kubectl 
-    sudo chmod +x $tmp/kubectl 
-    sudo mv $tmp/kubectl /usr/local/bin/kubectl
+    [ -f $kubectlBin ] && return 0
+    sudo curl -L -o $kubectlBin https://storage.googleapis.com/kubernetes-release/release/v$kubernetesVersion/bin/linux/amd64/kubectl 
+    sudo chmod +x $kubectlBin 
 }
 export -f installKubectl
  
 function installTerraform() {
     printDebug "installTerraform()"
-    which terraform > /dev/null 2> /dev/null && return 0
-    sudo apt-get install unzip
-    [ -f /tmp/terraform.zip ] && rm -f /tmp/terraform.zip
-    curl https://releases.hashicorp.com/terraform/${terraformVersion}/terraform_${terraformVersion}_linux_amd64.zip > /tmp/terraform.zip
-    unzip /tmp/terraform.zip
-    sudo mv terraform /usr/local/bin/terraform
+    [ -f $terraformBin ] && return
+    which unzip > /dev/null || sudo apt-get install unzip
+    [ -f $tmp/terraform.zip ] && rm -f $tmpterraform.zip
+    curl https://releases.hashicorp.com/terraform/${terraformVersion}/terraform_${terraformVersion}_linux_amd64.zip > $tmp/terraform.zip
+    unzip -o terraform.zip -d $tmp
+    chmod +x $terraformBin
 }
 export -f installTerraform
 
@@ -213,7 +256,7 @@ function installTerraformModule() {
     local dir=$1
     local attemptMax=1
     cd $dir
-    terraform init && terraform apply -auto-approve
+    $terraformBin init && terraform apply -auto-approve
 }
 export -f installTerraformModule
 

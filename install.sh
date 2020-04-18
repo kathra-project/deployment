@@ -12,6 +12,7 @@ export KATHRA_IMAGE_TAG="1"
 export DEPLOYMENT_GIT_SSH="https://gitlab.com/kathra/deployment.git"
 export KATHRA_CLI_GIT="https://gitlab.com/kathra/kathra/kathra-cli.git"
 export tmp=/tmp/kathra-install
+export tmpbin=/tmp/kathra-install-bin
 export LOCAL_CONF_FILE=$HOME/.kathra_pwd
 export LOCAL_CONF_FILE_KATHRA_CLI=$HOME/.kathra-context
 export purge=0
@@ -20,9 +21,14 @@ export debug=0
 # Helm to wrappe
 export helmVersion=2.14.3
 export helmPlateform=linux-amd64
-export helmBin=$tmp/helm-local/$helmPlateform/helm
+export helm2Bin=$tmpbin/helm2-local/$helmPlateform/helm
 export tillerNs=kube-system
 export helmInstallTimeout=900
+
+# Helm3 to wrappe
+export helm3Version=3.1.2
+export helm3Bin=$tmpbin/helm3-local/$helmPlateform/helm
+
 
 # KubeDB to Install
 export kubeDbVersion=0.8.0
@@ -173,6 +179,7 @@ function main() {
     printInfo "KATHRA INSTALLER (VERSION : $KATHRA_CHART_VERSION)"
     parseArgs $@
     local start=`date +%s`
+    [ ! -d $tmpbin ] && mkdir $tmpbin
     # Purge temp
     [ -d $tmp ] && rm -Rf $tmp
     mkdir $tmp
@@ -212,8 +219,10 @@ function main() {
     fi
     [ "$BASE_DOMAIN" == "" ] && printError "Base domain is undefined" && exit 1
 
-    progressBar "0" "Download Helm v${helmVersion}-${helmPlateform} ..." && installHelm && printInfo "OK"
-    progressBar "5" "Check Helm Tiller..." && checkTillerHelm && printInfo "OK"
+    progressBar "0" "Download Helm2 v${helmVersion}-${helmPlateform} ..."    && installHelm2 && printInfo "OK"
+    progressBar "3" "Download Helm3 v${helm3Version}-${helmPlateform} ..."   && installHelm3 && printInfo "OK"
+
+    progressBar "5" "Check Helm2 Tiller..." && checkTillerHelm && printInfo "OK"
     progressBar "10" "Check KubeDB..." && installKubeDBifNotPresent && printInfo "OK"
     progressBar "15" "Check Treafik..." && checkTreafikInstall && printInfo "OK"
     progressBar "20" "Clone Charts from version ${KATHRA_CHART_VERSION}..." && cloneCharts && printInfo "OK"
@@ -239,6 +248,15 @@ EOF
 
     printInfo "Kathra is installed in $((`date +%s`-start)) secondes"
     printInfo "You can use Kathra from dashboard : https://dashboard.${BASE_DOMAIN} or from kathra-cli: $KATHRA_CLI_GIT"
+    printInfo "Login     : $USER_LOGIN"
+    printInfo "Password  : $USER_PASSWORD"
+    printInfo ""
+    printInfo "Gitlab   : https://gitlab.${BASE_DOMAIN}"
+    printInfo "Jenkins  : https://jenkins.${BASE_DOMAIN}"
+    printInfo "Nexus    : https://nexus.${BASE_DOMAIN}"
+    printInfo "Harbor   : https://harbor.${BASE_DOMAIN}"
+    printInfo "Keycloak : https://keycloak.${BASE_DOMAIN}"
+    printInfo ""
     printInfo "Yours passwords are stored here : $LOCAL_CONF_FILE" 
     return 0
 }
@@ -325,25 +343,43 @@ export -f printDebug
 ###
 ### Download helm wrapper
 ###
-function installHelm() {
+function installHelm2() {
+    [ -f $helm2Bin ] && return 0
+    printDebug "$helm2Bin"
     local uriHelm="https://storage.googleapis.com/kubernetes-helm/helm-v${helmVersion}-${helmPlateform}.tar.gz"
-    curl ${uriHelm} > $tmp/helm-local.tar.gz 2> /dev/null
+    curl ${uriHelm} > $tmpbin/helm2-local.tar.gz 2> /dev/null
     [ $? -ne 0 ] && printError "Unable to get ${uriHelm}" && exit 1
-    mkdir $tmp/helm-local/ && tar xvzf $tmp/helm-local.tar.gz -C $tmp/helm-local/ 2>&1 > /dev/null && chmod +x $tmp/helm-local/$helmPlateform/*
+    [ ! -d $tmpbin/helm2-local/ ] && mkdir $tmpbin/helm2-local/
+    tar xvzf $tmpbin/helm2-local.tar.gz -C $tmpbin/helm2-local/ 2>&1 > /dev/null && chmod +x $tmpbin/helm2-local/$helmPlateform/*
     return $?
 }
-export -f installHelm
+export -f installHelm2
+
 ###
-### Check if Tiller Helm is installed
+### Download helm3 wrapper
+###
+function installHelm3() {
+    [ -f $helm3Bin ] && return
+    local uriHelm="https://get.helm.sh/helm-v${helm3Version}-${helmPlateform}.tar.gz"
+    curl ${uriHelm} > $tmpbin/helm3-local.tar.gz 2> /dev/null
+    [ $? -ne 0 ] && printError "Unable to get ${uriHelm}" && exit 1
+    [ ! -d $tmpbin/helm3-local/ ] && mkdir $tmpbin/helm3-local/
+    tar xvzf $tmpbin/helm3-local.tar.gz -C $tmpbin/helm3-local/ 2>&1 > /dev/null && chmod +x $tmpbin/helm3-local/$helmPlateform/*
+    return $?
+}
+export -f installHelm3
+
+###
+### Check if Tiller Helm 2 is installed
 ###
 function checkTillerHelm() {
-    $helmBin version --tiller-namespace=$tillerNs > /dev/null && printInfo "Tiller existing into namespace $tillerNs" && return 0
+    $helm2Bin version --tiller-namespace=$tillerNs > /dev/null && printInfo "Tiller existing into namespace $tillerNs" && return 0
     echo ""
     while true; do
         read -p "$(printInfo Tiller namespace [default:$tillerNs] ?)" tillerNsDefined
         [ ! "$tillerNsDefined" == "" ] && tillerNs=$tillerNsDefined
-        $helmBin version --tiller-namespace=$tillerNs > /dev/null && printInfo "Tiller existing into namespace $tillerNs" && return
-        [ $? -ne 0 ] && printError "Unable to find tiller into namespace $tillerNs, please install helm's tiller before ($helmBin init)" && exit 1
+        $helm2Bin version --tiller-namespace=$tillerNs > /dev/null && printInfo "Tiller existing into namespace $tillerNs" && return
+        [ $? -ne 0 ] && printError "Unable to find tiller into namespace $tillerNs, please install helm's tiller before ($helm2Bin init)" && exit 1
     done
 }
 ###
@@ -358,7 +394,8 @@ export -f installJq
 ### Install kubeDb
 ###
 function installKubeDBifNotPresent() {
-    [ $($helmBin --tiller-namespace=$tillerNs ls --output json | jq -c '.Releases[] | select((.Name=="kubedb-operator") and (.Chart|test("kubedb-.")))' | wc -l) -gt 0 ] && return
+    [ $($helm2Bin --tiller-namespace=$tillerNs ls --output json | jq -c '.Releases[] | select((.Name=="kubedb-operator") and (.Chart|test("kubedb-.")))' | wc -l) -gt 0 ] && return
+    [ $($helm3Bin -n kubedb ls --output json | jq -c '.[] | select((.name=="kubedb-operator") and (.chart|test("kubedb-.")))' | wc -l) -gt 0 ] && return
     #printInfo "KubeDB ${kubeDbVersion} is missing. Installing.." && curl -fsSL https://raw.githubusercontent.com/kubedb/cli/${kubeDbVersion}/hack/deploy/kubedb.sh 2> $tmp/log.installKubeDBifNotPresent | bash 2>&1 >> $tmp/log.installKubeDBifNotPresent
     [ $? -ne 0 ] && printError "Unable to install KubeDB ${kubeDbVersion} : $(cat $tmp/log.installKubeDBifNotPresent)" && exit 1
 }
@@ -367,7 +404,8 @@ function installKubeDBifNotPresent() {
 ###
 function checkTreafikInstall() {
     [ $(kubectl get --all-namespaces deployments -o json | jq -c '.items[] | select((.metadata.name=="traefik-ingress-controller-http") or (.metadata.name=="traefik"))' | wc -l) -gt 0 ] && return
-    printError "Treafik is missing. Please install.. ($helmBin install stable/traefik) and configure it DNS and SSL Challenge with your DNS provider and Let's Encrypt."
+    [ $($helm3Bin -n traefik ls --output json | jq -c '.[] | select(.name=="traefik")' | wc -l) -gt 0 ] && return
+    printError "Treafik is missing. Please install.. ($helm2Bin install stable/traefik) and configure it DNS and SSL Challenge with your DNS provider and Let's Encrypt."
     exit 1
 }
 export -f checkTreafikInstall
@@ -564,7 +602,7 @@ EOF
 export -f installKathraFactoryHarbor
 
 function checkChartDeployed() {
-    [ $($helmBin --tiller-namespace=$tillerNs --namespace $1 list -c $2 --output json 2> /dev/null  | jq -c '.Releases[] | select(.Status=="DEPLOYED")' | wc -l) -ne 0 ] && return 0 || return 1
+    [ $($helm2Bin --tiller-namespace=$tillerNs --namespace $1 list -c $2 --output json 2> /dev/null  | jq -c '.Releases[] | select(.Status=="DEPLOYED")' | wc -l) -ne 0 ] && return 0 || return 1
 }
 export -f checkChartDeployed
 
@@ -579,9 +617,9 @@ function installKathraFactoryChart() {
     [ -f $fileExtraVar ] && overrideEnvVar $fileExtraVar $fileExtraVar.configured.yaml || touch $fileExtraVar.configured.yaml
     [ "$overrideFile" != "" ] && mv $overrideFile $fileExtraVar.extra.yaml || touch $fileExtraVar.extra.yaml
 
-    $helmBin --tiller-namespace=$tillerNs delete $helmFactoryKathraName-${name} --purge 2> /dev/null > /dev/null 
+    $helm2Bin --tiller-namespace=$tillerNs delete $helmFactoryKathraName-${name} --purge 2> /dev/null > /dev/null 
 
-    $helmBin --tiller-namespace=$tillerNs install --namespace $helmFactoryKathraNS --timeout $helmInstallTimeout --name $helmFactoryKathraName-${name} $tmp/deployment/kathra-factory/${name}/ --wait -f $fileExtraVar.configured.yaml -f $fileExtraVar.extra.yaml 2>&1 > $tmp/log.installKathraFactoryChart.$name
+    $helm2Bin --tiller-namespace=$tillerNs install --namespace $helmFactoryKathraNS --timeout $helmInstallTimeout --name $helmFactoryKathraName-${name} $tmp/deployment/kathra-factory/${name}/ --wait -f $fileExtraVar.configured.yaml -f $fileExtraVar.extra.yaml 2>&1 > $tmp/log.installKathraFactoryChart.$name
     [ $? -ne 0 ] && printError "Unable to install ${name} $(cat $tmp/log.installKathraFactoryChart.$name), delete the release (helm delete --purge $helmFactoryKathraName-${name}) and retry install" && exit 1
     return 0
 }
@@ -636,8 +674,8 @@ EOF
 
     overrideEnvVar $tmp/deployment/kathra-services/extra-vars-wrapper.yaml $tmp/deployment/kathra-services/extra-vars-wrapper-configured.yaml
 
-    $helmBin --tiller-namespace=$tillerNs delete $helmAppKathraName --purge 2> /dev/null > /dev/null
-    $helmBin --tiller-namespace=$tillerNs install --timeout $helmInstallTimeout --namespace $helmAppKathraNS --name $helmAppKathraName -f $tmp/deployment/kathra-services/extra-vars-wrapper-configured.yaml -f $tmp/installKathraService.extra.conf $tmp/deployment/kathra-services/ 2>&1 > $tmp/log.installKathraService.$name
+    $helm2Bin --tiller-namespace=$tillerNs delete $helmAppKathraName --purge 2> /dev/null > /dev/null
+    $helm2Bin --tiller-namespace=$tillerNs install --timeout $helmInstallTimeout --namespace $helmAppKathraNS --name $helmAppKathraName -f $tmp/deployment/kathra-services/extra-vars-wrapper-configured.yaml -f $tmp/installKathraService.extra.conf $tmp/deployment/kathra-services/ 2>&1 > $tmp/log.installKathraService.$name
     [ $? -ne 0 ] && printError "Unable to install Kathra Services $(cat $tmp/log.installKathraService.$name)" && exit 1
     waitUntilJobSyncIsSucceeded || exit 1
     return 0

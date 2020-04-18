@@ -2,26 +2,17 @@ variable "version_chart" {
     default = "0.8.0"
 }
 variable "kube_config_file" {
-    default =  ""
 }
-variable "tiller_ns" {
-    default =  "kube-system"
+variable "namespace" {
 }
-
-
 provider "helm" {
   kubernetes {
     config_path = var.kube_config_file
   }
 }
-
-provider "kubernetes" {
-  config_path = var.kube_config_file
-}
-
-data "helm_repository" "stable" {
+data "helm_repository" "appscode" {
   name = "appscode"
-  url  = "https://charts.appscode.com/stable/"
+  url  = "https://charts.appscode.com/stable"
 }
 
 data "external" "apiserver_ca" {
@@ -30,10 +21,10 @@ data "external" "apiserver_ca" {
 
 resource "helm_release" "kubedb" {
   name       = "kubedb-operator"
-  repository = data.helm_repository.stable.metadata[0].name
+  repository = data.helm_repository.appscode.metadata[0].name
   chart      = "appscode/kubedb"
   version    = var.version_chart
-  namespace  = "kubedb"
+  namespace  = var.namespace
 
   set {
     name  = "apiserver.enableValidatingWebhook"

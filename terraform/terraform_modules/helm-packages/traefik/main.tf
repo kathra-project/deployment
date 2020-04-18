@@ -3,19 +3,16 @@ variable "version_chart" {
 }
 
 variable "kube_config_file" {
-    default =  ""
 }
-variable "tiller_ns" {
-    default =  "kube-system"
+variable "namespace" {
 }
 
 variable "load_balancer_ip" {
     default =  ""
 }
-variable "group" {
+variable "load_balancer_azure_group" {
     default =  "kathra"
 }
-
 
 provider "helm" {
   kubernetes {
@@ -23,29 +20,17 @@ provider "helm" {
   }
 }
 
-provider "kubernetes" {
-  config_path = var.kube_config_file
-}
-
-
 data "helm_repository" "stable" {
   name = "stable"
   url  = "https://kubernetes-charts.storage.googleapis.com"
 }
-
-resource "kubernetes_namespace" "traefik" {
-  metadata {
-    name = "traefik"
-  }
-}
-
 
 resource "helm_release" "traefik" {
   name       = "traefik"
   repository = data.helm_repository.stable.metadata[0].name
   chart      = "traefik"
   version    = var.version_chart
-  namespace  = "traefik"
+  namespace  = var.namespace
 
   set {
     name  = "kubernetes.ingressClass"
@@ -73,7 +58,7 @@ resource "helm_release" "traefik" {
   }
   set {
     name = "service.annotations.\"service\\.beta\\.kubernetes\\.io/azure-load-balancer-resource-group\""
-    value = var.group
+    value = var.load_balancer_azure_group
   }
 }
 output "ingress_controller" {

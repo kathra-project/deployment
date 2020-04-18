@@ -8,6 +8,15 @@ variable "zone" {
 }
 variable "domain" {
 }
+variable "k8s_version" {
+    default = "1.15.10"
+}
+variable "k8s_node_count" {
+    default = 4
+}
+variable "k8s_node_type" {
+    default = "n1-standard-4"
+}
 
 
 provider "google" {
@@ -15,44 +24,38 @@ provider "google" {
     credentials = file(var.gcp_crendetials)
     project     = var.project_name
     region      = var.region
-    zone        =  var.zone
+    zone        = var.zone
 }
 
 module "kubernetes" {
     source              = "../kubernetes/gcp"
     project_name        = var.project_name
     location            = var.region
+    kubernetes_version  = var.k8s_version
+    node_count          = var.k8s_node_count
+    node_type           = var.k8s_node_type
 }
+
 
 module "static_ip" {
     source              = "../public-ip/gcp"
     domain              = var.domain
 }
 
-module "kubedb" {
-    source              = "../helm-packages/kubedb"
-    kube_config_file    = module.kubernetes.kubeconfig_path
-    tiller_ns           = module.kubernetes.tiller_ns
+resource "local_file" "kube_config" {
+    content             = module.kubernetes.kubeconfig_content
+    filename            = "kube_config"
 }
 
-module "treafik" {
-    source              = "../helm-packages/traefik"
-    kube_config_file    = module.kubernetes.kubeconfig_path
-    load_balancer_ip    = module.static_ip.public_ip_address
-    tiller_ns           = module.kubernetes.tiller_ns
-    group               = ""
+module "kubernetes_addons" {
+    source              = "../kubernetes/addons"
+    kube_config_file    = local_file.kube_config.filename
+    static_ip           = module.static_ip.public_ip_address
 }
 
-module "cert-manager" {
-    source              = "../helm-packages/cert-manager"
-    kube_config_file    = module.kubernetes.kubeconfig_path
-    namespace           = module.treafik.namespace
-    tiller_ns           = module.kubernetes.tiller_ns
-}
-
-output "kubernetes" {
-    value = module.kubernetes
+output "kubeconfig_content" {
+    value = module.kubernetes.kubeconfig_content
 }
 output "kubeconfig_path" {
-    value = module.kubernetes.kubeconfig_path
+    value = local_file.kube_config.filename
 }

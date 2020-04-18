@@ -2,13 +2,8 @@ variable "version_chart" {
     default = "v0.12.0"
 }
 variable "kube_config_file" {
-    default =  ""
-}
-variable "tiller_ns" {
-    default =  "kube-system"
 }
 variable "namespace" {
-    default =  "treafik"
 }
 variable "issuer_name_default" {
     default =  "letsencrypt-prod"
@@ -26,7 +21,7 @@ data "template_file" "clusterIssuer" {
 }
 resource "local_file" "clusterIssuer" {
     content     = data.template_file.clusterIssuer.rendered
-    filename = "${path.module}/clusterIssuer.yaml"
+    filename = "/tmp/clusterIssuer.yaml"
 }
 
 provider "helm" {

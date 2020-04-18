@@ -5,8 +5,10 @@ variable location {
 variable "node_count" {
     default = 4
 }
+variable "node_type" {
+    default = 4
+}
 variable "kubernetes_version" {
-    default = "1.15.10"
 }
 
 resource "random_id" "username" {
@@ -30,7 +32,7 @@ resource "google_container_cluster" "kubernetes" {
     }
 
     node_config {
-        machine_type = "n1-standard-4"
+        machine_type = var.node_type
 
         oauth_scopes = [
             "https://www.googleapis.com/auth/compute",
@@ -83,9 +85,9 @@ provider "kubernetes" {
 
 
 /*********************
-    HELM INIT
+    HELM INIT TILLER
 ************************/
-
+/*
 provider "helm" {
     install_tiller  = true
     version         = "0.10.4"
@@ -126,10 +128,10 @@ resource "kubernetes_cluster_role_binding" "tiller" {
         namespace = "kube-system"
     }
 }
-
 output "tiller_ns" {
     value = kubernetes_service_account.tiller.metadata.0.namespace
 }
+*/
 output "kubeconfig_path" {
     value = local_file.kubeconfig.filename
 }

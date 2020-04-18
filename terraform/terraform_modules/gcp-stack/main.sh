@@ -1,7 +1,7 @@
 
 #/bin/bash
 export SCRIPT_DIR=$(realpath $(dirname `which $0`))
-export tmp=/tmp/kathra.azure.Wrapper
+export tmp=/tmp/kathra.gcp.Wrapper
 export KUBECONFIG=$tmp/kube_config
 [ ! -d $tmp ] && mkdir $tmp
 
@@ -11,7 +11,7 @@ export debug=1
 export domain=""
 export domainLabel=""
 
-export kathraChartVersion="master"
+export kathraChartsVersion="master"
 export kathraImagesTag="stable"
 
 export terraformModules=$SCRIPT_DIR/../terraform_modules
@@ -22,6 +22,14 @@ export gcpServiceAccount="kathra-sa-test"
 export gcpCredentials="/$HOME/terraform-gke-keyfile.json"
 export gcpRegion="us-central1"
 export gcpZone="us-central1-a"
+
+export kubernetesVersion="1.15.10"
+
+export helmVersion=2.14.3
+export helmPlateform=linux-amd64
+export helmBin=$tmp/helm-local/$helmPlateform/helm
+
+export kubectlBin=$tmp/kubectl
 
 function showHelp() {
     findInArgs "deploy" $* > /dev/null && showHelpDeploy $* && exit 0
@@ -95,7 +103,8 @@ function main() {
 function checkDependencies() {
     printDebug "checkDependencies()"
     which gcloud > /dev/null || installGoogleCloudSDK
-    which kubectl > /dev/null || installKubectl
+    installKubectl
+    installHelm
     which terraform > /dev/null || installTerraform
 }
 
@@ -110,17 +119,54 @@ function deploy() {
     # Deploy Kubernetes and configure
     terraform init || printErrorAndExit "Terraform : Unable to init"
     terraform apply -auto-approve || printErrorAndExit "Terraform : Unable to apply"
-    terraform output kubeconfig_content > $KUBECONFIG  || printErrorAndExit "Terraform : Unable to get kubeconfig_content"
 
-    kubectl get nodes || printErrorAndExit "Unable to connect to Kubernetes server"
+    export KUBECONFIG=$KUBECONFIG
+    terraform output kubeconfig_content > $KUBECONFIG  || printErrorAndExit "Terraform : Unable to get kubeconfig_content"
+    $kubectlBin get nodes || printErrorAndExit "Unable to connect to Kubernetes server"
+
+    # Install Tiller
+    installTiller || printErrorAndExit "Unable to install Tiller"
 
     # Deploy Kathra
-    export KUBECONFIG=$KUBECONFIG
     printInfo "export KUBECONFIG=$KUBECONFIG"
-    printInfo "install.sh --domain=$domain --chart-version=$kathraChartsVersion --kathra-image-tag=$kathraImagesTag --enable-tls-ingress --verbose"
-    $SCRIPT_DIR/../install.sh --domain=$domain --chart-version=$kathraChartsVersion --kathra-image-tag=$kathraImagesTag --enable-tls-ingress --verbose
+    local scriptInstall=$SCRIPT_DIR/../../../install.sh
+    printInfo "Prevent KubeDB issues, restart pods " && $kubectlBin -n kubedb delete pods --all 
+    printInfo "$scriptInstall --domain=$domain --chart-version=$kathraChartsVersion --kathra-image-tag=$kathraImagesTag --enable-tls-ingress --verbose"
+    $scriptInstall --domain=$domain --chart-version=$kathraChartsVersion --kathra-image-tag=$kathraImagesTag --enable-tls-ingress --verbose
+    return $?
 }
 export -f deploy
+
+###
+### Download helm wrapper
+###
+function installHelm() {
+    [ -f $helmBin ] && return
+    local uriHelm="https://storage.googleapis.com/kubernetes-helm/helm-v${helmVersion}-${helmPlateform}.tar.gz"
+    curl ${uriHelm} > $tmp/helm-local.tar.gz 2> /dev/null
+    [ $? -ne 0 ] && printError "Unable to get ${uriHelm}" && exit 1
+    [ ! -d  $tmp/helm-local/ ] && mkdir $tmp/helm-local/ 
+    tar xvzf $tmp/helm-local.tar.gz -C $tmp/helm-local/ 2>&1 > /dev/null && chmod +x $tmp/helm-local/$helmPlateform/*
+    return $?
+}
+export -f installHelm
+
+function installTiller() {
+    printDebug "installTiller()"
+    installHelm   || printErrorAndExit "Unable to install Helm"
+    $helmBin version && return
+    printInfo "Helm 2 install Tiller"
+    $kubectlBin --namespace kube-system create sa tiller
+    $kubectlBin create    clusterrolebinding tiller \
+                    --clusterrole cluster-admin \
+                    --serviceaccount=kube-system:tiller
+    $helmBin init --service-account tiller --upgrade
+    $helmBin version
+    while [ $? -ne 0 ]; do printInfo "Check Helm tiller" && $helmBin version; done
+    $helmBin version && printInfo "Tiller installed" || return 1
+    
+}
+export -f installTiller
 
 function destroy() {
     checkDependencies
@@ -142,6 +188,7 @@ function initTfVars() {
     echo "zone = \"$gcpZone\"" >> $file
     echo "domain = \"$domain\"" >> $file
     echo "gcp_crendetials = \"$gcpCredentials\"" >> $file
+    echo "k8s_version = \"$kubernetesVersion\"" >> $file
 }
 export -f initTfVars
 
@@ -184,21 +231,19 @@ export -f installGoogleCloudSDK
 
 function installKubectl() {
     printDebug "installKubectl()"
-    which kubectl > /dev/null 2> /dev/null && return 0
-    sudo curl -L -o $tmp/kubectl https://storage.googleapis.com/kubernetes-release/release/v$kubernetesVersion/bin/linux/amd64/kubectl 
-    sudo chmod +x $tmp/kubectl 
-    sudo mv $tmp/kubectl /usr/local/bin/kubectl
+    [ -f $kubectlBin ] && return 0
+    sudo curl -L -o $kubectlBin https://storage.googleapis.com/kubernetes-release/release/v$kubernetesVersion/bin/linux/amd64/kubectl 
+    sudo chmod +x $kubectlBin
 }
 export -f installKubectl
  
 function installTerraform() {
     printDebug "installTerraform()"
-    which terraform > /dev/null 2> /dev/null && return 0
-    sudo apt-get install unzip
-    [ -f /tmp/terraform.zip ] && rm -f /tmp/terraform.zip
-    curl https://releases.hashicorp.com/terraform/${terraformVersion}/terraform_${terraformVersion}_linux_amd64.zip > /tmp/terraform.zip
-    unzip /tmp/terraform.zip
-    sudo mv terraform /usr/local/bin/terraform
+    [ -f $terraformBin ] && return
+    which unzip > /dev/null || sudo apt-get install unzip
+    [ -f $tmp/terraform.zip ] && rm -f $tmpterraform.zip
+    curl https://releases.hashicorp.com/terraform/${terraformVersion}/terraform_${terraformVersion}_linux_amd64.zip > $tmp/terraform.zip
+    unzip $tmp/terraform.zip
 }
 export -f installTerraform
 
