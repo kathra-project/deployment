@@ -1,0 +1,4 @@
+configuration:
+  persistence:
+    PVC_STORAGE_SIZE: 5Gi
+    resourcePolicy: none

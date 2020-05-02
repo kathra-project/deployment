@@ -43,27 +43,6 @@ resource "google_container_cluster" "kubernetes" {
     }
 }
 
-data "template_file" "kubeconfig" {
-  template = file("${path.module}/kubeconfig-template.yaml")
-
-  vars = {
-    cluster_name    = google_container_cluster.kubernetes.name
-    user_name       = google_container_cluster.kubernetes.master_auth[0].username
-    user_password   = google_container_cluster.kubernetes.master_auth[0].password
-    endpoint        = google_container_cluster.kubernetes.endpoint
-    cluster_ca      = google_container_cluster.kubernetes.master_auth[0].cluster_ca_certificate
-    client_cert     = google_container_cluster.kubernetes.master_auth[0].client_certificate
-    client_cert_key = google_container_cluster.kubernetes.master_auth[0].client_key
-  }
-}
-
-
-
-
-resource "local_file" "kubeconfig" {
-    content  = data.template_file.kubeconfig.rendered
-    filename = "${path.module}/kubeconfig"
-}
 
 resource "kubernetes_storage_class" "default" {
     metadata {
@@ -77,7 +56,11 @@ resource "kubernetes_storage_class" "default" {
 }
 
 provider "kubernetes" {
-    config_path = local_file.kubeconfig.filename
+    load_config_file       = "false"
+    host                   = google_container_cluster.kubernetes.endpoint
+    client_certificate     = base64decode(google_container_cluster.kubernetes.master_auth[0].client_certificate)
+    client_key             = base64decode(google_container_cluster.kubernetes.master_auth[0].client_key)
+    cluster_ca_certificate = base64decode(google_container_cluster.kubernetes.master_auth[0].cluster_ca_certificate)
 }
 
 
@@ -92,7 +75,11 @@ provider "helm" {
     service_account = kubernetes_service_account.tiller.metadata.0.name
     namespace       = kubernetes_service_account.tiller.metadata.0.namespace
     kubernetes {
-        config_path = local_file.kubeconfig.filename
+        load_config_file       = "false"
+        host                   = google_container_cluster.kubernetes.endpoint
+        client_certificate     = base64decode(google_container_cluster.kubernetes.master_auth[0].client_certificate)
+        client_key             = base64decode(google_container_cluster.kubernetes.master_auth[0].client_key)
+        cluster_ca_certificate = base64decode(google_container_cluster.kubernetes.master_auth[0].cluster_ca_certificate)
     }
 }
 
@@ -130,11 +117,15 @@ resource "kubernetes_cluster_role_binding" "tiller" {
 output "tiller_ns" {
     value = kubernetes_service_account.tiller.metadata.0.namespace
 }
-output "kubeconfig_path" {
-    value = local_file.kubeconfig.filename
-}
-output "kubeconfig_content" {
-    value = data.template_file.kubeconfig.rendered
-}
 
-
+output "kubeconfig" {
+    value = {
+        cluster_name              =  google_container_cluster.kubernetes.name
+        host                      =  google_container_cluster.kubernetes.endpoint
+        username                  =  google_container_cluster.kubernetes.master_auth[0].username
+        password                  =  google_container_cluster.kubernetes.master_auth[0].password
+        client_certificate        =  google_container_cluster.kubernetes.master_auth[0].client_certificate
+        client_key                =  google_container_cluster.kubernetes.master_auth[0].client_key
+        cluster_ca_certificate    =  google_container_cluster.kubernetes.master_auth[0].cluster_ca_certificate
+    }
+}

@@ -1,12 +1,11 @@
 variable "version_chart" {
     default = "v0.12.0"
 }
-variable "kube_config_file" {
+variable "kube_config" {
 }
 variable "namespace" {
-    default =  "treafik"
 }
-variable "issuer_name_default" {
+variable "issuer_name" {
     default =  "letsencrypt-prod"
 }
 variable "email" {
@@ -16,19 +15,13 @@ variable "email" {
 data "template_file" "clusterIssuer" {
   template = file("${path.module}/clusterIssuer.yaml.tpl")
   vars = {
-    clusterIssuerName = var.issuer_name_default
+    clusterIssuerName = var.issuer_name
     email = var.email
   }
 }
 resource "local_file" "clusterIssuer" {
     content     = data.template_file.clusterIssuer.rendered
-    filename = "${path.module}/clusterIssuer.yaml"
-}
-
-provider "helm" {
-  kubernetes {
-    config_path = var.kube_config_file
-  }
+    filename    = "${path.module}/clusterIssuer.yaml"
 }
 
 data "helm_repository" "jetstack" {
@@ -37,11 +30,36 @@ data "helm_repository" "jetstack" {
 }
 
 resource "null_resource" "preConfigure" {
-  provisioner "local-exec" {
-    command = "kubectl --kubeconfig=${var.kube_config_file} apply --validate=false -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.12/deploy/manifests/00-crds.yaml --namespace ${var.namespace}"
-    environment = {
-      CONFIG = var.kube_config_file
+    triggers = {
+        timestamp        = timestamp()
     }
+  provisioner "local-exec" {
+    command = <<EOT
+      echo "
+apiVersion: v1
+kind: Config
+preferences:
+  colors: true
+current-context: tf-k8s
+contexts:
+- context:
+    cluster: kathra
+    namespace: default
+    user: local
+  name: tf-k8s
+clusters:
+- cluster:
+    server: ${var.kube_config.host}
+    certificate-authority-data: ${var.kube_config.cluster_ca_certificate}
+  name: kathra
+users:
+- name: local
+  user:
+    client-certificate-data: ${var.kube_config.client_certificate}
+    client-key-data: ${var.kube_config.client_key}" > /tmp/kathra_kube_config
+    
+kubectl --kubeconfig=/tmp/kathra_kube_config apply --validate=false -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.12/deploy/manifests/00-crds.yaml --namespace ${var.namespace}
+    EOT
   }
 }
 
@@ -57,18 +75,44 @@ resource "helm_release" "cert_manager" {
   }
   set {
     name  = "ingressShim.defaultIssuerName"
-    value = var.issuer_name_default
+    value = var.issuer_name
   }
+  depends_on = [null_resource.preConfigure]
 }
 
 resource "null_resource" "postInstall" {
+  triggers = {
+    timestamp        = timestamp()
+  }
   provisioner "local-exec" {
     command = <<EOT
-      kubectl --kubeconfig=${var.kube_config_file} apply -f ${local_file.clusterIssuer.filename} --namespace ${var.namespace} --validate=false --overwrite || exit 1
-      kubectl --kubeconfig=${var.kube_config_file} label namespace ${var.namespace} certmanager.k8s.io/disable-validation=true --overwrite || exit 1
+      echo "
+apiVersion: v1
+kind: Config
+preferences:
+  colors: true
+current-context: tf-k8s
+contexts:
+- context:
+    cluster: kathra
+    namespace: default
+    user: local
+  name: tf-k8s
+clusters:
+- cluster:
+    server: ${var.kube_config.host}
+    certificate-authority-data: ${var.kube_config.cluster_ca_certificate}
+  name: kathra
+users:
+- name: local
+  user:
+    client-certificate-data: ${var.kube_config.client_certificate}
+    client-key-data: ${var.kube_config.client_key}" > /tmp/kathra_kube_config
+
+kubectl --kubeconfig=/tmp/kathra_kube_config apply -f ${local_file.clusterIssuer.filename} --namespace ${var.namespace} --validate=false --overwrite || exit 1
+kubectl --kubeconfig=/tmp/kathra_kube_config label namespace ${var.namespace} certmanager.k8s.io/disable-validation=true --overwrite || exit 1
    EOT
     environment = {
-      CONFIG = var.kube_config_file
       MANIFEST = local_file.clusterIssuer.filename
     }
   }
@@ -79,3 +123,7 @@ resource "null_resource" "postInstall" {
 output "namespace" {
   value = helm_release.cert_manager.namespace
 }
+output "issuer" {
+  value = yamldecode(helm_release.cert_manager.metadata[0].values).ingressShim.defaultIssuerName
+}
+

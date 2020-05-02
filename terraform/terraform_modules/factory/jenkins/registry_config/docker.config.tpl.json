@@ -1,0 +1,7 @@
+{
+    "auths": {
+        "${registry}": {
+            "auth": "${docker_auth_as_b64}"
+        }
+    }
+}

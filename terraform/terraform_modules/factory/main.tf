@@ -2,109 +2,281 @@ variable "domain" {
 }
 variable "namespace" {
 }
+variable "ingress_tls_secret_name" {
+    default = null
+}
 variable "ingress_class" {
 }
-variable "kube_config_file" {
+variable "ingress_cert_manager_issuer" {
+}
+variable "kube_config" {
 }
 
-provider "kubernetes" {
-  load_config_file = "true"
-  config_path = var.kube_config_file
+variable "keycloak" {
+    default = {
+        host_prefix   = "keycloak"
+        username      = "keycloak"
+        password      = "BTg1Dmda2gyzUwvdZh3N"
+        client_id     = "admin-cli"
+    }
+}
+variable "jenkins" {
+    default = {
+        host_prefix   = "jenkins"
+        password      = "BTg1Dmda2gyzUwvdZh3N"
+    }
+}
+variable "nexus" {
+    default = {
+        host_prefix   = "nexus"
+        password      = "BTg1Dmda2gyzUwvdZh3N"
+    }
+}
+variable "harbor" {
+    default = {
+        host_prefix   = "harbor"
+        password      = "BTg1Dmda2gyzUwvdZh3N"
+    }
+}
+variable "gitlab" {
+    default = {
+        host_prefix   = "gitlab"
+        password      = "BTg1Dmda2gyzUwvdZh3N"
+    }
 }
 
 
-resource "kubernetes_namespace" "factory" {
-  metadata {
-    name = var.namespace
+provider "helm" {
+  kubernetes {
+    load_config_file       = "false"
+    host                   = var.kube_config.host
+    client_certificate     = base64decode(var.kube_config.client_certificate)
+    client_key             = base64decode(var.kube_config.client_key)
+    cluster_ca_certificate = base64decode(var.kube_config.cluster_ca_certificate)
   }
 }
-
-module "keycloak" {
-    source                  = "./keycloak/helm"
-    namespace               = kubernetes_namespace.factory.metadata[0].name
-    kube_config_file        = var.kube_config_file
-
-    username                = "keycloak"
-    password                = "@dminK#clo@k"
-
-    ingress_host            = "kc.${var.domain}"
-    ingress_class           = var.ingress_class
+provider "kubernetes" {
+    load_config_file       = "false"
+    host                   = var.kube_config.host
+    client_certificate     = base64decode(var.kube_config.client_certificate)
+    client_key             = base64decode(var.kube_config.client_key)
+    cluster_ca_certificate = base64decode(var.kube_config.cluster_ca_certificate)
 }
+
+/****************************
+    KEYCLOAK
+****************************/
+module "keycloak" {
+    source                      = "./keycloak/helm"
+    namespace                   = var.namespace
+    kube_config                 = var.kube_config
+
+    username                    = var.keycloak.username
+    password                    = var.keycloak.password
+
+    ingress_host                = "${var.keycloak.host_prefix}.${var.domain}"
+    ingress_class               = var.ingress_class
+    ingress_cert_manager_issuer = var.ingress_cert_manager_issuer
+    ingress_tls_secret_name     = var.ingress_tls_secret_name
+}
+
 module "realm" {
     source                  = "./keycloak/realm"
     keycloak_realm          = "kathra"
 
-    keycloak_client_id      = "admin-cli"
-    keycloak_username       = "keycloak"
-    keycloak_password       = "@dminK#clo@k"
+    keycloak_client_id      = var.keycloak.client_id
+    keycloak_username       = var.keycloak.username
+    keycloak_password       = var.keycloak.password
     keycloak_url            = module.keycloak.url
+
+    first_group_name        = "my-team"
+    first_user_login        = "user"
+    first_user_password     = "123"
 }
 
+
+/****************************
+    GITLAB
+****************************/
 module "gitlab_client" {
     source                  = "./keycloak/client"
 
     realm                   = module.realm.name
     client_id               = "gitlab"
-    redirect_uri            = "https://gitlab.${var.domain}/oidc/callback"
+    redirect_uri            = "https://${var.gitlab.host_prefix}.${var.domain}/*"
     
-    keycloak_client_id      = "admin-cli"
-    keycloak_username       = "keycloak"
-    keycloak_password       = "@dminK#clo@k"
+    keycloak_client_id      = var.keycloak.client_id
+    keycloak_username       = var.keycloak.username
+    keycloak_password       = var.keycloak.password
     keycloak_url            = module.keycloak.url
 }
 
 module "gitlab" {
-    source                  = "./gitlab"
-    kube_config_file        = var.kube_config_file
+    source                      = "./gitlab"
 
-    ingress_host            = "gitlab.${var.domain}"
-    ingress_class           = var.ingress_class
+    ingress_host                = "${var.gitlab.host_prefix}.${var.domain}"
+    ingress_class               = var.ingress_class
+    ingress_cert_manager_issuer = var.ingress_cert_manager_issuer
+    ingress_tls_secret_name     = {
+        unicorn     = var.ingress_tls_secret_name
+        minio       = var.ingress_tls_secret_name
+        registry    = var.ingress_tls_secret_name
+    }
 
-    namespace               = kubernetes_namespace.factory.metadata[0].name
-    password                = "d3f40ltp4ss"
+    namespace                   = var.namespace
+    password                    = var.gitlab.password
 
-    oidc_url                = module.keycloak.url
-    oidc_client_id          = module.gitlab_client.client_id
-    oidc_client_secret      = module.gitlab_client.client_secret
+    oidc_url                    = "${module.keycloak.url}/auth/realms/${module.realm.name}"
+    oidc_client_id              = module.gitlab_client.client_id
+    oidc_client_secret          = module.gitlab_client.client_secret
 }
-
-
+/****************************
+    HARBOR
+****************************/
 module "harbor_client" {
     source                  = "./keycloak/client"
 
     realm                   = module.realm.name
     client_id               = "harbor"
-    redirect_uri            = "https://harbor.${var.domain}/oidc/callback"
+    redirect_uri            = "https://${var.harbor.host_prefix}.${var.domain}/*"
     
-    keycloak_client_id      = "admin-cli"
-    keycloak_username       = "keycloak"
-    keycloak_password       = "@dminK#clo@k"
+    keycloak_client_id      = var.keycloak.client_id
+    keycloak_username       = var.keycloak.username
+    keycloak_password       = var.keycloak.password
     keycloak_url            = module.keycloak.url
 }
+module "harbor" {
+    source                      = "./harbor"
 
+    ingress_host                = "${var.harbor.host_prefix}.${var.domain}"
+    ingress_class               = var.ingress_class
+    ingress_cert_manager_issuer = var.ingress_cert_manager_issuer
+    ingress_tls_secret_name     = {
+        harbor = var.ingress_tls_secret_name
+        notary = var.ingress_tls_secret_name
+    }
 
+    namespace                   = var.namespace
+    password                    = var.harbor.password
+
+    oidc_url                    = "${module.keycloak.url}/auth/realms/${module.realm.name}"
+    oidc_client_id              = module.harbor_client.client_id
+    oidc_client_secret          = module.harbor_client.client_secret
+}
+
+/****************************
+    NEXUS
+****************************/
+module "nexus" {
+    source                      = "./nexus"
+
+    ingress_host                = "${var.nexus.host_prefix}.${var.domain}"
+    ingress_class               = var.ingress_class
+    ingress_cert_manager_issuer = var.ingress_cert_manager_issuer
+    ingress_tls_secret_name     = var.ingress_tls_secret_name
+
+    namespace                   = var.namespace
+    password                    = var.nexus.password
+}
+
+/****************************
+    DEPLOYMANAGER
+****************************/
+module "deploymanager" {
+    source                      = "./kathra-deploymanager"
+    namespace                   = var.namespace
+
+    tag                         = "master"
+    deployment_registry         = {
+        host     = module.harbor.host
+        username = module.harbor.username
+        password = module.harbor.password
+    }
+}
+
+/****************************
+    JENKINS
+****************************/
 module "jenkins_client" {
     source                  = "./keycloak/client"
 
     realm                   = module.realm.name
     client_id               = "jenkins"
-    redirect_uri            = "https://jenkins.${var.domain}/oidc/callback"
+    redirect_uri            = "https://${var.jenkins.host_prefix}.${var.domain}/*"
     
-    keycloak_client_id      = "admin-cli"
-    keycloak_username       = "keycloak"
-    keycloak_password       = "@dminK#clo@k"
+    keycloak_client_id      = var.keycloak.client_id
+    keycloak_username       = var.keycloak.username
+    keycloak_password       = var.keycloak.password
     keycloak_url            = module.keycloak.url
 }
 
+module "jenkins" {
+    source                      = "./jenkins"
+    kube_config                 = var.kube_config
+
+    ingress_host                = "${var.jenkins.host_prefix}.${var.domain}"
+    ingress_class               = var.ingress_class
+    ingress_cert_manager_issuer = var.ingress_cert_manager_issuer
+    ingress_tls_secret_name     = var.ingress_tls_secret_name
+
+    namespace                   = var.namespace
+    password                    = var.jenkins.password
+
+    oidc                        = {
+        host            = module.keycloak.host
+        token_url       = "${module.keycloak.url}/auth/realms/${module.realm.name}/protocol/openid-connect/token"
+        auth_url        = "${module.keycloak.url}/auth/realms/${module.realm.name}/protocol/openid-connect/auth"
+        well_known_url  = "${module.keycloak.url}/auth/realms/${module.realm.name}/.well-known/openid-configuration"
+        client_id       = module.jenkins_client.client_id
+        client_secret   = module.jenkins_client.client_secret
+    }
+
+    root_user                   = module.realm.first_user
+
+    deploymanager_url           = module.deploymanager.service_url
+
+    git_ssh                     = {
+        host        = "${var.gitlab.host_prefix}.${var.domain}"
+        service     = "gitlab"
+    }
+
+    binaries                    = {
+        maven = {
+            url      = module.nexus.url
+            username = module.nexus.username
+            password = module.nexus.password
+        }
+        pypi = {
+            url      = module.nexus.url
+            username = module.nexus.username
+            password = module.nexus.password
+        }
+        registry = {
+            host     = module.harbor.host
+            username = module.harbor.username
+            password = module.harbor.password
+        }
+    }
+
+}
+
+output "jenkins" {
+  value = module.jenkins
+}
+
+
+/****************************
+    KATHRA SERVICES
+****************************/
 module "kathra_client" {
     source                  = "./keycloak/client"
     
     realm                   = module.realm.name
     client_id               = "kathra"
-    redirect_uri            = "https://dashboard.${var.domain}/oidc/callback"
+    redirect_uri            = "https://dashboard.${var.domain}/*"
     
-    keycloak_client_id      = "admin-cli"
-    keycloak_username       = "keycloak"
-    keycloak_password       = "@dminK#clo@k"
+    keycloak_client_id      = var.keycloak.client_id
+    keycloak_username       = var.keycloak.username
+    keycloak_password       = var.keycloak.password
     keycloak_url            = module.keycloak.url
 }

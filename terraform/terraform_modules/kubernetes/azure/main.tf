@@ -53,6 +53,15 @@ resource "azurerm_kubernetes_cluster" "k8s" {
     }
 }
 
-output "kube_config" {
+output "kube_config_raw" {
     value = azurerm_kubernetes_cluster.k8s.kube_config_raw
+}
+
+output "kube_config" {
+    value = {
+        host                      =  azurerm_kubernetes_cluster.k8s.kube_config.0.host
+        client_certificate        =  azurerm_kubernetes_cluster.k8s.kube_config.0.client_certificate
+        client_key                =  azurerm_kubernetes_cluster.k8s.kube_config.0.client_key
+        cluster_ca_certificate    =  azurerm_kubernetes_cluster.k8s.kube_config.0.cluster_ca_certificate
+    }
 }

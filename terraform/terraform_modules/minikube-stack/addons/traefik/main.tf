@@ -1,11 +1,9 @@
 variable "version_chart" {
     default = "1.86.1"
 }
-variable "load_balancer_ip" {
-    default =  ""
+variable "default_tls_key" {
 }
-variable "aks_group" {
-    default =  "kathra"
+variable "default_tls_cert" {
 }
 
 data "helm_repository" "stable" {
@@ -26,38 +24,51 @@ resource "helm_release" "traefik" {
   version    = var.version_chart
   namespace  = "traefik"
 
+
+
   set {
     name  = "kubernetes.ingressClass"
     value = "traefik"
   }
   set {
-    name  = "kubernetes.ingressEndpoint.useDefaultPublishedService"
-    value = "true"
+    name  = "serviceType"
+    value = "NodePort"
   }
   set {
     name  = "ssl.enabled"
     value = "true"
   }
   set {
-    name  = "ssl.permanentRedirect"
-    value = "true"
+    name  = "service.nodePorts.http"
+    value = "30080"
+  }
+  set {
+    name  = "service.nodePorts.https"
+    value = "30443"
   }
   set {
     name  = "rbac.enabled"
     value = "true"
   }
   set {
-    name  = "loadBalancerIP"
-    value = var.load_balancer_ip
+    name  = "ssl.defaultCert"
+    value = base64encode(var.default_tls_cert)
   }
   set {
-    name = "service.annotations.\"service\\.beta\\.kubernetes\\.io/azure-load-balancer-resource-group\""
-    value = var.aks_group
+    name  = "ssl.defaultKey"
+    value = base64encode(var.default_tls_key)
   }
 }
+
 output "ingress_controller" {
-  value = "traefik"
+  value = yamldecode(helm_release.traefik.metadata[0].values).kubernetes.ingressClass
 }
 output "namespace" {
   value = helm_release.traefik.namespace
+}
+output "http_node_port" {
+  value = yamldecode(helm_release.traefik.metadata[0].values).service.nodePorts.https
+}
+output "https_node_port" {
+  value = yamldecode(helm_release.traefik.metadata[0].values).service.nodePorts.https
 }

@@ -1,20 +1,6 @@
 variable "version_chart" {
     default = "0.8.0"
 }
-variable "kube_config_file" {
-}
-
-
-provider "helm" {
-  kubernetes {
-    config_path = var.kube_config_file
-  }
-}
-
-provider "kubernetes" {
-  config_path = var.kube_config_file
-}
-
 
 resource "kubernetes_namespace" "kubedb" {
   metadata {

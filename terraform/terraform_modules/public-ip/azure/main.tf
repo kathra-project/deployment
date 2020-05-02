@@ -6,7 +6,7 @@ variable domain {
 }
 
 resource "azurerm_public_ip" "public_ip" {
-  name                = "k8sStaticIp"
+  name                = "static-ip"
   location            = var.location
   resource_group_name = var.group
   allocation_method   = "Static"
@@ -14,6 +14,9 @@ resource "azurerm_public_ip" "public_ip" {
 
 
 resource "null_resource" "check_dns_resolution" {
+    triggers = {
+        timestamp        = timestamp()
+    }
     provisioner "local-exec" {
       command = <<EOT
           echo "Trying to resolv DNS test.$DOMAIN  -> $IP"
@@ -28,7 +31,7 @@ resource "null_resource" "check_dns_resolution" {
 }
 
 data "azurerm_public_ip" "public_ip" {
-  name                = "k8sStaticIp"
+  name                = "static-ip"
   resource_group_name = var.group
 }
 
@@ -37,5 +40,5 @@ output "domain_name_label" {
 }
 
 output "public_ip_address" {
-  value = data.azurerm_public_ip.public_ip.ip_address
+  value = azurerm_public_ip.public_ip.ip_address
 }

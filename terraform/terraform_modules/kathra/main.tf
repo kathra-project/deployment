@@ -1,36 +1,380 @@
 
-variable "charts_version" {
-}
-variable "images_tag" {
-}
-variable "domain" {
-}
-variable "kube_config_file" {
-}
-variable "ingress_controller" {
-  default = "traefik"
+variable "namespace" { 
 }
 
-resource "null_resource" "kathraInstaller" {
-  provisioner "local-exec" {
-    command = <<EOT
-      echo "CONFIG:$CONFIG"
-      echo "DOMAIN:$DOMAIN"
-      echo "CHARTS_VERSION:$CHARTS_VERSION"
-      echo "IMAGES_TAG:$IMAGES_TAG"
-      export KUBECONFIG="$(pwd)/$CONFIG"
-
-      [ -d /tmp/kathra-deployment-tf ] && rm -rf /tmp/kathra-deployment-tf
-      git clone https://gitlab.com/kathra/deployment.git /tmp/kathra-deployment-tf || exit 1
-      cd /tmp/kathra-deployment-tf && git checkout $CHARTS_VERSION || exit 1
-      /tmp/kathra-deployment-tf/install.sh --domain=$DOMAIN --chart-version=$CHARTS_VERSION --kathra-image-tag=$IMAGES_TAG --enable-tls-ingress --verbose || exit 1
-   EOT
-    environment = {
-      CONFIG = var.kube_config_file
-      CHARTS_VERSION = var.charts_version
-      IMAGES_TAG = var.images_tag
-      DOMAIN = var.domain
+variable "kathra" {
+  /*
+  Example
+    default = {
+        images = {
+          registry_url    = "registry.hub.docker.com"
+          root_repository = "kathra"
+          docker_conf     = ""
+          tag             = "stable"
+        }
+        domain   = "kathra.org"
+        ingress  = {
+          appmanager = {
+            host              = "appmanager.kathra.org"
+            class             = ""
+            tls_secret_name   = "appmanager-cert"
+          }
+          dashboard = {
+            host              = "dashboard.kathra.org"
+            class             = ""
+            tls_secret_name   = "dashboard-cert"
+          }
+          platformmanager = {
+            host              = "platformmanager.kathra.org"
+            class             = ""
+            tls_secret_name   = "platformmanager"
+          }
+        }
+        arangodb = {
+          password  = null
+        }
+        oidc     = {
+          client_id     = "kathra-resource-manager"
+          client_secret = ""
+          auth_url      = "https://keycloak.kathra.org/auth"
+        }
     }
-  }
+  */
 }
 
+variable "gitlab" {
+    default = {
+      url           = null
+      username      = null
+      password      = null
+      token         = null
+      root_project  = "kathra-projects"
+    }
+}
+
+variable "harbor" {
+    default = {
+      url           = null
+      username      = null
+      password      = null
+    }
+}
+
+variable "jenkins" {
+    default = {
+      url           = null
+      username      = null
+      token         = null
+    }
+}
+
+variable "keycloak" {
+    default = {
+      url           = null
+      user          = {
+        auth_url      = "https://keycloak.${BASE_DOMAIN}/auth"
+        username      = null
+        password      = null
+        realm         = "kathra"
+      }
+      admin          = {
+        auth_url      = "https://keycloak.${BASE_DOMAIN}/auth"
+        username      = null
+        password      = null
+        realm         = "master"
+        client_id     = "admin-cli"
+      }
+    }
+}
+
+
+variable "nexus" {
+    default = {
+      url           = null
+      username      = null
+      password      = null
+    }
+}
+
+
+resource "helm_release" "kathra" {
+  name       = "kathra"
+  chart      = "${path.module}/../../../../kathra-services"
+  namespace  = var.namespace
+  timeout    = 600
+  values = [<<EOF
+## OVERIDE CHILDREN CHARTS' VALUES FROM HERE 
+## OR MODIFY THEM IN THEIR RESPECTIVE CHART
+global:
+  namespace: kathra
+  tld: irtsystemx.org
+  domain: ${var.kathra.domain}
+  docker:
+    registry: 
+      url: ${var.kathra.images.registry_url}
+      root_repository: ${var.kathra.images.root_repository}
+      secret: "${var.kathra.images.docker_conf}"
+  keycloak:
+    auth_url: ${var.keycloak.user.auth_url}
+    realm: ${var.keycloak.user.realm}
+    kathra_services_client:
+      id: ${var.oidc.client_id}
+      secret: ${var.oidc.client_secret}
+
+kathra-appmanager:
+  image: appmanager
+  version: ${var.kathra.images.tag}
+  tls: true
+  delete_zip_file: "true"
+  services_url:
+    codegen_helm: codegen-helm/api/v1
+    codegen_swagger: codegen-swagger/api/v1
+    binaryrepository_harbor: binaryrepositorymanager-harbor/api/v1
+    source_manager: sourcemanager/api/v1
+    pipeline_manager: pipelinemanager/api/v1
+    resource_manager: resourcemanager/api/v1
+    catalogmanager: catalogmanager/api/v1
+    pipeline_webhook: https://${var.kathra.ingress.appmanager.host}/api/v1/webhook
+  resources:
+    limits:
+      cpu: 900m
+      memory: 1Gi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  ingress:
+    annotations:
+      kubernetes.io/ingress.class: "${var.kathra.ingress.class}"
+      cert-manager.io/issuer: "${var.kathra.ingress.cert-manager_issuer}"
+    tls:
+    - hosts:
+      - ${var.kathra.ingress.appmanager.host}
+      secretName: ${var.kathra.ingress.appmanager.tls_secret_name}
+
+kathra-binaryrepositorymanager-harbor:
+  image: binaryrepositorymanager-harbor
+  version: ${var.kathra.images.tag}
+  services_url:
+    resource_manager: resourcemanager/api/v1
+  harbor:
+    url: ${var.harbor.url}
+    username: ${var.harbor.username}
+    password: ${var.harbor.password}
+  keycloak:
+    username: ${var.harbor.user.username}
+    password: ${var.harbor.user.password}
+  resources:
+    limits:
+      cpu: 500m
+      memory: 768Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+
+kathra-catalogmanager:
+  image: catalogmanager-helm
+  version: ${var.kathra.images.tag}
+  tls: true
+  services_url:
+    resource_manager: http://resourcemanager/api/v1
+  helm:
+    repoName: kathra
+    url: ${var.harbor.url}/chartrepo
+    login: ${var.harbor.username}
+    password: ${var.harbor.password}
+  keycloak:
+    username: ${var.harbor.user.username}
+    password: ${var.harbor.user.password}
+  resources:
+    limits:
+      cpu: 500m
+      memory: 768Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+kathra-codegen-swagger:
+  image: codegen-swagger
+  version: ${var.kathra.images.tag}
+  tls: true
+  repository:
+    url: ${var.nexus.url}
+    pythonRepo: pip-all/simple
+  resources:
+    limits:
+      cpu: 500m
+      memory: 768Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+
+kathra-codegen-helm:
+  image: codegen-helm
+  version: ${var.kathra.images.tag}
+  tls: true
+  resources:
+    limits:
+      cpu: 300m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+
+kathra-dashboard: 
+  image: dashboard
+  version: ${var.kathra.images.tag}
+  tls: true
+  services_url:
+    platform_manager: wss://${var.kathra.ingress.platformmanager.host}/spm
+    app_manager: https://${var.kathra.ingress.appmanager.host}/api/v1
+    jenkins_url: ${var.jenkins.url}
+    base_domain: ${var.kathra.domain}
+  resources
+    limits:
+      cpu: 300m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  ingress:
+    annotations:
+      kubernetes.io/ingress.class: "${var.kathra.ingress.class}"
+      cert-manager.io/issuer: "${var.kathra.ingress.cert-manager_issuer}"
+    tls:
+    - hosts:
+      - ${var.kathra.ingress.dashboard.host}
+      secretName: ${var.kathra.ingress.dashboard.tls_secret_name}
+
+kathra-pipelinemanager:
+  image: pipelinemanager-jenkins
+  version: ${var.kathra.images.tag}
+  tls: true
+  jenkins:
+    url: ${var.jenkins.url}
+    username: ${var.jenkins.username}
+    api_token: ${var.jenkins.token}
+  resources:
+    limits:
+      cpu: 500m
+      memory: 768Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+kathra-platformmanager:
+  image: platformmanager-kube
+  version: ${var.kathra.images.tag}
+  tls: true
+  websocket:
+    port: "8080"
+  catalog_manager:
+    url: http://catalogmanager/api/v1
+  deployment:
+    ingress_controller: "${var.kathra.ingress.class}"
+    tld: ${var.domain}
+  resources:
+    limits:
+      cpu: 500m
+      memory: 768Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  ingress:
+    annotations:
+      kubernetes.io/ingress.class: "${var.kathra.ingress.class}"
+      cert-manager.io/issuer: "${var.kathra.ingress.cert-manager_issuer}"
+    tls:
+    - hosts:
+      - ${var.kathra.ingress.platformmanager.host}
+      secretName: ${var.kathra.ingress.platformmanager.tls_secret_name}
+
+kathra-resourcemanager:
+  image: resourcemanager-arangodb
+  version: ${var.kathra.images.tag}
+  tls: true
+  arango:
+    host: resource-db
+    port: "8529"
+    database: KATHRA
+    user: root
+    password: ${var.arangodb.password}
+  resources:
+    limits:
+      cpu: 1
+      memory: 2Gi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+db:
+  db:
+    password: ${var.arangodb.password}
+
+kathra-sourcemanager:
+  image: sourcemanager-gitlab
+  version: ${var.kathra.images.tag}
+  tls: true
+  temp_repos_folder: /tmp/kathra-sourcemanager-git-repos
+  dir_creation_max_retry: "3"
+  delete_temp_folder: "true"
+  delete_temp_zip: "true"
+  gitlab:
+    url: ${var.gitlab.url}
+    api_token: ${var.gitlab.token}
+    parent_group: ${var.gitlab.root_project}
+  user_manager:
+    url: usermanager
+  resources:
+    limits:
+      cpu: 500m
+      memory: 768Mi
+    requests:
+      cpu: 50m
+      memory: 256Mi
+
+kathra-usermanager:
+  image: usermanager-keycloak
+  version: ${var.kathra.images.tag}
+  tls: true
+  resources:
+    limits:
+      cpu: 300m
+      memory: 768Mi
+    requests:
+      cpu: 50m
+      memory: 256Mi
+  keycloak:
+      adminRealm: ${var.keycloak.admin.realm}
+      adminClientId: ${var.keycloak.admin.client_id}
+      adminUsername: ${var.keycloak.admin.username}
+      adminPassword: ${var.keycloak.admin.password}
+
+kathra-sync:
+  keycloak:
+    login: ${var.harbor.user.username}
+    password: ${var.harbor.user.password}
+  image: users-sync
+  version: ${var.kathra.images.tag}
+  resources:
+    limits:
+      cpu: 300m
+      memory: 768Mi
+    requests:
+      cpu: 50m
+      memory: 256Mi
+
+      
+EOF
+]
+
+}
+
+output "namespace" {
+    value = helm_release.deploymanager.namespace
+}
+output "name" {
+    value = helm_release.deploymanager.name
+}

@@ -242,7 +242,6 @@ export -f downloadMinikube
 
 function downloadKubectl() {
     printDebug "downloadKubectl()"
-    sudo apt-get install -y virtualbox
     which kubectl > /dev/null 2> /dev/null && return 0
     sudo curl -L -o $tmp/kubectl https://storage.googleapis.com/kubernetes-release/release/v$kubernetesVersion/bin/linux/amd64/kubectl 
     sudo chmod +x $tmp/kubectl 
@@ -279,7 +278,7 @@ EOF
     fi
 
     ## Test config
-    checkCommandAndRetry "kubectl run -it --rm --restart=Never --image=infoblox/dnstools:latest dnstools -- '-c' \"host $domain\" | grep \"$domain has address $ip\" > /dev/null" || printErrorAndExit "Unable to run pod dnstools and check hostname"
+    checkCommandAndRetry "kubectl run -it --rm --restart=Never --image=infoblox/dnstools:latest dnstools -- '-c' \"host $domain\" | tee | grep \"$domain has address $ip\" > /dev/null" || printErrorAndExit "Unable to run pod dnstools and check hostname"
     printInfo "CoreDNS Configured"
     return 0
 }
@@ -347,7 +346,7 @@ function generateCertsDnsChallenge() {
     ./certbot-auto certonly --manual --preferred-challenges=dns --email=$email --agree-tos -d *.$domain  || printErrorAndExit "Unable to generate certificate for domain *.$domain"
     sudo chmod +r -R $certDir
     sudo ls -l $tlsCert > /dev/null || printErrorAndExit "File $tlsCert not found"
-    sudo ls -l $tlsKey > /dev/null || printErrorAndExit "File $tlsKey not found"
+    sudo ls -l $tlsKey > /dev/null  || printErrorAndExit "File $tlsKey not found"
     printInfo "Certificate FullChain and PrivateKey generated: $tlsCert, $tlsKey"
     return 0
 }

@@ -167,9 +167,11 @@ function checkDependencies() {
     which curl > /dev/null || sudo apt-get install curl -y > /dev/null 2> /dev/null 
     which jq >  /dev/null || sudo apt-get install jq -y > /dev/null 2> /dev/null 
     which unzip > /dev/null || sudo apt-get install unzip -y > /dev/null 2> /dev/null 
+    which go > /dev/null || sudo apt-get install golang-go > /dev/null 2> /dev/null 
     which az > /dev/null || installAzureCli
     which kubectl > /dev/null || installKubectl
     which terraform > /dev/null || installTerraform
+    installKeycloakProviderPlugin || printErrorAndExit "Unable to install keycloak teraform plugin"
 }
 export -f checkDependencies
 
@@ -335,11 +337,16 @@ export -f findInArgs
 
 function installKeycloakProviderPlugin() {
     local version=1.17.1
-    git clone https://github.com/mrparkers/terraform-provider-keycloak.git /tmp/terraform-provider-keycloak
-    cd /tmp/terraform-provider-keycloak
-    git checkout $version
-    go build -o terraform-provider-keycloak
-    mv terraform-provider-keycloak $SCRIPT_DIR/.terraform/plugins/terraform-provider-keycloak_v$version
+    local bin=$SCRIPT_DIR/.terraform/plugins/linux_amd64/terraform-provider-keycloak_v$version
+    [ -f $bin ] && return 0
+    [ -d /tmp/terraform-provider-keycloak ] && rm -rf /tmp/terraform-provider-keycloak 
+    git clone https://github.com/mrparkers/terraform-provider-keycloak.git /tmp/terraform-provider-keycloak || return 1
+    cd /tmp/terraform-provider-keycloak || return 1
+    git checkout $version || return 1
+    go build -o terraform-provider-keycloak || return 1
+    mv terraform-provider-keycloak $bin || return 1
+    cd $SCRIPT_DIR
+    return 0
 }
 
 main $*

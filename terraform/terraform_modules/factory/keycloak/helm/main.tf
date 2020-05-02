@@ -1,10 +1,14 @@
 variable "version_chart" {
     default = "1.86.1"
 }
-
-variable "kube_config_file" {
+variable "kube_config" {
 }
 variable "ingress_host" {
+}
+variable "ingress_tls_secret_name" {
+  default = "keycloak-cert"
+}
+variable "ingress_cert_manager_issuer" {
 }
 variable "namespace" { 
 }
@@ -13,13 +17,6 @@ variable "username" {
 variable "password" {
 }
 variable "ingress_class" {
-}
-
-
-provider "helm" {
-  kubernetes {
-    config_path = var.kube_config_file
-  }
 }
 
 data "helm_repository" "codecentric" {
@@ -32,7 +29,7 @@ resource "helm_release" "keycloak" {
   repository = data.helm_repository.codecentric.metadata[0].name
   chart      = "keycloak"
   namespace  = var.namespace
-
+  
   values = [<<EOF
 keycloak:
   username: "${var.username}"
@@ -43,18 +40,35 @@ keycloak:
   ingress:
     annotations:
         kubernetes.io/ingress.class: "${var.ingress_class}"
-        cert-manager.io/issuer: letsencrypt-prod
+        cert-manager.io/issuer: "${var.ingress_cert_manager_issuer}"
     enabled: true
     hosts: 
     - ${var.ingress_host}
     tls:
     - hosts:
       - ${var.ingress_host}
-      secretName: keycloak-cert
+      secretName: ${var.ingress_tls_secret_name}
 EOF
 ]
 
 }
+
+resource "null_resource" "check_tls_resolution" {
+    triggers = {
+        timestamp        = timestamp()
+    }
+    provisioner "local-exec" {
+      command = <<EOT
+for attempt in $(seq 1 100); do sleep 5 && curl --fail https://${var.ingress_host} && exit 0 || echo "Check https://${var.ingress_host} ($attempt/100)"; done
+curl --fail https://${var.ingress_host} || exit 1
+exit 1
+    EOT
+    }
+    depends_on = [ helm_release.keycloak ]
+}
+
+
+
 
 output "namespace" {
     value = helm_release.keycloak.namespace
@@ -67,6 +81,9 @@ output "username" {
 }
 output "password" {
     value = yamldecode(helm_release.keycloak.metadata[0].values).keycloak.password
+}
+output "host" {
+    value = yamldecode(helm_release.keycloak.metadata[0].values).keycloak.ingress.hosts[0]
 }
 output "url" {
     value = "https://${yamldecode(helm_release.keycloak.metadata[0].values).keycloak.ingress.hosts[0]}"
