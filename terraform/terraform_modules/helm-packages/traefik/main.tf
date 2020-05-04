@@ -16,6 +16,9 @@ data "helm_repository" "stable" {
 resource "kubernetes_namespace" "traefik" {
   metadata {
     name = "traefik"
+    annotations = {
+      "certmanager.k8s.io/disable-validation" = "true"
+    }
   }
 }
 

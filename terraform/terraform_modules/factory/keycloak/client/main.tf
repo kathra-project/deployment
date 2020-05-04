@@ -8,13 +8,10 @@ variable "keycloak_username" {
 }
 variable "keycloak_password" {
 }
-
 variable "client_id" {
 }
 variable "redirect_uri" {
 }
-
-
 
 provider "keycloak" {
     client_id     = var.keycloak_client_id
@@ -40,9 +37,24 @@ resource "keycloak_openid_client" "client" {
     ]
 }
 
+
+output "host" {
+  value = replace("https://",var.keycloak_url)
+}
+output "well_known_url" {
+  value = "${var.keycloak_url}/auth/realms/${var.realm}/.well-known/openid-configuration"
+}
+output "token_url" {
+  value = "${var.keycloak_url}/auth/realms/${var.realm}/protocol/openid-connect/token"
+}
+output "auth_url" {
+  value =  "${var.keycloak_url}/auth/realms/${var.realm}/protocol/openid-connect/auth"
+}
 output "client_id" {
   value = keycloak_openid_client.client.client_id
 }
 output "client_secret" {
   value = keycloak_openid_client.client.client_secret
 }
+
+

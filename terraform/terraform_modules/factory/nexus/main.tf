@@ -46,7 +46,7 @@ ingress:
   tls:
     enabled: true
     usesSecret: true
-    secretName: ${var.ingress_tls_secret_name}
+    secretName: ${var.ingress_tls_secret_name == null ? "nexus-cert" : var.ingress_tls_secret_name}
 EOF
 ]
 

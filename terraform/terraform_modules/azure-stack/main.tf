@@ -58,6 +58,13 @@ module "kubernetes_addons" {
     aks_group                   = azurerm_resource_group.kathra.name
 }
 
+provider "kubernetes" {
+    load_config_file       = "false"
+    host                   = module.kubernetes.kube_config.host
+    client_certificate     = base64decode(module.kubernetes.kube_config.client_certificate)
+    client_key             = base64decode(module.kubernetes.kube_config.client_key)
+    cluster_ca_certificate = base64decode(module.kubernetes.kube_config.cluster_ca_certificate)
+}
 
 resource "kubernetes_namespace" "factory" {
   metadata {

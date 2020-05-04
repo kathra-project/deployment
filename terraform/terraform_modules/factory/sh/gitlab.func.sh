@@ -4,15 +4,21 @@
 ### Generate API Token for GitLab having all authorization
 ###
 function gitlabGenerateApiToken() {
-    local login=$1
-    local password=$2
-    local fileOut=$3
-    printDebug "gitlabGenerateApiToken(login: $login, password: $password, fileOut: $fileOut)"
+    local gitlab_host=$1
+    local keycloak_host=$2
+    local login=$3
+    local password=$4
+    local fileOut=$5
+    local kubeconfigFile=$6
+    local namespace=$7
+    local releaseName=$8
+    local renewIfExists=$9
+    printDebug "gitlabGenerateApiToken(login: $login, password: $password, fileOut: $fileOut, kubeconfigFile: $kubeconfigFile, namespace: $namespace releaseName: $releaseName)"
     local attempt_counter=0
     local max_attempts=5
     while true; do
 
-        curl -v https://gitlab.${BASE_DOMAIN}/sign_in  2> $tmp/gitlab.sign_in.err > $tmp/gitlab.sign_in.err
+        curl -v https://${gitlab_host}/sign_in  2> $tmp/gitlab.sign_in.err > $tmp/gitlab.sign_in.err
         local GA=$(getHttpHeaderSetCookie $tmp/gitlab.sign_in.err "_ga")
         local GA_SESSION=$(getHttpHeaderSetCookie $tmp/gitlab.sign_in.err "_gitlab_session")
         local locationAuth=$(getHttpHeaderLocation $tmp/gitlab.sign_in.err )
@@ -28,17 +34,17 @@ function gitlabGenerateApiToken() {
         local KC_RESTART=$(getHttpHeaderSetCookie $tmp/gitlab.kc.err KC_RESTART)
         local location=$(getHttpHeaderLocation $tmp/gitlab.kc.err)
 
-        curl -v "$uriLogin" -H "authority: keycloak.${BASE_DOMAIN}" -H 'cache-control: max-age=0' -H "origin: https://keycloak.${BASE_DOMAIN}" -H 'upgrade-insecure-requests: 1' -H 'content-type: application/x-www-form-urlencoded' -H "$UA" -H "$headerAccept" -H "referer: $location" -H 'accept-encoding: gzip, deflate, br' -H "$headerAcceptLang" -H "Cookie:$AUTH_SESSION_ID;$KC_RESTART" --data-urlencode "username=${login}"  --data-urlencode "password=${password}" --compressed 2> $tmp/gitlab.kc.post.err > $tmp/gitlab.kc.post
+        curl -v "$uriLogin" -H "authority: ${keycloak_host}" -H 'cache-control: max-age=0' -H "origin: https://${keycloak_host}" -H 'upgrade-insecure-requests: 1' -H 'content-type: application/x-www-form-urlencoded' -H "$UA" -H "$headerAccept" -H "referer: $location" -H 'accept-encoding: gzip, deflate, br' -H "$headerAcceptLang" -H "Cookie:$AUTH_SESSION_ID;$KC_RESTART" --data-urlencode "username=${login}"  --data-urlencode "password=${password}" --compressed 2> $tmp/gitlab.kc.post.err > $tmp/gitlab.kc.post
         local locationFinishLogin=$(getHttpHeaderLocation $tmp/gitlab.kc.post.err)
 
         curl -v -H "Cookie: $GA $GA_SESSION" $locationFinishLogin 2> $tmp/gitlab.finishLogin.err > $tmp/gitlab.finishLogin
             
-        gitlabDefineAccountAsAdmin ${login}
+        gitlabDefineAccountAsAdmin ${login} ${kubeconfigFile} ${namespace} ${releaseName}
         local GA_SESSION_FINAL=$(getHttpHeaderSetCookie $tmp/gitlab.finishLogin.err "_gitlab_session")
-        curl https://gitlab.${BASE_DOMAIN}/profile -H "Cookie: $GA $GA_SESSION_FINAL" 2> $tmp/gitlab.profile.err  > $tmp/gitlab.profile
+        curl https://${gitlab_host}/profile -H "Cookie: $GA $GA_SESSION_FINAL" 2> $tmp/gitlab.profile.err  > $tmp/gitlab.profile
         local AUTH_TOKEN=$(grep "name=\"authenticity_token\"" < $tmp/gitlab.profile  | sed "s/.* value=\"\([^\"]*\)\".*/\1/" | sed 's/amp;//g' | tr -d '\n')
 
-        curl -v "https://gitlab.${BASE_DOMAIN}/profile/personal_access_tokens" -H 'authority: gitlab.${BASE_DOMAIN}' -H 'cache-control: max-age=0' -H "origin: https://gitlab.${BASE_DOMAIN}" -H 'upgrade-insecure-requests: 1' -H 'content-type: application/x-www-form-urlencoded' -H "${UA}" -H "${headerAccept}" -H "referer: https://gitlab.${BASE_DOMAIN}/profile/personal_access_tokens" -H 'accept-encoding: gzip, deflate, br' -H "${headerAcceptLang}" -H "Cookie: $GA $GA_SESSION_FINAL" --data-urlencode "utf8=✓" \
+        curl -v "https://${gitlab_host}/profile/personal_access_tokens" -H 'authority: ${gitlab_host}' -H 'cache-control: max-age=0' -H "origin: https://${gitlab_host}" -H 'upgrade-insecure-requests: 1' -H 'content-type: application/x-www-form-urlencoded' -H "${UA}" -H "${headerAccept}" -H "referer: https://${gitlab_host}/profile/personal_access_tokens" -H 'accept-encoding: gzip, deflate, br' -H "${headerAcceptLang}" -H "Cookie: $GA $GA_SESSION_FINAL" --data-urlencode "utf8=✓" \
         --data-urlencode "authenticity_token=${AUTH_TOKEN}" \
         --data-urlencode "personal_access_token[name]=kathra-token" \
         --data-urlencode "personal_access_token[expires_at]=" \
@@ -46,7 +52,7 @@ function gitlabGenerateApiToken() {
         --data-urlencode "personal_access_token[scopes][]=read_user" \
         --data-urlencode "personal_access_token[scopes][]=sudo" \
         --data-urlencode "personal_access_token[scopes][]=read_repository" 2> $tmp/gitlab.personal_access_tokens.err  > $tmp/gitlab.personal_access_tokens
-        curl -v -H "Cookie: $GA $GA_SESSION_FINAL" "https://gitlab.${BASE_DOMAIN}/profile/personal_access_tokens" 2> $tmp/gitlab.personal_access_tokens.created.err  > $tmp/gitlab.personal_access_tokens.created
+        curl -v -H "Cookie: $GA $GA_SESSION_FINAL" "https://${gitlab_host}/profile/personal_access_tokens" 2> $tmp/gitlab.personal_access_tokens.created.err  > $tmp/gitlab.personal_access_tokens.created
 
         grep "id=\"created-personal-access-token\"" < $tmp/gitlab.personal_access_tokens.created  | sed "s/.* value=\"\([^\"]*\)\".*/\1/" | sed 's/amp;//g' | tr -d '\n' > $fileOut
         [ ! "$(cat $fileOut)" == "" ] && break
@@ -62,9 +68,12 @@ export -f gitlabGenerateApiToken
 ### Define GitLab Account as Admin
 ###
 function gitlabDefineAccountAsAdmin() {
-    printDebug "gitlabDefineAccountAsAdmin(accountName: $1, kubeconfig_file: $2, namespace: $3, release=$4)"
+    printDebug "gitlabDefineAccountAsAdmin(accountName: $1, kubeconfigFile: $2, namespace: $3, release=$4)"
+    local dbUser=postgres
+    local dbName=gitlabhq_production
+    local dbPassword=$(kubectl --kubeconfig=$2 -n $3 get secret $4-postgresql-password -o json | jq -r '.data."postgresql-postgres-password"' | base64 -d)
     local podIdentifier=$(kubectl --kubeconfig=$2 -n $3 get pods -l app=postgresql,release=$4 -o json | jq -r -c '.items[0] | .metadata.name')
-    kubectl --kubeconfig=$2 -n $3 exec -it ${podIdentifier} -- bash -c "echo \"update users set admin=true where username like '${1}';\" | gitlab-psql" 2> /dev/null > /dev/null
+    kubectl --kubeconfig=$2 -n $3 exec -it ${podIdentifier} -- bash -c "export PGPASSWORD=$dbPassword ; echo \"update users set admin=true where username like '${1}';\" | psql -U $dbUser -d $dbName" 2> /dev/null > /dev/null
     return $?
 }
 export -f gitlabDefineAccountAsAdmin
@@ -75,7 +84,7 @@ function gitlabImportPublicSshKey() {
     local apiToken=$2
     local publicKeyFile=$3
     printDebug "gitlabImportPublicSshKey(userId: $userId, apiToken: $apiToken, publicKeyFile: $publicKeyFile)"
-    curl --fail -s -X POST --header "PRIVATE-TOKEN: ${apiToken}" --data-urlencode "key=$(cat $publicKeyFile)" --data-urlencode "title=kathra-autoimport-key" "https://gitlab.${BASE_DOMAIN}/api/v4/user/keys" 2> /dev/null > /dev/null
+    curl --fail -s -X POST --header "PRIVATE-TOKEN: ${apiToken}" --data-urlencode "key=$(cat $publicKeyFile)" --data-urlencode "title=kathra-autoimport-key" "https://${gitlab_host}/api/v4/user/keys" 2> /dev/null > /dev/null
     [ $? -ne 0 ] && printError "Unable to push public ssh key into gitlab" && exit 1
     printDebug "PublicKey $publicKeyFile is pushed into GitLab for user $userId"
 }

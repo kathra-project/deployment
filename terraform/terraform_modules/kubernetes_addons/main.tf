@@ -24,6 +24,15 @@ provider "kubernetes" {
     cluster_ca_certificate = base64decode(var.kube_config.cluster_ca_certificate)
 }
 
+provider "kubectl" {
+    load_config_file       = false
+    host                   = var.kube_config.host
+    cluster_ca_certificate = base64decode(var.kube_config.cluster_ca_certificate)
+    client_certificate     = base64decode(var.kube_config.client_certificate)
+    client_key             = base64decode(var.kube_config.client_key)
+    apply_retry_count      = 15
+}
+
 module "kubedb" {
     source              = "../helm-packages/kubedb"
 }
@@ -36,7 +45,6 @@ module "treafik" {
 
 module "cert-manager" {
     source              = "../helm-packages/cert-manager"
-    kube_config         = var.kube_config
     namespace           = module.treafik.namespace
 }
 

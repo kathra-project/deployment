@@ -47,7 +47,7 @@ keycloak:
     tls:
     - hosts:
       - ${var.ingress_host}
-      secretName: ${var.ingress_tls_secret_name}
+      secretName: ${var.ingress_tls_secret_name == null ? "keycloak-cert" : var.ingress_tls_secret_name}
 EOF
 ]
 

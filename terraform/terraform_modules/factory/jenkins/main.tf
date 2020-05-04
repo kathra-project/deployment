@@ -7,7 +7,6 @@ variable "ingress_cert_manager_issuer" {
 variable "ingress_tls_secret_name" {
   default = "jenkins-cert"
 }
-
 variable "namespace" { 
 }
 variable "password" {
@@ -22,13 +21,6 @@ variable "git_ssh" {
 }
 variable "deploymanager_url" {
 }
-
-variable "root_user" {
-}
-
-variable "kube_config" {
-}
-
 
 data "helm_repository" "stable" {
   name = "stable"
@@ -146,7 +138,7 @@ master:
     tls:
     - hosts:
       - ${var.ingress_host}
-      secretName: ${var.ingress_tls_secret_name}
+      secretName: ${var.ingress_tls_secret_name == null ? "jenkins-cert" : var.ingress_tls_secret_name}
     path: /
     hostName: ${var.ingress_host}
     labels:
@@ -405,21 +397,6 @@ EOF
 ]
 }
 
-data "external" "api_token" {
-    program = ["bash", "-c", "${path.module}/generate_api_token.sh"]
-    query = {
-       jenkins_host  = yamldecode(helm_release.jenkins.metadata[0].values).master.ingress.hostName
-       keycloak_host = var.oidc.host 
-       username = var.root_user.username
-       password = var.root_user.password
-       kube_config = jsonencode(var.kube_config)
-       namespace  = var.namespace
-       secret_name= "factory-token-store"
-       secret_key = "jenkins"
-    }
-}
-
-
 output "namespace" {
   value = helm_release.jenkins.namespace
 }
@@ -432,8 +409,8 @@ output "username" {
 output "password" {
   value = yamldecode(helm_release.jenkins.metadata[0].values).master.adminUser
 }
-output "api_token" {
-  value = data.external.api_token.result.token
+output "host" {
+  value = yamldecode(helm_release.jenkins.metadata[0].values).master.ingress.hostName
 }
 output "url" {
   value = "https://${yamldecode(helm_release.jenkins.metadata[0].values).master.ingress.hostName}"

@@ -37,6 +37,7 @@ function showHelp() {
     printInfo "deploy : Deploy on Azure"
     printInfo "destroy : Destroy on Azure"
     printInfo "backup-install : Configure backup on Azure"
+    exit 0
 }
 export -f showHelp
 
@@ -164,14 +165,16 @@ export -f destroy
 
 function checkDependencies() {
     printDebug "checkDependencies()"
-    which curl > /dev/null || sudo apt-get install curl -y > /dev/null 2> /dev/null 
-    which jq >  /dev/null || sudo apt-get install jq -y > /dev/null 2> /dev/null 
-    which unzip > /dev/null || sudo apt-get install unzip -y > /dev/null 2> /dev/null 
-    which go > /dev/null || sudo apt-get install golang-go > /dev/null 2> /dev/null 
-    which az > /dev/null || installAzureCli
-    which kubectl > /dev/null || installKubectl
-    which terraform > /dev/null || installTerraform
-    installKeycloakProviderPlugin || printErrorAndExit "Unable to install keycloak teraform plugin"
+    which curl > /dev/null          || sudo apt-get install curl -y > /dev/null 2> /dev/null 
+    which jq >  /dev/null           || sudo apt-get install jq -y > /dev/null 2> /dev/null 
+    which unzip > /dev/null         || sudo apt-get install unzip -y > /dev/null 2> /dev/null 
+    which go > /dev/null            || sudo apt-get install golang-go > /dev/null 2> /dev/null 
+    which az > /dev/null            || installAzureCli
+    which kubectl > /dev/null       || installKubectl
+    which terraform > /dev/null     || installTerraform
+    
+    installTerraformPlugin "keycloak" "1.17.1" https://github.com/mrparkers/terraform-provider-keycloak.git "1.17.1"   || printErrorAndExit "Unable to install keycloak terraform plugin"
+    installTerraformPlugin "kubectl"  "1.3.5"  https://github.com/gavinbunney/terraform-provider-kubectl    "v1.3.5"   || printErrorAndExit "Unable to install keycloak terraform plugin"
 }
 export -f checkDependencies
 
@@ -335,18 +338,22 @@ function findInArgs() {
 }
 export -f findInArgs
 
-function installKeycloakProviderPlugin() {
-    local version=1.17.1
-    local bin=$SCRIPT_DIR/.terraform/plugins/linux_amd64/terraform-provider-keycloak_v$version
+function installTerraformPlugin() {
+    printDebug "installTerraformModule(pluginName: $1, pluginVersion: $2, pluginSourceCommit: $3, pluginSourceCommit: $4)"
+    local pluginName=$1
+    local pluginVersion=$2
+    local pluginSourceRepositoryGit=$3
+    local pluginSourceCommit=$4
+    local bin=$SCRIPT_DIR/.terraform/plugins/windows_amd64/terraform-provider-${pluginName}_v$pluginVersion
+    
     [ -f $bin ] && return 0
-    [ -d /tmp/terraform-provider-keycloak ] && rm -rf /tmp/terraform-provider-keycloak 
-    git clone https://github.com/mrparkers/terraform-provider-keycloak.git /tmp/terraform-provider-keycloak || return 1
-    cd /tmp/terraform-provider-keycloak || return 1
-    git checkout $version || return 1
-    go build -o terraform-provider-keycloak || return 1
-    mv terraform-provider-keycloak $bin || return 1
+    [ -d /tmp/terraform-provider-$pluginName ] && rm -rf /tmp/terraform-provider-$pluginName 
+    git clone ${pluginSourceRepositoryGit} /tmp/terraform-provider-$pluginName || return 1
+    cd /tmp/terraform-provider-$pluginName || return 1
+    git checkout $pluginSourceCommit || return 1
+    go build -o terraform-provider-$pluginName || return 1
+    mv terraform-provider-$pluginName $bin || return 1
     cd $SCRIPT_DIR
-    return 0
 }
 
 main $*

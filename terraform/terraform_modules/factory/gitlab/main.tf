@@ -58,15 +58,15 @@ gitlab:
   unicorn:
     ingress:
       tls:
-        secretName: ${var.ingress_tls_secret_name.unicorn}
+        secretName: ${var.ingress_tls_secret_name.unicorn == null ? "gitlab-unicorn-cert" : var.ingress_tls_secret_name.unicorn}
 registry:
   ingress:
     tls:
-      secretName: ${var.ingress_tls_secret_name.registry}
+      secretName: ${var.ingress_tls_secret_name.registry == null ? "gitlab-registry-cert" : var.ingress_tls_secret_name.registry}
 minio:
   ingress:
     tls:
-      secretName: ${var.ingress_tls_secret_name.minio}
+      secretName: ${var.ingress_tls_secret_name.minio == null ? "gitlab-minio-cert" : var.ingress_tls_secret_name.minio}
 
 global:
   hosts:
@@ -123,54 +123,6 @@ args:
 EOF
   }
 }
-
-/*
-
-
-      enabled: true
-      syncProfileFromProvider: []
-      syncProfileAttributes: ['email']
-      allowSingleSignOn:
-        - openid_connect
-      autoSignInWithProvider:
-        - openid_connect
-      blockAutoCreatedUsers: true
-      autoLinkLdapUser: false
-      autoLinkSamlUser: false
-      externalProviders:
-        - openid_connect
-      allowBypassTwoFactor: []
-      providers:
-
-        - name: "oauth2_generic"
-          label: "keycloak"
-          app_id: "${var.oidc_client_id}"
-          app_secret: "${var.oidc_client_secret}"
-          args:
-            name: "oauth2_generic"
-            scope:
-             - openid
-             - profile
-             - email
-            issuer: "${var.oidc_url}"
-            user_response_structure:
-              attributes: 
-                email: "email"
-                first_name: "given_name"
-                last_name: "family_name"
-                name: "name"
-                nickname: "preferred_username"
-              id_path: "preferred_username"
-            client_options:
-              identifier: "${var.oidc_client_id}"
-              secret: "${var.oidc_client_secret}"
-              site: "${var.ingress_host}"
-              authorize_url: "/auth/realms/kathra/protocol/openid-connect/userinfo"
-              redirect_uri: "/auth/realms/kathra/protocol/openid-connect/auth"
-              token_url: "/auth/realms/kathra/protocol/openid-connect/token"
-
-*/
-
 
 output "namespace" {
     value = helm_release.gitlab.namespace

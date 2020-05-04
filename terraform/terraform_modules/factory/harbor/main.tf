@@ -42,8 +42,8 @@ harborAdminPassword: ${var.password}
 expose:
   tls:
     enabled: true
-    secretName: ${var.ingress_tls_secret_name.harbor}
-    notarySecretName: ${var.ingress_tls_secret_name.notary}
+    secretName: ${var.ingress_tls_secret_name.harbor == null ? "harbor-cert" : var.ingress_tls_secret_name.harbor}
+    notarySecretName: ${var.ingress_tls_secret_name.notary == null ? "harbor-notary-cert" : var.ingress_tls_secret_name.notary}
   ingress:
     labels:
       ingress: tls

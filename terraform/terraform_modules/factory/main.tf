@@ -45,7 +45,6 @@ variable "gitlab" {
     }
 }
 
-
 provider "helm" {
   kubernetes {
     load_config_file       = "false"
@@ -130,6 +129,7 @@ module "gitlab" {
     oidc_client_id              = module.gitlab_client.client_id
     oidc_client_secret          = module.gitlab_client.client_secret
 }
+
 /****************************
     HARBOR
 ****************************/
@@ -212,7 +212,6 @@ module "jenkins_client" {
 
 module "jenkins" {
     source                      = "./jenkins"
-    kube_config                 = var.kube_config
 
     ingress_host                = "${var.jenkins.host_prefix}.${var.domain}"
     ingress_class               = var.ingress_class
@@ -231,7 +230,6 @@ module "jenkins" {
         client_secret   = module.jenkins_client.client_secret
     }
 
-    root_user                   = module.realm.first_user
 
     deploymanager_url           = module.deploymanager.service_url
 
@@ -280,3 +278,31 @@ module "kathra_client" {
     keycloak_password       = var.keycloak.password
     keycloak_url            = module.keycloak.url
 }
+
+/********************
+    FIRST USER
+***********************/
+
+/*
+module "gitlab_user_init_api_token" {
+    source        = "./gitlab/generate_api_token"
+    gitlab_host   = module.gitlab.host
+    keycloak_host = module.keycloak.host
+    username      = module.realm.first_user.username
+    password      = module.realm.first_user.password
+    release       = module.gitlab.name
+    namespace     = module.gitlab.namespace
+    kube_config   = var.kube_config
+}
+
+module "jenkins_user_init_api_token" {
+    source        = "./jenkins/generate_api_token"
+    jenkins_host  = module.jenkins.host
+    keycloak_host = module.keycloak.host
+    username      = module.realm.first_user.username
+    password      = module.realm.first_user.password
+    release       = module.jenkins.name
+    namespace     = module.jenkins.namespace
+    kube_config   = var.kube_config
+}
+*/
