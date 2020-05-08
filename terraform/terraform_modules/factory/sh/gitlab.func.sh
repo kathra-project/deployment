@@ -13,27 +13,37 @@ function gitlabGenerateApiToken() {
     local namespace=$7
     local releaseName=$8
     local renewIfExists=$9
-    printDebug "gitlabGenerateApiToken(login: $login, password: $password, fileOut: $fileOut, kubeconfigFile: $kubeconfigFile, namespace: $namespace releaseName: $releaseName)"
+    printDebug "$*"
+    printDebug "gitlabGenerateApiToken(gitlab_host: $gitlab_host, keycloak_host:$keycloak_host login: $login, password: $password, fileOut: $fileOut, kubeconfigFile: $kubeconfigFile, namespace: $namespace releaseName: $releaseName)"
     local attempt_counter=0
-    local max_attempts=5
+    local max_attempts=1
     while true; do
 
-        curl -v https://${gitlab_host}/sign_in  2> $tmp/gitlab.sign_in.err > $tmp/gitlab.sign_in.err
+        curl -v https://${gitlab_host}/users/sign_in  2> $tmp/gitlab.sign_in.err > $tmp/gitlab.sign_in
         local GA=$(getHttpHeaderSetCookie $tmp/gitlab.sign_in.err "_ga")
         local GA_SESSION=$(getHttpHeaderSetCookie $tmp/gitlab.sign_in.err "_gitlab_session")
-        local locationAuth=$(getHttpHeaderLocation $tmp/gitlab.sign_in.err )
+        local authenticity_token=$(cat $tmp/gitlab.sign_in | grep csrf-token | sed 's/.*content="\(.*\)".*/\1/g' )
 
-        curl -v -H "Cookie: $GA $GA_SESSION" ${locationAuth} 2> $tmp/gitlab.auth.err > $tmp/gitlab.auth
-        local locationKathra=$(getHttpHeaderLocation $tmp/gitlab.auth.err)
+        printDebug "authenticity_token: $authenticity_token"
+        printDebug "_gitlab_session: $GA_SESSION"
+        curl -X POST -H "Content-Type: application/x-www-form-urlencoded" --data-urlencode "_method=post" --data-urlencode "authenticity_token=$authenticity_token" -v -H "Origin: https://gitlab.kathra.az3.boubechtoula.ovh" -H "Origin: https://gitlab.kathra.az3.boubechtoula.ovh/users/sign_in"  -H "Cookie: $GA_SESSION" https://${gitlab_host}/users/auth/openid_connect 2> $tmp/gitlab.openid_connect.err > $tmp/gitlab.openid_connect
+        local locationKathra=$(getHttpHeaderLocation $tmp/gitlab.openid_connect.err)
+        cat $tmp/gitlab.openid_connect
+        printDebug "GA: $GA"
+        printDebug "GA_SESSION: $GA_SESSION"
+        printDebug "locationKathra: $locationKathra"
         curl -v -H "Cookie: $GA $GA_SESSION" ${locationKathra} 2> $tmp/gitlab.auth.kathra.err > $tmp/gitlab.kathra.auth
         local locationKC=$(getHttpHeaderLocation $tmp/gitlab.auth.kathra.err )
-
+        #  . ./../factory/sh/gitlab.func.sh gitlab.kathra.az3.boubechtoula.ovh keycloak.kathra.az3.boubechtoula.ovh user 123 /tmp/kathra.factory/gitlab.api_token /tmp/kathra.factory/kubeconfig kathra-factory gitlab false
+        printDebug "locationKC: $locationKC"
+        return 0
         curl -v ${locationKC} 2> $tmp/gitlab.kc.err > $tmp/gitlab.kc
         local uriLogin=$(grep "action=" < $tmp/gitlab.kc  | sed "s/.* action=\"\([^\"]*\)\".*/\1/" | sed 's/amp;//g' | tr -d '\r\n')
         local AUTH_SESSION_ID=$(getHttpHeaderSetCookie $tmp/gitlab.kc.err AUTH_SESSION_ID)
         local KC_RESTART=$(getHttpHeaderSetCookie $tmp/gitlab.kc.err KC_RESTART)
         local location=$(getHttpHeaderLocation $tmp/gitlab.kc.err)
 
+        printDebug "uriLogin: $uriLogin"
         curl -v "$uriLogin" -H "authority: ${keycloak_host}" -H 'cache-control: max-age=0' -H "origin: https://${keycloak_host}" -H 'upgrade-insecure-requests: 1' -H 'content-type: application/x-www-form-urlencoded' -H "$UA" -H "$headerAccept" -H "referer: $location" -H 'accept-encoding: gzip, deflate, br' -H "$headerAcceptLang" -H "Cookie:$AUTH_SESSION_ID;$KC_RESTART" --data-urlencode "username=${login}"  --data-urlencode "password=${password}" --compressed 2> $tmp/gitlab.kc.post.err > $tmp/gitlab.kc.post
         local locationFinishLogin=$(getHttpHeaderLocation $tmp/gitlab.kc.post.err)
 
@@ -78,6 +88,23 @@ function gitlabDefineAccountAsAdmin() {
 }
 export -f gitlabDefineAccountAsAdmin
 
+rawurlencode() {
+  local string="${1}"
+  local strlen=${#string}
+  local encoded=""
+  local pos c o
+
+  for (( pos=0 ; pos<strlen ; pos++ )); do
+     c=${string:$pos:1}
+     case "$c" in
+        [-_.~a-zA-Z0-9] ) o="${c}" ;;
+        * )               printf -v o '%%%02x' "'$c"
+     esac
+     encoded+="${o}"
+  done
+  echo "${encoded}"    # You can either set a return variable (FASTER) 
+  REPLY="${encoded}"   #+or echo the result (EASIER)... or both... :p
+}
 
 function gitlabImportPublicSshKey() {
     local userId=$1
@@ -89,3 +116,6 @@ function gitlabImportPublicSshKey() {
     printDebug "PublicKey $publicKeyFile is pushed into GitLab for user $userId"
 }
 export -f gitlabImportPublicSshKey
+
+
+gitlabGenerateApiToken $*

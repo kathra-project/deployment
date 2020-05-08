@@ -39,7 +39,7 @@ resource "keycloak_openid_client" "client" {
 
 
 output "host" {
-  value = replace("https://",var.keycloak_url)
+  value = replace(var.keycloak_url, "https://", "")
 }
 output "well_known_url" {
   value = "${var.keycloak_url}/auth/realms/${var.realm}/.well-known/openid-configuration"

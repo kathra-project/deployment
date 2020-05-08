@@ -344,7 +344,9 @@ function installTerraformPlugin() {
     local pluginVersion=$2
     local pluginSourceRepositoryGit=$3
     local pluginSourceCommit=$4
-    local bin=$SCRIPT_DIR/.terraform/plugins/windows_amd64/terraform-provider-${pluginName}_v$pluginVersion
+    local system="linux"
+    [ "$OSTYPE" == "win32" ] && system="windows"
+    local bin=$SCRIPT_DIR/.terraform/plugins/${system}_amd64/terraform-provider-${pluginName}_v$pluginVersion
     
     [ -f $bin ] && return 0
     [ -d /tmp/terraform-provider-$pluginName ] && rm -rf /tmp/terraform-provider-$pluginName 

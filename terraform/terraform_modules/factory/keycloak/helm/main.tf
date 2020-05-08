@@ -54,9 +54,6 @@ EOF
 }
 
 resource "null_resource" "check_tls_resolution" {
-    triggers = {
-        timestamp        = timestamp()
-    }
     provisioner "local-exec" {
       command = <<EOT
 for attempt in $(seq 1 100); do sleep 5 && curl --fail https://${var.ingress_host} && exit 0 || echo "Check https://${var.ingress_host} ($attempt/100)"; done

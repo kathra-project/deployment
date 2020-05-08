@@ -7,9 +7,6 @@ resource "google_compute_address" "static" {
 }
 
 resource "null_resource" "check_dns_resolution" {
-    triggers = {
-        timestamp        = timestamp()
-    }
     provisioner "local-exec" {
       command = <<EOT
           echo "Trying to resolv DNS test.$DOMAIN  -> $IP"

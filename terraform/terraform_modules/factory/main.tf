@@ -262,28 +262,10 @@ output "jenkins" {
   value = module.jenkins
 }
 
-
-/****************************
-    KATHRA SERVICES
-****************************/
-module "kathra_client" {
-    source                  = "./keycloak/client"
-    
-    realm                   = module.realm.name
-    client_id               = "kathra"
-    redirect_uri            = "https://dashboard.${var.domain}/*"
-    
-    keycloak_client_id      = var.keycloak.client_id
-    keycloak_username       = var.keycloak.username
-    keycloak_password       = var.keycloak.password
-    keycloak_url            = module.keycloak.url
-}
-
 /********************
     FIRST USER
 ***********************/
 
-/*
 module "gitlab_user_init_api_token" {
     source        = "./gitlab/generate_api_token"
     gitlab_host   = module.gitlab.host
@@ -305,4 +287,29 @@ module "jenkins_user_init_api_token" {
     namespace     = module.jenkins.namespace
     kube_config   = var.kube_config
 }
-*/
+
+output "jenkins_user_init_api_token" {
+  value = module.jenkins_user_init_api_token
+}
+output "gitlab_user_init_api_token" {
+  value = module.gitlab_user_init_api_token
+}
+
+
+/****************************
+    KATHRA SERVICES
+****************************/
+module "kathra_client" {
+    source                  = "./keycloak/client"
+    
+    realm                   = module.realm.name
+    client_id               = "kathra"
+    redirect_uri            = "https://dashboard.${var.domain}/*"
+    
+    keycloak_client_id      = var.keycloak.client_id
+    keycloak_username       = var.keycloak.username
+    keycloak_password       = var.keycloak.password
+    keycloak_url            = module.keycloak.url
+}
+
+
