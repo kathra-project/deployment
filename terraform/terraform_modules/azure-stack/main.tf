@@ -84,6 +84,6 @@ module "factory" {
 output "kubeconfig_content" {
     value                       = module.kubernetes.kube_config_raw
 }
-output "kubeconfig" {
-    value                       = module.kubernetes.kube_config
+output "factory" {
+    value                       = module.factory
 }

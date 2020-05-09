@@ -1,5 +1,6 @@
 #!/bin/bash
-
+export tmp=/tmp/kathra.gitlab.init_token.$(date +%s%N)
+[ ! -d $tmp ] && mkdir $tmp
 export SCRIPT_DIR=$(realpath $(dirname `which $0`))
 export debug=1
 
@@ -47,4 +48,5 @@ then
 fi
 
 jq -n --arg token "$token" '{"token":$token}'
+exit 1
 exit $?

@@ -32,6 +32,7 @@ module "treafik" {
     default_tls_cert           = var.default_tls_cert
 }
 
+/*
 resource "null_resource" "forward_port" {
     provisioner "local-exec" {
         command = <<EOT
@@ -47,7 +48,7 @@ resource "null_resource" "forward_port" {
         }
     }
 }
-
+*/
 output "treafik" {
     value = module.treafik
 }

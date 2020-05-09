@@ -1,5 +1,5 @@
 #!/bin/bash
-[ "$tmp" == "" ] && export tmp=/tmp/kathra.factory
+[ "$tmp" == "" ] && export tmp=/tmp/kathra.factory.$(date +%s%N)
 [ ! -d $tmp ] && mkdir $tmp
 
 function printError(){

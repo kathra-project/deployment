@@ -8,7 +8,6 @@ variable "keycloak_username" {
 }
 variable "keycloak_password" {
 }
-
 variable "first_user_login" {
 }
 variable "first_user_password" {
@@ -73,11 +72,15 @@ output "name" {
     value = keycloak_realm.realm.realm
 }
 
+output "id" {
+    value = keycloak_realm.realm.id
+}
+
 output "first_user" {
-  value = {
-    username = var.first_user_login
-    password = var.first_user_password
-  }
+    value = {
+        username = var.first_user_login
+        password = var.first_user_password
+    }
 }
 
 

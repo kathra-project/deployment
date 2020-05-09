@@ -5,26 +5,26 @@ variable "ingress_class" {
 variable "ingress_cert_manager_issuer" {
 }
 variable "ingress_tls_secret_name" {
-  default = "jenkins-cert"
+    default = "jenkins-cert"
 }
 variable "namespace" { 
 }
 variable "password" {
 }
 variable "oidc" {
-  default = null
+    default = null
 }
 variable "binaries" {
 }
 variable "git_ssh" {
-  default = null
+    default = null
 }
 variable "deploymanager_url" {
 }
 
 data "helm_repository" "stable" {
-  name = "stable"
-  url  = "https://codecentric.github.io/helm-charts"
+    name = "stable"
+    url  = "https://kubernetes-charts.storage.googleapis.com"
 }
 
 module "registry_config" {
@@ -67,58 +67,58 @@ module "nfs-server" {
 }
 
 resource "kubernetes_storage_class" "nfs" {
-  metadata {
-    name = "nfs"
-  }
-  storage_provisioner = "nfs"
-  reclaim_policy      = "Retain"
+    metadata {
+        name = "nfs"
+    }
+    storage_provisioner = "nfs"
+    reclaim_policy      = "Retain"
 }
 
 resource "kubernetes_persistent_volume" "jenkins_mvn_cache_pv" {
-  metadata {
-    name                    = "jenkins-mvn-local-repo-pv"
-  }
-  spec {
-    capacity = {
-      storage               = "5Gi"
+    metadata {
+        name                    = "jenkins-mvn-local-repo-pv"
     }
-    access_modes            = ["ReadWriteMany"]
-    storage_class_name      = kubernetes_storage_class.nfs.metadata[0].name
-    persistent_volume_source {
-      nfs {
-        path                = "/"
-        server              = module.nfs-server.service_host
-      }
+    spec {
+        capacity = {
+            storage               = "5Gi"
+        }
+        access_modes            = ["ReadWriteMany"]
+        storage_class_name      = kubernetes_storage_class.nfs.metadata[0].name
+        persistent_volume_source {
+            nfs {
+                path                = "/"
+                server              = module.nfs-server.service_host
+            }
+        }
+        persistent_volume_reclaim_policy = "Retain"
     }
-    persistent_volume_reclaim_policy = "Retain"
-  }
 }
 
 resource "kubernetes_persistent_volume_claim" "jenkins_mvn_cache_pvc" {
-  metadata {
-    name                    = "jenkins-mvn-local-repo-pvc"
-    namespace               = var.namespace
-  }
-  spec {
-    access_modes            = ["ReadWriteMany"]
-    storage_class_name      = kubernetes_storage_class.nfs.metadata[0].name
-    resources {
-      requests = {
-        storage = "5Gi"
-      }
+    metadata {
+        name                    = "jenkins-mvn-local-repo-pvc"
+        namespace               = var.namespace
     }
-    volume_name = kubernetes_persistent_volume.jenkins_mvn_cache_pv.metadata.0.name
-  }
+    spec {
+        access_modes            = ["ReadWriteMany"]
+        storage_class_name      = kubernetes_storage_class.nfs.metadata[0].name
+        resources {
+            requests = {
+                storage = "5Gi"
+            }
+        }
+        volume_name = kubernetes_persistent_volume.jenkins_mvn_cache_pv.metadata.0.name
+    }
 }
 
 
 resource "helm_release" "jenkins" {
-  name          = "jenkins"
-  repository    = data.helm_repository.stable.metadata[0].name
-  chart         = "jenkins"
-  namespace     = var.namespace
-  timeout       = 800
-  values = [<<EOF
+    name          = "jenkins"
+    repository    = data.helm_repository.stable.metadata[0].name
+    chart         = "jenkins"
+    namespace     = var.namespace
+    timeout       = 800
+    values = [<<EOF
 
 master:
   adminUser: ${var.password}
@@ -398,20 +398,20 @@ EOF
 }
 
 output "namespace" {
-  value = helm_release.jenkins.namespace
+    value = helm_release.jenkins.namespace
 }
 output "name" {
-  value = helm_release.jenkins.name
+    value = helm_release.jenkins.name
 }
 output "username" {
-  value = "admin"
+    value = "admin"
 }
 output "password" {
-  value = yamldecode(helm_release.jenkins.metadata[0].values).master.adminUser
+    value = yamldecode(helm_release.jenkins.metadata[0].values).master.adminUser
 }
 output "host" {
-  value = yamldecode(helm_release.jenkins.metadata[0].values).master.ingress.hostName
+    value = yamldecode(helm_release.jenkins.metadata[0].values).master.ingress.hostName
 }
 output "url" {
-  value = "https://${yamldecode(helm_release.jenkins.metadata[0].values).master.ingress.hostName}"
+    value = "https://${yamldecode(helm_release.jenkins.metadata[0].values).master.ingress.hostName}"
 }

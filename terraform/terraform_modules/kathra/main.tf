@@ -103,8 +103,7 @@ resource "helm_release" "kathra" {
   namespace  = var.namespace
   timeout    = 600
   values = [<<EOF
-## OVERIDE CHILDREN CHARTS' VALUES FROM HERE 
-## OR MODIFY THEM IN THEIR RESPECTIVE CHART
+
 global:
   namespace: kathra
   tld: irtsystemx.org

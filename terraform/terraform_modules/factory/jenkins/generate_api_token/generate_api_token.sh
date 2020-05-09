@@ -1,10 +1,11 @@
 #!/bin/bash
-
+export tmp=/tmp/kathra.jenkins.init_token.$(date +%s%N)
+[ ! -d $tmp ] && mkdir $tmp
 export SCRIPT_DIR=$(realpath $(dirname `which $0`))
 export debug=1
 
-. ${SCRIPT_DIR}/../sh/commons.func.sh
-. ${SCRIPT_DIR}/../sh/jenkins.func.sh
+. ${SCRIPT_DIR}/../../sh/commons.func.sh
+. ${SCRIPT_DIR}/../../sh/jenkins.func.sh
 
 export retrySecondInterval=2
 export max_attempts=5

@@ -295,7 +295,30 @@ output "gitlab_user_init_api_token" {
   value = module.gitlab_user_init_api_token
 }
 
+module "user_sync" {
+    source      = "./user"
+    realm_id    = module.realm.id
+    namespace   = var.namespace
+    firstname   = "user-sync"
+    lastname    = "user-sync"
+    email       = "user-sync@${var.domain}"
+    username    = "user-sync"
+    password    = "dzdbd789"
+    jenkins     = module.jenkins
+    gitlab      = module.gitlab
+    keycloak    = {
+        host            = module.keycloak.host
+        url             = module.keycloak.url
+        client_id       = var.keycloak.client_id
+        username        = var.keycloak.username
+        password        = var.keycloak.password
+    }
+    kube_config = var.kube_config
+}
 
+output "gitlab_useruser_sync_init_api_token" {
+  value = module.user_sync
+}
 /****************************
     KATHRA SERVICES
 ****************************/
