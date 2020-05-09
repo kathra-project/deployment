@@ -1,5 +1,4 @@
 #!/bin/bash
-
 export SCRIPT_DIR=$(realpath $(dirname `which $0`))
 export debug=1
 

@@ -16,7 +16,7 @@ function gitlabGenerateApiToken() {
     printDebug "$*"
     printDebug "gitlabGenerateApiToken(gitlab_host: $gitlab_host, keycloak_host:$keycloak_host login: $login, password: $password, fileOut: $fileOut, kubeconfigFile: $kubeconfigFile, namespace: $namespace releaseName: $releaseName)"
     local attempt_counter=0
-    local max_attempts=1
+    local max_attempts=5
     while true; do
 
         curl -v https://${gitlab_host}/users/sign_in  2> $tmp/gitlab.sign_in.err > $tmp/gitlab.sign_in
@@ -32,16 +32,12 @@ function gitlabGenerateApiToken() {
         printDebug "GA: $GA"
         printDebug "GA_SESSION: $GA_SESSION"
         printDebug "locationKathra: $locationKathra"
-        curl -v -H "Cookie: $GA $GA_SESSION" ${locationKathra} 2> $tmp/gitlab.auth.kathra.err > $tmp/gitlab.kathra.auth
+        curl -v -H "Cookie: $GA $GA_SESSION" ${locationKathra} 2> $tmp/gitlab.auth.kathra.err > $tmp/gitlab.auth.kathra
         local locationKC=$(getHttpHeaderLocation $tmp/gitlab.auth.kathra.err )
-        #  . ./../factory/sh/gitlab.func.sh gitlab.kathra.az3.boubechtoula.ovh keycloak.kathra.az3.boubechtoula.ovh user 123 /tmp/kathra.factory/gitlab.api_token /tmp/kathra.factory/kubeconfig kathra-factory gitlab false
-        printDebug "locationKC: $locationKC"
-        return 0
-        curl -v ${locationKC} 2> $tmp/gitlab.kc.err > $tmp/gitlab.kc
-        local uriLogin=$(grep "action=" < $tmp/gitlab.kc  | sed "s/.* action=\"\([^\"]*\)\".*/\1/" | sed 's/amp;//g' | tr -d '\r\n')
-        local AUTH_SESSION_ID=$(getHttpHeaderSetCookie $tmp/gitlab.kc.err AUTH_SESSION_ID)
-        local KC_RESTART=$(getHttpHeaderSetCookie $tmp/gitlab.kc.err KC_RESTART)
-        local location=$(getHttpHeaderLocation $tmp/gitlab.kc.err)
+        local uriLogin=$(grep "action=" < $tmp/gitlab.auth.kathra | sed "s/.* action=\"\([^\"]*\)\".*/\1/" | sed 's/amp;//g' | tr -d '\r\n')
+        local AUTH_SESSION_ID=$(getHttpHeaderSetCookie $tmp/gitlab.auth.kathra.err AUTH_SESSION_ID)
+        local KC_RESTART=$(getHttpHeaderSetCookie $tmp/gitlab.auth.kathra.err KC_RESTART)
+        local location=$(getHttpHeaderLocation $tmp/gitlab.auth.kathra.err)
 
         printDebug "uriLogin: $uriLogin"
         curl -v "$uriLogin" -H "authority: ${keycloak_host}" -H 'cache-control: max-age=0' -H "origin: https://${keycloak_host}" -H 'upgrade-insecure-requests: 1' -H 'content-type: application/x-www-form-urlencoded' -H "$UA" -H "$headerAccept" -H "referer: $location" -H 'accept-encoding: gzip, deflate, br' -H "$headerAcceptLang" -H "Cookie:$AUTH_SESSION_ID;$KC_RESTART" --data-urlencode "username=${login}"  --data-urlencode "password=${password}" --compressed 2> $tmp/gitlab.kc.post.err > $tmp/gitlab.kc.post
@@ -81,7 +77,8 @@ function gitlabDefineAccountAsAdmin() {
     printDebug "gitlabDefineAccountAsAdmin(accountName: $1, kubeconfigFile: $2, namespace: $3, release=$4)"
     local dbUser=postgres
     local dbName=gitlabhq_production
-    local dbPassword=$(kubectl --kubeconfig=$2 -n $3 get secret $4-postgresql-password -o json | jq -r '.data."postgresql-postgres-password"' | base64 -d)
+    local dbPasswordB64=$(kubectl --kubeconfig=$2 -n $3 get secret $4-postgresql-password -o json | jq -r '.data."postgresql-postgres-password"')
+    local dbPassword=$(echo $dbPasswordB64 | base64 -d)
     local podIdentifier=$(kubectl --kubeconfig=$2 -n $3 get pods -l app=postgresql,release=$4 -o json | jq -r -c '.items[0] | .metadata.name')
     kubectl --kubeconfig=$2 -n $3 exec -it ${podIdentifier} -- bash -c "export PGPASSWORD=$dbPassword ; echo \"update users set admin=true where username like '${1}';\" | psql -U $dbUser -d $dbName" 2> /dev/null > /dev/null
     return $?
@@ -116,6 +113,3 @@ function gitlabImportPublicSshKey() {
     printDebug "PublicKey $publicKeyFile is pushed into GitLab for user $userId"
 }
 export -f gitlabImportPublicSshKey
-
-
-gitlabGenerateApiToken $*

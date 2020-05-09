@@ -138,18 +138,6 @@ function deploy() {
     terraform init || printErrorAndExit "Terraform : Unable to init"
     terraform apply -auto-approve || printErrorAndExit "Terraform : Unable to apply"
     terraform output kubeconfig_content > $KUBECONFIG  || printErrorAndExit "Terraform : Unable to get kubeconfig_content"
-
-    kubectl get nodes || printErrorAndExit "Unable to connect to Kubernetes server"
-
-    # Deploy Kathra
-    export KUBECONFIG=$KUBECONFIG
-    printInfo "Force to restart kubedb and kube-system pods [ aks issues ]"
-    kubectl -n kube-system delete pods --all
-    kubectl -n kubedb delete pods --all
-    printInfo "export KUBECONFIG=$KUBECONFIG"
-    printInfo "install.sh --domain=$domain --chart-version=$kathraChartsVersion --kathra-image-tag=$kathraImagesTag --enable-tls-ingress --verbose"
-    $SCRIPT_DIR/../install.sh --domain=$domain --chart-version=$kathraChartsVersion --kathra-image-tag=$kathraImagesTag --enable-tls-ingress --verbose
-    return $?
 }
 export -f deploy
 
@@ -157,7 +145,8 @@ function destroy() {
     printDebug "destroy()"
     checkDependencies
     terraform init 
-    terraform destroy
+    terraform state rm $(terraform state list | grep "factory")
+    terraform destroy target=$(terraform state list | grep "kubernetes" | tr " " ",")
     return $?
 }
 export -f destroy
