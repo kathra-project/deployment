@@ -12,6 +12,10 @@ variable "client_id" {
 }
 variable "redirect_uri" {
 }
+variable "service_accounts_enabled" {
+    default = false
+}
+
 
 provider "keycloak" {
     client_id     = var.keycloak_client_id
@@ -23,16 +27,21 @@ provider "keycloak" {
 }
 
 resource "keycloak_openid_client" "client" {
-    realm_id                = var.realm
-    client_id               = var.client_id
+    realm_id                  = var.realm
+    client_id                 = var.client_id
 
-    name                    = var.client_id
-    enabled                 = true
-    standard_flow_enabled   = true 
-    implicit_flow_enabled   = true
+    name                      = var.client_id
+    enabled                   = true
+    standard_flow_enabled     = true 
+    implicit_flow_enabled     = true
+    service_accounts_enabled  = var.service_accounts_enabled
+    authorization {
+      allow_remote_resource_management = var.service_accounts_enabled
+      policy_enforcement_mode          = "ENFORCING"
+    }                    
 
-    access_type             = "CONFIDENTIAL"
-    valid_redirect_uris     = [
+    access_type               = "CONFIDENTIAL"
+    valid_redirect_uris       = [
         var.redirect_uri
     ]
 }

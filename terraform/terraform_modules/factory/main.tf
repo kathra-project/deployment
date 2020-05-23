@@ -335,16 +335,18 @@ output "user_sync" {
     KATHRA SERVICES
 ****************************/
 module "kathra_client" {
-    source                  = "./keycloak/client"
+    source                      = "./keycloak/client"
     
-    realm                   = module.realm.name
-    client_id               = "kathra"
-    redirect_uri            = "https://dashboard.${var.domain}/*"
-    
-    keycloak_client_id      = var.keycloak.client_id
-    keycloak_username       = var.keycloak.username
-    keycloak_password       = var.keycloak.password
-    keycloak_url            = module.keycloak.url
+    realm                       = module.realm.name
+    client_id                   = "kathra"
+    redirect_uri                = "https://dashboard.${var.domain}/*"
+    service_accounts_enabled    = true
+
+
+    keycloak_client_id          = var.keycloak.client_id
+    keycloak_username           = var.keycloak.username
+    keycloak_password           = var.keycloak.password
+    keycloak_url                = module.keycloak.url
 }
 
 output "kathra" {

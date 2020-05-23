@@ -100,22 +100,22 @@ resource "helm_release" "kathra" {
   values = [<<EOF
 
 global:
-  domain: ${var.kathra.domain}
+  domain: "${var.kathra.domain}"
   docker:
     registry: 
-      url: ${var.kathra.images.registry_url}
-      root_repository: ${var.kathra.images.root_repository}
+      url: "${var.kathra.images.registry_url}"
+      root_repository: "${var.kathra.images.root_repository}"
       secret: "${var.kathra.images.docker_conf}"
   keycloak:
-    auth_url: ${var.keycloak.user.auth_url}
-    realm: ${var.keycloak.user.realm}
+    auth_url: "${var.keycloak.user.auth_url}"
+    realm: "${var.keycloak.user.realm}"
     kathra_services_client:
-      id: ${var.kathra.oidc.client_id}
-      secret: ${var.kathra.oidc.client_secret}
+      id: "${var.kathra.oidc.client_id}"
+      secret: "${var.kathra.oidc.client_secret}"
 
 kathra-appmanager:
   image: appmanager
-  version: ${var.kathra.images.tag}
+  version: "${var.kathra.images.tag}"
   tls: true
   delete_zip_file: "true"
   services_url:
@@ -140,21 +140,21 @@ kathra-appmanager:
       cert-manager.io/issuer: "${var.kathra.ingress.cert-manager_issuer}"
     tls:
     - hosts:
-      - ${var.kathra.ingress.appmanager.host}
-      secretName: ${var.kathra.ingress.appmanager.tls_secret_name}
+      - "${var.kathra.ingress.appmanager.host}"
+      secretName: "${var.kathra.ingress.appmanager.tls_secret_name}"
 
 kathra-binaryrepositorymanager-harbor:
   image: binaryrepositorymanager-harbor
-  version: ${var.kathra.images.tag}
+  version: "${var.kathra.images.tag}"
   services_url:
     resource_manager: resourcemanager/api/v1
   harbor:
-    url: ${var.harbor.url}
-    username: ${var.harbor.username}
-    password: ${var.harbor.password}
+    url: "${var.harbor.url}"
+    username: "${var.harbor.username}"
+    password: "${var.harbor.password}"
   keycloak:
-    username: ${var.keycloak.user.username}
-    password: ${var.keycloak.user.password}
+    username: "${var.keycloak.user.username}"
+    password: "${var.keycloak.user.password}"
   resources:
     limits:
       cpu: 500m
@@ -166,18 +166,18 @@ kathra-binaryrepositorymanager-harbor:
 
 kathra-catalogmanager:
   image: catalogmanager-helm
-  version: ${var.kathra.images.tag}
+  version: "${var.kathra.images.tag}"
   tls: true
   services_url:
     resource_manager: http://resourcemanager/api/v1
   helm:
     repoName: kathra
-    url: ${var.harbor.url}/chartrepo
-    login: ${var.harbor.username}
-    password: ${var.harbor.password}
+    url: "${var.harbor.url}/chartrepo"
+    login: "${var.harbor.username}"
+    password: "${var.harbor.password}"
   keycloak:
-    username: ${var.keycloak.user.username}
-    password: ${var.keycloak.user.password}
+    username: "${var.keycloak.user.username}"
+    password: "${var.keycloak.user.password}"
   resources:
     limits:
       cpu: 500m
@@ -188,10 +188,10 @@ kathra-catalogmanager:
 
 kathra-codegen-swagger:
   image: codegen-swagger
-  version: ${var.kathra.images.tag}
+  version: "${var.kathra.images.tag}"
   tls: true
   repository:
-    url: ${var.nexus.url}
+    url: "${var.nexus.url}"
     pythonRepo: pip-all/simple
   resources:
     limits:
@@ -220,10 +220,10 @@ kathra-dashboard:
   version: "${var.kathra.images.tag}"
   tls: true
   services_url:
-    platform_manager: wss://${var.kathra.ingress.platformmanager.host}/spm
-    app_manager: https://${var.kathra.ingress.appmanager.host}/api/v1
-    jenkins_url: ${var.jenkins.url}
-    base_domain: ${var.kathra.domain}
+    platform_manager: "wss://${var.kathra.ingress.platformmanager.host}/spm"
+    app_manager: "https://${var.kathra.ingress.appmanager.host}/api/v1"
+    jenkins_url: "${var.jenkins.url}"
+    base_domain: "${var.kathra.domain}"
   resources:
     limits:
       cpu: 300m
@@ -245,9 +245,9 @@ kathra-pipelinemanager:
   version: "${var.kathra.images.tag}"
   tls: true
   jenkins:
-    url: ${var.jenkins.url}
-    username: ${var.jenkins.username}
-    api_token: ${var.jenkins.token}
+    url: "${var.jenkins.url}"
+    username: "${var.jenkins.username}"
+    api_token: "${var.jenkins.token}"
   resources:
     limits:
       cpu: 500m
@@ -266,7 +266,7 @@ kathra-platformmanager:
     url: http://catalogmanager/api/v1
   deployment:
     ingress_controller: "${var.kathra.ingress.class}"
-    tld: ${var.kathra.domain}
+    tld: "${var.kathra.domain}"
   resources:
     limits:
       cpu: 500m
@@ -280,8 +280,8 @@ kathra-platformmanager:
       cert-manager.io/issuer: "${var.kathra.ingress.cert-manager_issuer}"
     tls:
     - hosts:
-      - ${var.kathra.ingress.platformmanager.host}
-      secretName: ${var.kathra.ingress.platformmanager.tls_secret_name}
+      - "${var.kathra.ingress.platformmanager.host}"
+      secretName: "${var.kathra.ingress.platformmanager.tls_secret_name}"
 
 kathra-resourcemanager:
   image: resourcemanager-arangodb
@@ -292,7 +292,7 @@ kathra-resourcemanager:
     port: "8529"
     database: KATHRA
     user: root
-    password: ${var.kathra.arangodb.password}
+    password: "${var.kathra.arangodb.password}"
   resources:
     limits:
       cpu: 1
@@ -303,20 +303,20 @@ kathra-resourcemanager:
 
 db:
   db:
-    password: ${var.kathra.arangodb.password}
+    password: "${var.kathra.arangodb.password}""
 
 kathra-sourcemanager:
   image: sourcemanager-gitlab
-  version: ${var.kathra.images.tag}
+  version: "${var.kathra.images.tag}"
   tls: true
   temp_repos_folder: /tmp/kathra-sourcemanager-git-repos
   dir_creation_max_retry: "3"
   delete_temp_folder: "true"
   delete_temp_zip: "true"
   gitlab:
-    url: ${var.gitlab.url}
-    api_token: ${var.gitlab.token}
-    parent_group: ${var.gitlab.root_project}
+    url: "${var.gitlab.url}"
+    api_token: "${var.gitlab.token}"
+    parent_group: "${var.gitlab.root_project}"
   user_manager:
     url: usermanager
   resources:
@@ -329,7 +329,7 @@ kathra-sourcemanager:
 
 kathra-usermanager:
   image: usermanager-keycloak
-  version: ${var.kathra.images.tag}
+  version: "${var.kathra.images.tag}"
   tls: true
   resources:
     limits:
@@ -339,17 +339,17 @@ kathra-usermanager:
       cpu: 50m
       memory: 256Mi
   keycloak:
-      adminRealm: ${var.keycloak.admin.realm}
-      adminClientId: ${var.keycloak.admin.client_id}
-      adminUsername: ${var.keycloak.admin.username}
-      adminPassword: ${var.keycloak.admin.password}
+      adminRealm: "${var.keycloak.admin.realm}"
+      adminClientId: "${var.keycloak.admin.client_id}"
+      adminUsername: "${var.keycloak.admin.username}"
+      adminPassword: "${var.keycloak.admin.password}"
 
 kathra-sync:
   keycloak:
-    login: ${var.keycloak.user.username}
-    password: ${var.keycloak.user.password}
+    login: "${var.keycloak.user.username}"
+    password: "${var.keycloak.user.password}"
   image: users-sync
-  version: ${var.kathra.images.tag}
+  version: "${var.kathra.images.tag}"
   resources:
     limits:
       cpu: 300m
@@ -358,7 +358,7 @@ kathra-sync:
       cpu: 50m
       memory: 256Mi
 
-      
+    
 EOF
 ]
 
