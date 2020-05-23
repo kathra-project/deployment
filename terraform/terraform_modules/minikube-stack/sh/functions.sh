@@ -6,7 +6,7 @@ function startMinikube() {
     printDebug "startMinikube(minikubeCpus: $minikubeCpus, minikubeMemory: $minikubeMemory, minikubeDiskSize: $minikubeDiskSize)"
     downloadMinikube
     downloadKubectl
-    [ $(minikube status | grep -e "host: Running\|kubelet: Running\|apiserver: Running\|kubectl: Correctly Configured\|kubeconfig: Configured" | wc -l) -eq 4 ] && printInfo "Minikube already started" && return 0
+    [ $(minikube status | grep -e "host: Running\|kubelet: Running\|apiserver: Running\|kubectl: Correctly Configured\|kubeconfig: Configured" | wc -l) -eq 4 ] && minikube addons enable ingress && printInfo "Minikube already started" && return 0
     if [ $minikubeVmDriver == "none" ]
     then
         $sudo minikube start --vm-driver="none" --kubernetes-version v$kubernetesVersion || printErrorAndExit "Unable to install minikube"
@@ -14,6 +14,8 @@ function startMinikube() {
         minikube start --vm-driver=$minikubeVmDriver --cpus $minikubeCpus --memory $minikubeMemory --disk-size $minikubeDiskSize --kubernetes-version v$kubernetesVersion || printErrorAndExit "Unable to install minikube"
     fi
     printInfo "Minikubed started"
+    minikube addons enable ingress
+    addDefaultCertNginxController "kathra-services" "default-tls"               || printErrorAndExit "Unable to Configure Nginx"
     return 0
 }
 export -f startMinikube
@@ -23,6 +25,12 @@ function getLocalIp() {
     local ip=$(ip -4 addr show $hostNetworkDevice | grep -oP '(?<=inet\s)[\da-f.]+')
     [ "$ip" == "" ] && return 1
     echo $ip
+}
+
+function addDefaultCertNginxController() {
+    local namespace=$1
+    local secretName=$2
+    kubectl -n kube-system patch deployment nginx-ingress-controller -o json --type "json" -p "[{\"op\":\"add\",\"path\":\"/spec/template/spec/containers/0/args/1\",\"value\":\"--default-ssl-certificate=$namespace/$secretName\"}]" 
 }
 
 function addLocalIpInCoreDNS() {
@@ -169,7 +177,7 @@ function generateCertsDnsChallenge() {
     export tlsCert=$certDir/fullchain.pem
     export tlsKey=$certDir/privkey.pem
 
-    sudo ls -l $tlsCert > /dev/null 2> /dev/null && sudo ls -l $tlsKey > /dev/null 2> /dev/null && printInfo "Certificate already exists: $tlsCert, $tlsKey" && return 0
+    sudo ls -l $tlsCert > /dev/null 2> /dev/null && sudo ls -l $tlsKey > /dev/null 2> /dev/null && printInfo "Certificate already exists: $tlsCert, $tlsKey" && sudo cp $tlsCert $tlsCertOut && sudo cp $tlsKey $tlsKeyOut && return 0
 
     printInfo "Generate new wildcard certificate for domain *.$domain with Let's Encrypt"
 
@@ -202,20 +210,27 @@ function installTerraform() {
 }
 export -f installTerraform
 
-
-
-function installKeycloakProviderPlugin() {
-    local version=1.17.1
-    local bin=$SCRIPT_DIR/.terraform/plugins/linux_amd64/terraform-provider-keycloak_v$version
+function installTerraformPlugin() {
+    printDebug "installTerraformPlugin(pluginName: $1, pluginVersion: $2, pluginSourceCommit: $3, pluginSourceCommit: $4)"
+    local pluginName=$1
+    local pluginVersion=$2
+    local pluginSourceRepositoryGit=$3
+    local pluginSourceCommit=$4
+    local system="linux"
+    [ "$OSTYPE" == "win32" ] && system="windows"
+    [ "$OSTYPE" == "win32" ] && system="windows"
+    
+    local bin=$SCRIPT_DIR/.terraform/plugins/${system}_amd64/terraform-provider-${pluginName}_v$pluginVersion
+    
     [ -f $bin ] && return 0
-    [ -d /tmp/terraform-provider-keycloak ] && rm -rf /tmp/terraform-provider-keycloak 
-    git clone https://github.com/mrparkers/terraform-provider-keycloak.git /tmp/terraform-provider-keycloak || return 1
-    cd /tmp/terraform-provider-keycloak || return 1
-    git checkout $version || return 1
-    go build -o terraform-provider-keycloak || return 1
-    mv terraform-provider-keycloak $bin || return 1
+    [ -d /tmp/terraform-provider-$pluginName ] && rm -rf /tmp/terraform-provider-$pluginName 
+    git clone ${pluginSourceRepositoryGit} /tmp/terraform-provider-$pluginName || return 1
+    cd /tmp/terraform-provider-$pluginName || return 1
+    git checkout $pluginSourceCommit || return 1
+    go build -o terraform-provider-$pluginName || return 1
+    [ ! -d "$(dirname $bin)" ] && mkdir "$(dirname $bin)"
+    mv terraform-provider-$pluginName $bin || return 1
     cd $SCRIPT_DIR
-    return 0
 }
 
 function printErrorAndExit(){

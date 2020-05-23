@@ -19,10 +19,10 @@ export tlsKey=
 export manualDnsChallenge=0
 export automaticDnsChallenge=0
 export hostNetworkDevice=$(ip -4 addr show | grep '^[0-9]*:' | awk '{print $2;}' | sed 's/\://g' | grep -v 'lo' | head -n 1)
-export nodePortHTTP=30080
-export nodePortHTTPS=30443
-export minikubeCpus=6
-export minikubeMemory=16384
+export nodePortHTTP=80
+export nodePortHTTPS=443
+export minikubeCpus=8
+export minikubeMemory=20000
 export minikubeDiskSize="50000mb"
 export minikubeVersion="1.3.1"
 export minikubeVmDriver="virtualbox"
@@ -50,9 +50,9 @@ function showHelp() {
     printInfo "--acme-dns-provider             Provider name"
     printInfo "--acme-dns-config               Provider configuration"
     printInfo ""
-    printInfo "Using own certifications"
-    printInfo "--tlsCert=<path>                TLS cert file path"
-    printInfo "--tlsKey=<path>                 TLS key file path"
+    printInfo "Using own certificates"
+    printInfo "--tls-cert=<path>                TLS cert file path"
+    printInfo "--tls-key=<path>                 TLS key file path"
     printInfo ""
     printInfo "Manualy TLS certificate generation from Let's Encrypt with DNS Challenge"
     printInfo "--manual-acme          "
@@ -77,8 +77,8 @@ function parseArgs() {
         local value=${argument#*=}
         case "$key" in
             --domain)                       domain=$value;;
-            --tlsCert)                      tlsCert=$value;;
-            --tlsKey)                       tlsKey=$value;;
+            --tls-cert)                      tlsCert=$value;;
+            --tls-key)                       tlsKey=$value;;
             --manual-acme)                  manualDnsChallenge=1;;
             --acme-dns-provider)            automaticDnsChallenge=1 && acmeDnsProvider="$value";;
             --acme-dns-config)              automaticDnsChallenge=1 && acmeDnsConfig="$value";;
@@ -97,7 +97,7 @@ function parseArgs() {
 
 function main() {
     printDebug "main()"
-    parseArgs $*
+    parseArgs "$1" "$2" "$3" "$4" "$5" "$5" "$6"
 
     ## check OS
     lsb_release -a 2> /dev/null | grep -E "Ubuntu|Debian" > /dev/null || printErrorAndExit "Only for Ubuntu or Debian Distrib"
@@ -115,11 +115,10 @@ function initTfVars() {
     [ -f $file ] && rm $file
     echo "domain = \"$domain\"" >> $file
     echo "kube_config = $(getKubeConfig)" >> $file
-    [ $manualDnsChallenge -eq 1 ]    && echo "tls_cert_filepath = $tmp/tls.cert"    >> $file
-    [ $manualDnsChallenge -eq 1 ]    && echo "tls_key_filepath = $tmp/tls.key"      >> $file
-    [ $automaticDnsChallenge -eq 1 ] && echo "acme_provider = \"$acmeDnsProvider\""    >> $file
-    [ $automaticDnsChallenge -eq 1 ] && echo "acme_config = ${acmeDnsConfig}"            >> $file
-    cat $file
+    [ $manualDnsChallenge -eq 1 ]    && echo "tls_cert_filepath = \"$tmp/tls.cert\""            >> $file
+    [ $manualDnsChallenge -eq 1 ]    && echo "tls_key_filepath = \"$tmp/tls.key\""              >> $file
+    [ $automaticDnsChallenge -eq 1 ] && echo "acme_provider = \"$acmeDnsProvider\""         >> $file
+    [ $automaticDnsChallenge -eq 1 ] && echo "acme_config = ${acmeDnsConfig}"               >> $file
 }
 
 function deploy() {
@@ -129,27 +128,20 @@ function deploy() {
     [ $manualDnsChallenge -eq 1 ] && generateCertsDnsChallenge $domain $tmp/tls.cert $tmp/tls.key
     startMinikube                                                               || printErrorAndExit "Unable to install minikube"
     kubectl get nodes                                                           || printErrorAndExit "Unable to connect to minikube with kubectl"
-    addLocalIpInCoreDNS $domain                                                 || printErrorAndExit "Unable to add dns entry into coredns"
+    coreDnsAddRecords $domain  "$(minikube ip)"                                 || printErrorAndExit "Unable to add dns entry into coredns"
     getKubeConfig > $tmp/kathra_minikube_kubeconfig                             || printErrorAndExit "Unable to get kubeconfig"
     
-
     initTfVars $SCRIPT_DIR/terraform.tfvars
-
-    forwardPort "80"  "$(minikube ip)"  "$nodePortHTTP"   || exit 1
-    forwardPort "443" "$(minikube ip)"  "$nodePortHTTPS"  || exit 1
     
     local hostIP=$(ip -4 addr show $hostNetworkDevice | grep -oP '(?<=inet\s)[\da-f.]+')
     local subdomains=( "keycloak" "jenkins" "gitlab" "harbor" "nexus" "appmanager" "dashboard" "resourcemanager" "pipelinemanager" "sourcemanager" )
-    for subdomain in ${subdomains[@]}; do addEntryHostFile "$subdomain.$domain" "$hostIP"; done;
+    for subdomain in ${subdomains[@]}; do addEntryHostFile "$subdomain.$domain" "$(minikube ip)"; done;
     
     # Deploy Kubernetes and configure
     cd $SCRIPT_DIR
     terraform init                      || printErrorAndExit "Unable to init terraform"
     terraform apply -auto-approve       || printErrorAndExit "Unable to apply terraform"
 
-    forwardPort "80" "$(minikube ip)"   "$nodePortHTTP"   || exit 1
-    forwardPort "443" "$(minikube ip)"  "$nodePortHTTPS"  || exit 1
-    
     return $?
 }
 export -f deploy
@@ -159,7 +151,7 @@ function destroy() {
     checkDependencies
     minikube delete
     cd $SCRIPT_DIR
-    rm terraform.*
+    rm terraform.tfstate*
     return 0
 }
 export -f destroy
@@ -168,9 +160,13 @@ function checkDependencies() {
     ! dpkg -s socat > /dev/null     && sudo apt-get install -y socat
     ! dpkg -s jq > /dev/null        && sudo apt-get install -y jq
     ! dpkg -s curl > /dev/null      && sudo apt-get install -y curl
-
-    installKeycloakProviderPlugin
+    
     installTerraform
+    
+    installTerraformPlugin "keycloak" "1.17.1" "https://github.com/mrparkers/terraform-provider-keycloak.git" "1.17.1"   || printErrorAndExit "Unable to install keycloak terraform plugin"
+    installTerraformPlugin "kubectl"  "1.3.5"  "https://github.com/gavinbunney/terraform-provider-kubectl"    "v1.3.5"   || printErrorAndExit "Unable to install keycloak terraform plugin"
+    installTerraformPlugin "nexus"    "1.6.0"  "https://github.com/datadrivers/terraform-provider-nexus"      "v1.6.0"   || printErrorAndExit "Unable to install keycloak terraform plugin"
+
 }
 
-main $*
+main "$1" "$2" "$3" "$4" "$5" "$5" "$6"

@@ -5,10 +5,10 @@ variable "name" {
 }
 
 resource "helm_release" "nfs" {
-  name       = var.name
-  chart      = "${path.module}/nfs"
-  namespace  = var.namespace
-  values = [<<EOF
+    name       = var.name
+    chart      = "${path.module}/nfs"
+    namespace  = var.namespace
+    values = [<<EOF
 configuration:
   persistence:
     PVC_STORAGE_SIZE: 5Gi

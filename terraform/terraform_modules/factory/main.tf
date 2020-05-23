@@ -78,6 +78,9 @@ module "keycloak" {
     ingress_cert_manager_issuer = var.ingress_cert_manager_issuer
     ingress_tls_secret_name     = var.ingress_tls_secret_name
 }
+output "keycloak" {
+    value = module.keycloak
+}
 
 module "realm" {
     source                  = "./keycloak/realm"
@@ -93,6 +96,9 @@ module "realm" {
     first_user_password     = "123"
 }
 
+output "realm" {
+    value = module.realm
+}
 
 /****************************
     GITLAB
@@ -130,6 +136,11 @@ module "gitlab" {
     oidc_client_secret          = module.gitlab_client.client_secret
 }
 
+output "gitlab" {
+    value = module.gitlab
+}
+
+
 /****************************
     HARBOR
 ****************************/
@@ -163,6 +174,9 @@ module "harbor" {
     oidc_client_id              = module.harbor_client.client_id
     oidc_client_secret          = module.harbor_client.client_secret
 }
+output "harbor" {
+    value = module.harbor
+}
 
 /****************************
     NEXUS
@@ -178,6 +192,9 @@ module "nexus" {
     namespace                   = var.namespace
     password                    = var.nexus.password
 }
+output "nexus" {
+    value = module.nexus
+}
 
 /****************************
     DEPLOYMANAGER
@@ -192,6 +209,9 @@ module "deploymanager" {
         username = module.harbor.username
         password = module.harbor.password
     }
+}
+output "deploymanager" {
+    value = module.deploymanager
 }
 
 /****************************
@@ -257,9 +277,8 @@ module "jenkins" {
     }
 
 }
-
 output "jenkins" {
-  value = module.jenkins
+    value = module.jenkins
 }
 
 /********************
@@ -288,14 +307,30 @@ module "jenkins_user_init_api_token" {
     kube_config   = var.kube_config
 }
 
-output "jenkins_user_init_api_token" {
-  value = module.jenkins_user_init_api_token
-}
-output "gitlab_user_init_api_token" {
-  value = module.gitlab_user_init_api_token
+module "user_sync" {
+    source      = "./user"
+    realm_id    = module.realm.id
+    namespace   = var.namespace
+    firstname   = "user-sync"
+    lastname    = "user-sync"
+    email       = "user-sync@${var.domain}"
+    username    = "user-sync"
+    password    = "dzdbd789"
+    jenkins     = module.jenkins
+    gitlab      = module.gitlab
+    keycloak    = {
+        host            = module.keycloak.host
+        url             = module.keycloak.url
+        client_id       = var.keycloak.client_id
+        username        = var.keycloak.username
+        password        = var.keycloak.password
+    }
+    kube_config = var.kube_config
 }
 
-
+output "user_sync" {
+    value = module.user_sync
+}
 /****************************
     KATHRA SERVICES
 ****************************/
@@ -311,5 +346,10 @@ module "kathra_client" {
     keycloak_password       = var.keycloak.password
     keycloak_url            = module.keycloak.url
 }
+
+output "kathra" {
+    value = module.kathra_client
+}
+
 
 

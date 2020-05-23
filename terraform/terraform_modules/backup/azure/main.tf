@@ -29,47 +29,47 @@ variable "kube_config_file" {
 }
 
 provider "helm" {
-  kubernetes {
-    config_path = var.kube_config_file
-  }
-  version = "0.10.4"
+    kubernetes {
+        config_path = var.kube_config_file
+    }
+    version = "0.10.4"
 }
 
 data "helm_repository" "vmware-tanzu" {
-  name = "vmware-tanzu"
-  url  = "https://vmware-tanzu.github.io/helm-charts"
+    name = "vmware-tanzu"
+    url  = "https://vmware-tanzu.github.io/helm-charts"
 }
 
 resource "azurerm_resource_group" "example" {
-  name      = var.group
-  location  = var.location
+    name      = var.group
+    location  = var.location
 }
 
 resource "azurerm_storage_account" "example" {
-  name                     = "kathrabackupaccountname"
-  resource_group_name      = azurerm_resource_group.example.name
-  location                 = var.location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
+    name                     = "kathrabackupaccountname"
+    resource_group_name      = azurerm_resource_group.example.name
+    location                 = var.location
+    account_tier             = "Standard"
+    account_replication_type = "LRS"
 }
 
 resource "azurerm_storage_container" "example" {
-  name                  = "kathrabackupcontainer"
-  resource_group_name   = azurerm_resource_group.example.name
-  storage_account_name  = azurerm_storage_account.example.name
-  container_access_type = "private"
+    name                  = "kathrabackupcontainer"
+    resource_group_name   = azurerm_resource_group.example.name
+    storage_account_name  = azurerm_storage_account.example.name
+    container_access_type = "private"
 }
 
 data "template_file" "credential" {
-  template = file("${path.module}/velero.credential.tpl")
-  
-  vars = {
-    ARM_SUBSCRIPTION_ID = var.subscribtion_id
-    ARM_TENANT_ID = var.tenant_id
-    ARM_CLIENT_ID = var.velero_client_id
-    ARM_CLIENT_SECRET = var.velero_client_secret
-    AKS_RESOURCE_GROUP = azurerm_resource_group.example.name
-  }
+    template = file("${path.module}/velero.credential.tpl")
+    
+    vars = {
+        ARM_SUBSCRIPTION_ID = var.subscribtion_id
+        ARM_TENANT_ID = var.tenant_id
+        ARM_CLIENT_ID = var.velero_client_id
+        ARM_CLIENT_SECRET = var.velero_client_secret
+        AKS_RESOURCE_GROUP = azurerm_resource_group.example.name
+    }
 }
 
 resource "helm_release" "velero" {

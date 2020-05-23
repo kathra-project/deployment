@@ -27,8 +27,9 @@ data "external" "api_token" {
        secret_name   = "factory-token-store"
        secret_key    = "gitlab-${var.username}"
     }
+    depends_on = [ var.gitlab_host, var.keycloak_host ]
 }
 
 output "api_token" {
-  value = data.external.api_token.result.token
+    value = data.external.api_token.result.token
 }

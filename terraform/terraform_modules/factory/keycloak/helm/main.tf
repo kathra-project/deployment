@@ -60,6 +60,7 @@ for attempt in $(seq 1 100); do sleep 5 && curl --fail https://${var.ingress_hos
 curl --fail https://${var.ingress_host} || exit 1
 exit 1
     EOT
+      interpreter = ["bash", "-c"]
     }
     depends_on = [ helm_release.keycloak ]
 }

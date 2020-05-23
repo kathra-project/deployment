@@ -34,6 +34,8 @@ nexusProxy:
 
 nexus:
   adminPassword: ${var.password}
+  imageName: sonatype/nexus3
+  imageTag: 3.23.0
 nexusBackup:
   nexusAdminPassword: ${var.password}
 
@@ -52,6 +54,33 @@ EOF
 
 }
 
+module "default_repositories" {
+    source = "./repositories"
+    nexus_url = "https://${yamldecode(helm_release.nexus.metadata[0].values).nexusProxy.env.nexusHttpHost}"
+    username  = "admin"
+    password  = "admin123"
+}
+output "repositories" {
+    value = module.default_repositories
+}
+
+provider "nexus" {
+    insecure = true
+    url      = "https://${yamldecode(helm_release.nexus.metadata[0].values).nexusProxy.env.nexusHttpHost}"
+    username = "admin"
+    password = "admin123"
+}
+
+resource "nexus_user" "kathra_user" {
+  userid    = "kathra_admin"
+  firstname = "Administrator"
+  lastname  = "User"
+  email     = "nexus@example.com"
+  password  = var.password
+  roles     = ["nx-admin"]
+  status    = "active"
+}
+
 output "namespace" {
     value = helm_release.nexus.namespace
 }
@@ -59,10 +88,10 @@ output "name" {
     value = helm_release.nexus.name
 }
 output "username" {
-    value = "admin"
+    value = nexus_user.kathra_user.userid
 }
 output "password" {
-    value = yamldecode(helm_release.nexus.metadata[0].values).nexus.adminPassword
+    value = nexus_user.kathra_user.password
 }
 output "service" {
     value = "http://sonatype-nexus-service:8081"

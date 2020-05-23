@@ -1,5 +1,5 @@
 #!/bin/bash
-[ "$tmp" == "" ] && export tmp=/tmp/kathra.factory
+[ "$tmp" == "" ] && export tmp=/tmp/kathra.factory.$(date +%s%N)
 [ ! -d $tmp ] && mkdir $tmp
 
 function printError(){
@@ -53,7 +53,8 @@ function getValueInSecretK8S() {
     local secret_name=$3
     local secret_key=$4
     printDebug "getValueInSecretK8S(kube_config_file: $kube_config_file, namespace: $namespace, secret_name: $secret_name, secret_key: $secret_key)"
-    kubectl --kubeconfig=$kube_config_file -n $namespace get secret $secret_name -o json 2> /dev/null | jq -r ".data.\"$secret_key\"" | base64 -d && return 1
+    kubectl --kubeconfig=$kube_config_file -n $namespace get secret $secret_name -o json 2> /dev/null | jq -r ".data.\"$secret_key\"" | base64 -d
+    return $?
 }
 export -f getValueInSecretK8S
 
@@ -64,9 +65,10 @@ function setValueInSecretK8S() {
     local secret_key=$4
     local secret_value=$5
     printDebug "setValueInSecretK8S(kube_config_file: $kube_config_file, namespace: $namespace, secret_name: $secret_name, secret_key: $secret_key, secret_value: $secret_value)"
-    kubectl --kubeconfig=$kube_config_file -n $namespace get secret $secret_name
-    [ $rc -ne 0 ] && kubectl --kubeconfig=$kube_config_file -n $namespace  create secret generic $secret_name --from-literal="$secret_key"="$secret_value" 2> /dev/null && return 0
-    kubectl --kubeconfig=$kube_config_file -n $namespace patch secret $secret_name -p="{\"data\":{\"$secret_key\": \"$(echo $secret_value | base64 -w0)\"}}" && return 0 || return 1
+    kubectl --kubeconfig=$kube_config_file -n $namespace get secret $secret_name > /dev/null 2> /dev/null 
+    [ $rc -ne 0 ] && kubectl --kubeconfig=$kube_config_file -n $namespace create secret generic $secret_name --from-literal="$secret_key"="$secret_value" > /dev/null && return 0
+    kubectl --kubeconfig=$kube_config_file -n $namespace patch secret $secret_name -p="{\"data\":{\"$secret_key\": \"$(echo $secret_value | base64 -w0)\"}}" > /dev/null
+    return $?
 }
 export -f setValueInSecretK8S
 
@@ -105,3 +107,16 @@ users:
     client-key-data: "$client_cert_key"" > $kube_config_file
 }
 export -f generateKubeFile
+
+function findInArgs() {
+    local keyToFind=$1
+    shift 
+    POSITIONAL=()
+    while [[ $# -gt 0 ]]
+    do
+        [ "$(echo "$1" | cut -d'=' -f1)" == "${keyToFind}" ] && echo $(echo "$1" | cut -d'=' -f2) && return 0
+        shift
+    done
+    return 1
+}
+export -f findInArgs

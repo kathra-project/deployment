@@ -1,10 +1,11 @@
 #!/bin/bash
-
+export tmp=/tmp/kathra.jenkins.init_token.$(date +%s%N)
+[ ! -d $tmp ] && mkdir $tmp
 export SCRIPT_DIR=$(realpath $(dirname `which $0`))
 export debug=1
 
-. ${SCRIPT_DIR}/../sh/commons.func.sh
-. ${SCRIPT_DIR}/../sh/jenkins.func.sh
+. ${SCRIPT_DIR}/../../sh/commons.func.sh
+. ${SCRIPT_DIR}/../../sh/jenkins.func.sh
 
 export retrySecondInterval=2
 export max_attempts=5
@@ -24,11 +25,11 @@ eval "$(jq -r '@sh "jenkins_host=\(.jenkins_host) keycloak_host=\(.keycloak_host
 declare kubeconfig_file=$tmp/kubeconfig
 generateKubeFile "$kube_config" "$kubeconfig_file"
 
-jenkinsGenerateApiToken "$jenkins_host" "$keycloak_host" "$username" "$password" "$tmp/jenkins.api_token" "false"
+jenkinsGenerateApiToken "$jenkins_host" "$keycloak_host" "$username" "$password" "$tmp/jenkins.api_token" "false" > /dev/null
 declare rc=$?
 [ $rc -eq 1 ] && printError "Error occured when generating Jenkins API Token" && exit 0
 
-[ $rc -eq 0 ] && token=$(cat $tmp/jenkins.api_token) && setValueInSecretK8S $kubeconfig_file $namespace $secret_name $secret_key "$token" 
+[ $rc -eq 0 ] && token=$(cat $tmp/jenkins.api_token) && setValueInSecretK8S $kubeconfig_file $namespace $secret_name $secret_key "$token" > /dev/null
 ## already existing
 if [ $rc -eq 2 ]
 then
@@ -38,12 +39,12 @@ then
 
     if [ "$token" == "" ]
     then
-        jenkinsGenerateApiToken "$jenkins_host" "$keycloak_host" "$username" "$password" "$tmp/jenkins.api_token" "true"
+        jenkinsGenerateApiToken "$jenkins_host" "$keycloak_host" "$username" "$password" "$tmp/jenkins.api_token" "true" > /dev/null
         token=$(cat $tmp/jenkins.api_token)
         printDebug "Token regenerated : $token"
-        setValueInSecretK8S $kubeconfig_file $namespace $secret_name $secret_key "$token" 
+        setValueInSecretK8S $kubeconfig_file $namespace $secret_name $secret_key "$token" > /dev/null 
     fi
 fi
-
+printDebug "{\"token\":\"$token\"}"
 jq -n --arg token "$token" '{"token":$token}'
 exit $?

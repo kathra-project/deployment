@@ -44,6 +44,7 @@ resource "helm_release" "gitlab" {
   name       = "gitlab"
   repository = data.helm_repository.gitlab.metadata[0].name
   chart      = "gitlab"
+  version    = "3.3.5"
   namespace  = var.namespace
   timeout    = 1200
   values = [<<EOF

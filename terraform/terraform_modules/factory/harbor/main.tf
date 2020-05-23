@@ -22,19 +22,19 @@ variable "oidc_client_secret" {
 }
 
 data "helm_repository" "goharbor" {
-  name = "goharbor"
-  url  = "https://helm.goharbor.io"
+    name = "goharbor"
+    url  = "https://helm.goharbor.io"
 }
 
 resource "helm_release" "harbor" {
-  name       = "harbor"
-  repository = data.helm_repository.goharbor.metadata[0].name
-  chart      = "harbor"
-  namespace  = var.namespace
-  timeout    = 800
-  version    = "v1.3.2"
+    name       = "harbor"
+    repository = data.helm_repository.goharbor.metadata[0].name
+    chart      = "harbor"
+    namespace  = var.namespace
+    timeout    = 800
+    version    = "v1.3.2"
 
-  values = [<<EOF
+    values = [<<EOF
 externalURL: https://${var.ingress_host}
 
 harborAdminPassword: ${var.password}
@@ -71,21 +71,19 @@ EOF
 }
 
 resource "null_resource" "harbor_oidc_config" {
-  provisioner "local-exec" {
-    command = <<EOT
-      ${path.module}/oidc-config.sh
-   EOT
-    environment = {
-      ADMIN_USER                     = "admin"
-      ADMIN_PASSWORD                 = var.password
-      HARBOR_CONFIGURATIONS_ENDPOINT = "https://${var.ingress_host}/api/configurations"
-      OIDC_ENDPOINT                  = var.oidc_url
-      OIDC_SCOPE                     = "openid,email"
-      OIDC_CLIENT_ID                 = var.oidc_client_id
-      OIDC_CLIENT_SECRET             = var.oidc_client_secret
+    provisioner "local-exec" {
+        command     = "bash ${path.module}/oidc-config.sh"
+        environment = {
+            ADMIN_USER                     = "admin"
+            ADMIN_PASSWORD                 = var.password
+            HARBOR_CONFIGURATIONS_ENDPOINT = "https://${var.ingress_host}/api/configurations"
+            OIDC_ENDPOINT                  = var.oidc_url
+            OIDC_SCOPE                     = "openid,email"
+            OIDC_CLIENT_ID                 = var.oidc_client_id
+            OIDC_CLIENT_SECRET             = var.oidc_client_secret
+        }
     }
-  }
-  depends_on = [helm_release.harbor]
+    depends_on = [helm_release.harbor]
 }
 
 output "namespace" {

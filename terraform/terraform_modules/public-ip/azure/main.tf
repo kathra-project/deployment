@@ -27,6 +27,7 @@ resource "null_resource" "check_dns_resolution" {
         IP = azurerm_public_ip.public_ip.ip_address
         DOMAIN = var.domain
       }
+      interpreter = ["bash", "-c"]
     }
 }
 

@@ -1,9 +1,12 @@
+{{ if .Values.ingress }}
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: usermanager
+{{- with .Values.ingress.annotations }}
   annotations:
-    kubernetes.io/ingress.class: traefik
+{{ toYaml . | indent 4 }}
+{{- end }}
   labels:
 {{ include "kathra.labels" . | indent 4 }}
     ingress: "{{ if .Values.tls }}tls{{ else }}plain{{ end }}"
@@ -15,3 +18,8 @@ spec:
       - backend:
           serviceName: usermanager
           servicePort: 80
+{{- with .Values.ingress.tls }}
+  tls:
+{{ toYaml . | indent 4 }}
+{{- end }}
+{{ end }}

@@ -14,7 +14,7 @@ export terraformModules=$SCRIPT_DIR/../terraform_modules
 export azureStackModule=$SCRIPT_DIR
 
 export azureGroupName="kathra"
-export azureLocation="eastus"
+export azureLocation="francecentral"
 
 export terraformVersion="0.12.21"
 export traefikChartVersion="1.85.0"
@@ -145,8 +145,10 @@ function destroy() {
     printDebug "destroy()"
     checkDependencies
     terraform init 
-    terraform state rm $(terraform state list | grep "factory")
-    terraform destroy target=$(terraform state list | grep "kubernetes" | tr " " ",")
+    local statesToDelete=$(terraform state list | grep "factory")
+    [ ! "$statesToDelete" == "" ] && terraform state rm $statesToDelete
+    local resourcesToDestroy=$(terraform state list | grep "kubernetes" | sed -E 's/(.*)/--target=\1/g' | tr '\n' ' ')
+    [ ! "$resourcesToDestroy" == "" ] && terraform destroy -auto-approve $resourcesToDestroy
     return $?
 }
 export -f destroy
@@ -162,8 +164,9 @@ function checkDependencies() {
     which kubectl > /dev/null       || installKubectl
     which terraform > /dev/null     || installTerraform
     
-    installTerraformPlugin "keycloak" "1.17.1" https://github.com/mrparkers/terraform-provider-keycloak.git "1.17.1"   || printErrorAndExit "Unable to install keycloak terraform plugin"
-    installTerraformPlugin "kubectl"  "1.3.5"  https://github.com/gavinbunney/terraform-provider-kubectl    "v1.3.5"   || printErrorAndExit "Unable to install keycloak terraform plugin"
+    installTerraformPlugin "keycloak" "1.17.1" "https://github.com/mrparkers/terraform-provider-keycloak.git" "1.17.1"   || printErrorAndExit "Unable to install keycloak terraform plugin"
+    installTerraformPlugin "kubectl"  "1.3.5"  "https://github.com/gavinbunney/terraform-provider-kubectl"    "v1.3.5"   || printErrorAndExit "Unable to install keycloak terraform plugin"
+    installTerraformPlugin "nexus"    "1.6.0"  "https://github.com/datadrivers/terraform-provider-nexus"      "v1.6.0"   || printErrorAndExit "Unable to install keycloak terraform plugin"
 }
 export -f checkDependencies
 
@@ -328,21 +331,24 @@ function findInArgs() {
 export -f findInArgs
 
 function installTerraformPlugin() {
-    printDebug "installTerraformModule(pluginName: $1, pluginVersion: $2, pluginSourceCommit: $3, pluginSourceCommit: $4)"
+    printDebug "installTerraformPlugin(pluginName: $1, pluginVersion: $2, pluginSourceCommit: $3, pluginSourceCommit: $4)"
     local pluginName=$1
     local pluginVersion=$2
     local pluginSourceRepositoryGit=$3
     local pluginSourceCommit=$4
     local system="linux"
     [ "$OSTYPE" == "win32" ] && system="windows"
+    [ "$OSTYPE" == "msys" ]  && system="windows"
+
     local bin=$SCRIPT_DIR/.terraform/plugins/${system}_amd64/terraform-provider-${pluginName}_v$pluginVersion
-    
+    printDebug "$bin"
     [ -f $bin ] && return 0
     [ -d /tmp/terraform-provider-$pluginName ] && rm -rf /tmp/terraform-provider-$pluginName 
     git clone ${pluginSourceRepositoryGit} /tmp/terraform-provider-$pluginName || return 1
     cd /tmp/terraform-provider-$pluginName || return 1
     git checkout $pluginSourceCommit || return 1
     go build -o terraform-provider-$pluginName || return 1
+    [ ! -d "$(dirname $bin)" ] && mkdir "$(dirname $bin)"
     mv terraform-provider-$pluginName $bin || return 1
     cd $SCRIPT_DIR
 }

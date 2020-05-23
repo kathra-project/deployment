@@ -1,11 +1,11 @@
+variable "kube_config" {
+}
 
 variable "namespace" { 
 }
 
 variable "kathra" {
-  /*
-  Example
-    default = {
+  default = {
         images = {
           registry_url    = "registry.hub.docker.com"
           root_repository = "kathra"
@@ -39,7 +39,6 @@ variable "kathra" {
           auth_url      = "https://keycloak.kathra.org/auth"
         }
     }
-  */
 }
 
 variable "gitlab" {
@@ -69,22 +68,6 @@ variable "jenkins" {
 }
 
 variable "keycloak" {
-    default = {
-      url           = null
-      user          = {
-        auth_url      = "https://keycloak.${BASE_DOMAIN}/auth"
-        username      = null
-        password      = null
-        realm         = "kathra"
-      }
-      admin          = {
-        auth_url      = "https://keycloak.${BASE_DOMAIN}/auth"
-        username      = null
-        password      = null
-        realm         = "master"
-        client_id     = "admin-cli"
-      }
-    }
 }
 
 
@@ -97,17 +80,26 @@ variable "nexus" {
 }
 
 
+
+
+provider "helm" {
+    kubernetes {
+        load_config_file       = "false"
+        host                   = var.kube_config.host
+        client_certificate     = base64decode(var.kube_config.client_certificate)
+        client_key             = base64decode(var.kube_config.client_key)
+        cluster_ca_certificate = base64decode(var.kube_config.cluster_ca_certificate)
+    }
+}
+
 resource "helm_release" "kathra" {
   name       = "kathra"
-  chart      = "${path.module}/../../../../kathra-services"
+  chart      = "${path.module}/../../../kathra-services"
   namespace  = var.namespace
   timeout    = 600
   values = [<<EOF
-## OVERIDE CHILDREN CHARTS' VALUES FROM HERE 
-## OR MODIFY THEM IN THEIR RESPECTIVE CHART
+
 global:
-  namespace: kathra
-  tld: irtsystemx.org
   domain: ${var.kathra.domain}
   docker:
     registry: 
@@ -118,8 +110,8 @@ global:
     auth_url: ${var.keycloak.user.auth_url}
     realm: ${var.keycloak.user.realm}
     kathra_services_client:
-      id: ${var.oidc.client_id}
-      secret: ${var.oidc.client_secret}
+      id: ${var.kathra.oidc.client_id}
+      secret: ${var.kathra.oidc.client_secret}
 
 kathra-appmanager:
   image: appmanager
@@ -161,8 +153,8 @@ kathra-binaryrepositorymanager-harbor:
     username: ${var.harbor.username}
     password: ${var.harbor.password}
   keycloak:
-    username: ${var.harbor.user.username}
-    password: ${var.harbor.user.password}
+    username: ${var.keycloak.user.username}
+    password: ${var.keycloak.user.password}
   resources:
     limits:
       cpu: 500m
@@ -184,8 +176,8 @@ kathra-catalogmanager:
     login: ${var.harbor.username}
     password: ${var.harbor.password}
   keycloak:
-    username: ${var.harbor.user.username}
-    password: ${var.harbor.user.password}
+    username: ${var.keycloak.user.username}
+    password: ${var.keycloak.user.password}
   resources:
     limits:
       cpu: 500m
@@ -212,7 +204,7 @@ kathra-codegen-swagger:
 
 kathra-codegen-helm:
   image: codegen-helm
-  version: ${var.kathra.images.tag}
+  version: "${var.kathra.images.tag}"
   tls: true
   resources:
     limits:
@@ -225,14 +217,14 @@ kathra-codegen-helm:
 
 kathra-dashboard: 
   image: dashboard
-  version: ${var.kathra.images.tag}
+  version: "${var.kathra.images.tag}"
   tls: true
   services_url:
     platform_manager: wss://${var.kathra.ingress.platformmanager.host}/spm
     app_manager: https://${var.kathra.ingress.appmanager.host}/api/v1
     jenkins_url: ${var.jenkins.url}
     base_domain: ${var.kathra.domain}
-  resources
+  resources:
     limits:
       cpu: 300m
       memory: 256Mi
@@ -250,7 +242,7 @@ kathra-dashboard:
 
 kathra-pipelinemanager:
   image: pipelinemanager-jenkins
-  version: ${var.kathra.images.tag}
+  version: "${var.kathra.images.tag}"
   tls: true
   jenkins:
     url: ${var.jenkins.url}
@@ -266,7 +258,7 @@ kathra-pipelinemanager:
 
 kathra-platformmanager:
   image: platformmanager-kube
-  version: ${var.kathra.images.tag}
+  version: "${var.kathra.images.tag}"
   tls: true
   websocket:
     port: "8080"
@@ -274,7 +266,7 @@ kathra-platformmanager:
     url: http://catalogmanager/api/v1
   deployment:
     ingress_controller: "${var.kathra.ingress.class}"
-    tld: ${var.domain}
+    tld: ${var.kathra.domain}
   resources:
     limits:
       cpu: 500m
@@ -293,14 +285,14 @@ kathra-platformmanager:
 
 kathra-resourcemanager:
   image: resourcemanager-arangodb
-  version: ${var.kathra.images.tag}
+  version: "${var.kathra.images.tag}"
   tls: true
   arango:
     host: resource-db
     port: "8529"
     database: KATHRA
     user: root
-    password: ${var.arangodb.password}
+    password: ${var.kathra.arangodb.password}
   resources:
     limits:
       cpu: 1
@@ -311,7 +303,7 @@ kathra-resourcemanager:
 
 db:
   db:
-    password: ${var.arangodb.password}
+    password: ${var.kathra.arangodb.password}
 
 kathra-sourcemanager:
   image: sourcemanager-gitlab
@@ -354,8 +346,8 @@ kathra-usermanager:
 
 kathra-sync:
   keycloak:
-    login: ${var.harbor.user.username}
-    password: ${var.harbor.user.password}
+    login: ${var.keycloak.user.username}
+    password: ${var.keycloak.user.password}
   image: users-sync
   version: ${var.kathra.images.tag}
   resources:
@@ -373,8 +365,8 @@ EOF
 }
 
 output "namespace" {
-    value = helm_release.deploymanager.namespace
+    value = helm_release.kathra.namespace
 }
 output "name" {
-    value = helm_release.deploymanager.name
+    value = helm_release.kathra.name
 }

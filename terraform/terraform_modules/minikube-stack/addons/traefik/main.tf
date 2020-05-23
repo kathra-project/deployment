@@ -31,20 +31,8 @@ resource "helm_release" "traefik" {
     value = "traefik"
   }
   set {
-    name  = "serviceType"
-    value = "NodePort"
-  }
-  set {
     name  = "ssl.enabled"
     value = "true"
-  }
-  set {
-    name  = "service.nodePorts.http"
-    value = "30080"
-  }
-  set {
-    name  = "service.nodePorts.https"
-    value = "30443"
   }
   set {
     name  = "rbac.enabled"
@@ -66,9 +54,10 @@ output "ingress_controller" {
 output "namespace" {
   value = helm_release.traefik.namespace
 }
+/*
 output "http_node_port" {
   value = yamldecode(helm_release.traefik.metadata[0].values).service.nodePorts.https
 }
 output "https_node_port" {
   value = yamldecode(helm_release.traefik.metadata[0].values).service.nodePorts.https
-}
+}*/
