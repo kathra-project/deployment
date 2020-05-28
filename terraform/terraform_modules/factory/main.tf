@@ -44,6 +44,12 @@ variable "gitlab" {
         password      = "BTg1Dmda2gyzUwvdZh3N"
     }
 }
+variable "sonarqube" {
+    default = {
+        host_prefix   = "sonarqube"
+        password      = "BTg1Dmda2gyzUwvdZh3N"
+    }
+}
 
 provider "helm" {
   kubernetes {
@@ -193,6 +199,39 @@ module "nexus" {
     password                    = var.nexus.password
 }
 output "nexus" {
+    value = module.nexus
+}
+
+/****************************
+    NEXUS
+****************************/
+module "sonarqube_client" {
+    source                  = "./keycloak/client"
+
+    realm                   = module.realm.name
+    client_id               = "sonarqube"
+    redirect_uri            = "https://${var.sonarqube.host_prefix}.${var.domain}/*"
+    
+    keycloak_client_id      = var.keycloak.client_id
+    keycloak_username       = var.keycloak.username
+    keycloak_password       = var.keycloak.password
+    keycloak_url            = module.keycloak.url
+}
+module "sonarqube" {
+    source                      = "./sonarqube"
+
+    ingress_host                = "${var.sonarqube.host_prefix}.${var.domain}"
+    ingress_class               = var.ingress_class
+    ingress_cert_manager_issuer = var.ingress_cert_manager_issuer
+    ingress_tls_secret_name     = var.ingress_tls_secret_name
+
+    namespace                   = var.namespace
+    
+    oidc_url                    = module.realm.url
+    oidc_client_id              = module.sonarqube_client.client_id
+    oidc_client_secret          = module.sonarqube_client.client_secret
+}
+output "sonarqube" {
     value = module.nexus
 }
 
