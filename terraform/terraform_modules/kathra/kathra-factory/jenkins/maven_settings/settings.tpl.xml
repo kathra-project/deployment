@@ -1,0 +1,61 @@
+<settings>
+  <!-- sets the local maven repository outside of the ~/.m2 folder for easier mounting of secrets and repo -->
+  <localRepository>$${user.home}/.mvnrepository</localRepository>
+  <mirrors>
+    <mirror>
+      <id>nexus</id>
+      <mirrorOf>external:*</mirrorOf>
+      <url>${repository_url}/repository/maven-all/</url>
+    </mirror>
+  </mirrors>
+
+  <!-- lets disable the download progress indicator that fills up logs -->
+  <interactiveMode>false</interactiveMode>
+  <pluginGroups>
+    <pluginGroup>org.sonarsource.scanner.maven</pluginGroup>
+  </pluginGroups>
+  <servers>
+    <server>
+      <id>kathra-nexus</id>
+      <username>${repository_username}</username>
+      <password>${repository_password}</password>
+    </server>
+  </servers>
+
+  <profiles>
+    <profile>
+      <id>nexus</id>
+      <repositories>
+       <repository>
+          <id>kathra-nexus</id>
+          <name>Nexus public dev</name>
+          <url>${repository_url}/repository/maven-all/</url>
+          <releases>
+            <updatePolicy>always</updatePolicy>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <updatePolicy>always</updatePolicy>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+      </repositories>
+      <properties>
+        <altReleaseDeploymentRepository>kathra-nexus::default::${repository_url}/repository/maven-releases/</altReleaseDeploymentRepository>
+        <altSnapshotDeploymentRepository>kathra-nexus::default::${repository_url}/repository/maven-snapshots/</altSnapshotDeploymentRepository>
+      </properties>
+      
+      <pluginRepositories>
+      </pluginRepositories>
+
+      <properties>
+        <sonar.host.url>${sonar_url}</sonar.host.url>
+        <sonar.login>${sonar_username}</sonar.login>
+        <sonar.password>${sonar_password}</sonar.password>
+    </properties>
+    </profile>
+  </profiles>
+  <activeProfiles>
+    <activeProfile>nexus</activeProfile>
+  </activeProfiles>
+</settings>

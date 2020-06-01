@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sourcemanager-gitlab
@@ -6,20 +6,20 @@ metadata:
 {{ include "kathra.labels" . | indent 4 }}
     app: sourcemanager
     impl: gitlab
-    product: kathra
+    project: kathra
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: sourcemanager
       impl: gitlab
-      product: kathra
+      project: kathra
   template:
     metadata:
       labels:
         app: sourcemanager
         impl: gitlab
-        product: kathra
+        project: kathra
     spec:
       imagePullSecrets:
       - name: regcred

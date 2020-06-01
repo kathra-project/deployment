@@ -5,13 +5,13 @@ export tmp=/tmp/kathra.azure.Wrapper
 export KUBECONFIG=$tmp/kube_config
 [ ! -d $tmp ] && mkdir $tmp
 
+. $SCRIPT_DIR/../common.sh
+
 cd $SCRIPT_DIR
 
 export debug=1
 export domain=""
-export domainLabel=""
 
-export kathraChartVersion="master"
 export kathraImagesTag="stable"
 
 export terraformModules=$SCRIPT_DIR/../terraform_modules
@@ -83,7 +83,10 @@ function parseArgs() {
 }
 
 function main() {
-    parseArgs $*    
+    parseArgs $*   
+
+    which gcloud > /dev/null        || installGoogleCloudSDK
+     
     [ "$domain" == "" ] && printError "Domain is undefined" && showHelpDeploy && exit 1
     #[ "$gcpCredentials" == "" ] && printError "Define gcp credentials file" && showHelpDeploy && exit 1
     #[ ! -f $gcpCredentials ] && printError "File gcp credentials is not found : $gcpCredentials" && showHelpDeploy && exit 1
@@ -94,10 +97,19 @@ function main() {
 
 function checkDependencies() {
     printDebug "checkDependencies()"
-    which gcloud > /dev/null || installGoogleCloudSDK
-    which kubectl > /dev/null || installKubectl
-    which terraform > /dev/null || installTerraform
+    which curl > /dev/null          || sudo apt-get install curl -y > /dev/null 2> /dev/null 
+    which jq >  /dev/null           || sudo apt-get install jq -y > /dev/null 2> /dev/null 
+    which unzip > /dev/null         || sudo apt-get install unzip -y > /dev/null 2> /dev/null 
+    which go > /dev/null            || sudo apt-get install golang-go > /dev/null 2> /dev/null 
+    which gcloud > /dev/null        || installKubectl
+    which kubectl > /dev/null       || installKubectl
+    which terraform > /dev/null     || installTerraform
+    
+    installTerraformPlugin "keycloak" "1.18.0" "https://github.com/mrparkers/terraform-provider-keycloak.git" "1.18.0"   || printErrorAndExit "Unable to install keycloak terraform plugin"
+    installTerraformPlugin "kubectl"  "1.3.5"  "https://github.com/gavinbunney/terraform-provider-kubectl"    "v1.3.5"   || printErrorAndExit "Unable to install kubectl terraform plugin"
+    installTerraformPlugin "nexus"    "1.6.2"  "https://github.com/datadrivers/terraform-provider-nexus"      "v1.6.2"   || printErrorAndExit "Unable to install nexus terraform plugin"
 }
+export -f checkDependencies
 
 function deploy() {
     printDebug "deploy()"
@@ -111,14 +123,6 @@ function deploy() {
     terraform init || printErrorAndExit "Terraform : Unable to init"
     terraform apply -auto-approve || printErrorAndExit "Terraform : Unable to apply"
     terraform output kubeconfig_content > $KUBECONFIG  || printErrorAndExit "Terraform : Unable to get kubeconfig_content"
-
-    kubectl get nodes || printErrorAndExit "Unable to connect to Kubernetes server"
-
-    # Deploy Kathra
-    export KUBECONFIG=$KUBECONFIG
-    printInfo "export KUBECONFIG=$KUBECONFIG"
-    printInfo "install.sh --domain=$domain --chart-version=$kathraChartsVersion --kathra-image-tag=$kathraImagesTag --enable-tls-ingress --verbose"
-    $SCRIPT_DIR/../install.sh --domain=$domain --chart-version=$kathraChartsVersion --kathra-image-tag=$kathraImagesTag --enable-tls-ingress --verbose
 }
 export -f deploy
 
@@ -142,6 +146,8 @@ function initTfVars() {
     echo "zone = \"$gcpZone\"" >> $file
     echo "domain = \"$domain\"" >> $file
     echo "gcp_crendetials = \"$gcpCredentials\"" >> $file
+    echo "kathra_version = \"$kathraImagesTag\"" >> $file
+    
 }
 export -f initTfVars
 
@@ -172,8 +178,6 @@ function configureServiceAccount() {
 }
 export -f configureServiceAccount
 
-
-
 function installGoogleCloudSDK() {
     printDebug "installGoogleCloudSDK()"
     echo "deb https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
@@ -181,61 +185,6 @@ function installGoogleCloudSDK() {
     sudo apt-get update && sudo apt-get install google-cloud-sdk
 }
 export -f installGoogleCloudSDK
-
-function installKubectl() {
-    printDebug "installKubectl()"
-    which kubectl > /dev/null 2> /dev/null && return 0
-    sudo curl -L -o $tmp/kubectl https://storage.googleapis.com/kubernetes-release/release/v$kubernetesVersion/bin/linux/amd64/kubectl 
-    sudo chmod +x $tmp/kubectl 
-    sudo mv $tmp/kubectl /usr/local/bin/kubectl
-}
-export -f installKubectl
- 
-function installTerraform() {
-    printDebug "installTerraform()"
-    which terraform > /dev/null 2> /dev/null && return 0
-    sudo apt-get install unzip
-    [ -f /tmp/terraform.zip ] && rm -f /tmp/terraform.zip
-    curl https://releases.hashicorp.com/terraform/${terraformVersion}/terraform_${terraformVersion}_linux_amd64.zip > /tmp/terraform.zip
-    unzip /tmp/terraform.zip
-    sudo mv terraform /usr/local/bin/terraform
-}
-export -f installTerraform
-
-function printErrorAndExit(){
-    echo -e "\033[31;1m $* \033[0m" 1>&2 && exit 1
-}
-export -f printErrorAndExit
-function printError(){
-    echo -e "\033[31;1m $* \033[0m" 1>&2 && return 0
-}
-export -f printError
-function printWarn(){
-    echo -e "\033[33;1m $* \033[0m" 1>&2 && return 0
-}
-export -f printWarn
-function printInfo(){
-    echo -e "\033[33;1m $* \033[0m" 1>&2 && return 0
-}
-export -f printInfo
-function printDebug(){
-    [ "$debug" == "1" ] && echo -e "\033[94;1m $* \033[0m" 1>&2
-    return 0
-}
-export -f printDebug
-
-function findInArgs() {
-    local keyToFind=$1
-    shift 
-    POSITIONAL=()
-    while [[ $# -gt 0 ]]
-    do
-        [ "$(echo "$1" | cut -d'=' -f1)" == "${keyToFind}" ] && echo $(echo "$1" | cut -d'=' -f2) && return 0
-        shift
-    done
-    return 1
-}
-export -f findInArgs
 
 main $*
 

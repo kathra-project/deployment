@@ -1,40 +1,10 @@
 
-variable "kube_config" {
-}
 variable "public_ip" {
 }
 variable "aks_group" {
     default = ""
 }
-
-provider "helm" {
-  kubernetes {
-    load_config_file       = "false"
-    host                   = var.kube_config.host
-    client_certificate     = base64decode(var.kube_config.client_certificate)
-    client_key             = base64decode(var.kube_config.client_key)
-    cluster_ca_certificate = base64decode(var.kube_config.cluster_ca_certificate)
-  }
-}
-provider "kubernetes" {
-    load_config_file       = "false"
-    host                   = var.kube_config.host
-    client_certificate     = base64decode(var.kube_config.client_certificate)
-    client_key             = base64decode(var.kube_config.client_key)
-    cluster_ca_certificate = base64decode(var.kube_config.cluster_ca_certificate)
-}
-
-provider "kubectl" {
-    load_config_file       = false
-    host                   = var.kube_config.host
-    cluster_ca_certificate = base64decode(var.kube_config.cluster_ca_certificate)
-    client_certificate     = base64decode(var.kube_config.client_certificate)
-    client_key             = base64decode(var.kube_config.client_key)
-    apply_retry_count      = 15
-}
-
-module "kubedb" {
-    source              = "../helm-packages/kubedb"
+variable "domain" {
 }
 
 module "treafik" {
@@ -47,6 +17,30 @@ module "cert-manager" {
     source              = "../helm-packages/cert-manager"
     namespace           = module.treafik.namespace
 }
+
+
+resource "kubernetes_namespace" "monitoring" {
+    metadata {
+        name = "monitoring"
+    }
+}
+
+module "prometheus" {
+    source                      = "../helm-packages/prometheus"
+    namespace                   = kubernetes_namespace.monitoring.metadata[0].name
+    ingress_class               = module.treafik.ingress_controller
+    ingress_cert_manager_issuer = module.cert-manager.issuer
+    grafana                     = {
+        ingress_host            = "monitoring.${var.domain}"
+        password                = "admin"
+        ingress_tls_secret_name = "grafana-cert"
+    }
+}
+
+output "prometheus" {
+  value = module.prometheus
+}
+
 
 output "ingress_controller" {
     value = module.treafik.ingress_controller

@@ -6,6 +6,13 @@ variable "k8s_client_id" {
 }
 variable "k8s_client_secret" { 
 }
+variable "subscribtion_id" {
+}
+variable "tenant_id" {
+}
+variable "kathra_version" {
+    default = "stable"
+}
 
 variable "group" {
     default = "kathra"
@@ -14,7 +21,7 @@ variable "location" {
     default = "eastus"
 }
 variable "k8s_node_count" {
-    default = 3
+    default = 4
 }
 variable "k8s_node_size" {
     default = "Standard_D4s_v3"
@@ -40,6 +47,9 @@ module "static_ip" {
     domain                      = var.domain
 }
 
+############################################################
+### KUBERNETES ADDONS (INGRESS + CERT MANAGER)
+############################################################
 module "kubernetes" {
     source                      = "../kubernetes/azure"
     location                    = var.location
@@ -56,6 +66,7 @@ module "kubernetes_addons" {
     kube_config                 = module.kubernetes.kube_config
     public_ip                   = module.static_ip.public_ip_address
     aks_group                   = azurerm_resource_group.kathra.name
+    domain                      = var.domain
 }
 
 provider "kubernetes" {
@@ -66,110 +77,60 @@ provider "kubernetes" {
     cluster_ca_certificate = base64decode(module.kubernetes.kube_config.cluster_ca_certificate)
 }
 
-resource "kubernetes_namespace" "factory" {
-  metadata {
-    name = "kathra-factory"
-  }
-}
 
-module "factory" {
-    source                      = "../factory"
-    ingress_class               = module.kubernetes_addons.ingress_controller
-    ingress_cert_manager_issuer = module.kubernetes_addons.ingress_cert_manager_issuer
-    domain                      = var.domain
-    namespace                   = kubernetes_namespace.factory.metadata[0].name
-    kube_config                 = module.kubernetes.kube_config
+provider "helm" {
+    kubernetes {
+        load_config_file       = "false"
+        host                   = module.kubernetes.kube_config.host
+        client_certificate     = base64decode(module.kubernetes.kube_config.client_certificate)
+        client_key             = base64decode(module.kubernetes.kube_config.client_key)
+        cluster_ca_certificate = base64decode(module.kubernetes.kube_config.cluster_ca_certificate)
+    }
 }
 
 
-resource "kubernetes_namespace" "kathra" {
-  metadata {
-    name = "kathra-services"
-  }
+provider "kubectl" {
+    load_config_file       = false
+    host                   = module.kubernetes.kube_config.host
+    client_certificate     = base64decode(module.kubernetes.kube_config.client_certificate)
+    client_key             = base64decode(module.kubernetes.kube_config.client_key)
+    cluster_ca_certificate = base64decode(module.kubernetes.kube_config.cluster_ca_certificate)
+    apply_retry_count      = 15
 }
 
+
+############################################################
+### KATHRA INSTANCE
+############################################################
 module "kathra" {
     source                      = "../kathra"
-    namespace                   = kubernetes_namespace.kathra.metadata[0].name
-    kube_config                 = module.kubernetes.kube_config
+    ingress_controller          = module.kubernetes_addons.ingress_controller
+    ingress_cert_manager_issuer = module.kubernetes_addons.ingress_cert_manager_issuer
+    domain                      = var.domain
+    kathra_version              = var.kathra_version
+}
 
-    kathra = {
-        images = {
-            registry_url    = "registry.hub.docker.com"
-            root_repository = "kathra"
-            docker_conf     = ""
-            tag             = "stable"
-        }
-        domain   = var.domain
-        ingress  = {
-            class                 = module.kubernetes_addons.ingress_controller
-            cert-manager_issuer   = module.kubernetes_addons.ingress_cert_manager_issuer
-            appmanager = {
-                host              = "appmanager.${var.domain}"
-                tls_secret_name   = "appmanager-cert"
-            }
-            dashboard = {
-                host              = "dashboard.${var.domain}"
-                tls_secret_name   = "dashboard-cert"
-            }
-            platformmanager = {
-                host              = "platformmanager.${var.domain}"
-                tls_secret_name   = "platformmanager"
-            }
-        }
-        arangodb = {
-            password  = "dezofzeofo"
-        }
-        oidc = {
-            client_id       = module.factory.kathra.client_id
-            client_secret   = module.factory.kathra.client_secret
-        }
-    }
-
-    gitlab                      = {
-        url          = module.factory.gitlab.url
-        username     = module.factory.user_sync.username
-        password     = module.factory.user_sync.password
-        token        = module.factory.user_sync.gitlab_api_token
-        root_project = "kathra-projects"
-    }
-
-    harbor                      = {
-        url          = module.factory.harbor.url
-        username     = module.factory.user_sync.username
-        password     = module.factory.user_sync.password
-    }
-
-    jenkins                      = {
-        url          = module.factory.harbor.url
-        username     = module.factory.user_sync.username
-        token        = module.factory.user_sync.jenkins_api_token
-    }
-
-    nexus                         = module.factory.nexus
-
-    keycloak                      = {
-        url           = module.factory.keycloak.url
-        user          = {
-            auth_url      = "${module.factory.keycloak.url}/auth"
-            realm         = module.factory.realm.name
-            username      = module.factory.user_sync.username
-            password      = module.factory.user_sync.password
-        }
-        admin          = {
-            auth_url      = "${module.factory.keycloak.url}/auth"
-            username      = module.factory.user_sync.username
-            password      = module.factory.user_sync.password
-            realm         = "master"
-            client_id     = "admin-cli"
-        }
-    }
+####################
+### BACKUP
+####################
+module "backup" {
+    source                  = "./../backup/azure"
+    group                   = "${var.group}_backup"
+    namespace               = "velero"
+    location                = var.location
+    tenant_id               = var.tenant_id
+    subscribtion_id         = var.subscribtion_id
+    velero_client_id        = var.k8s_client_id
+    velero_client_secret    = var.k8s_client_secret
 }
 
 
+############################################################
+### OUTPUT
+############################################################
 output "kubeconfig_content" {
     value                       = module.kubernetes.kube_config_raw
 }
-output "factory" {
-    value                       = module.factory
+output "kathra" {
+    value                       = module.kathra
 }

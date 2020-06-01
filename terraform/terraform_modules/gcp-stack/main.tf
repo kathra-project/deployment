@@ -8,24 +8,32 @@ variable "zone" {
 }
 variable "domain" {
 }
+variable "node_size" {
+  default = "n1-standard-8"
+}
+variable "node_count" {
+  default = 2
+}
+variable "kathra_version" {
+  default = "latest"
+}
+
 
 
 provider "google" {
-    version     = "3.14.0"
+    version     = "3.23.0"
     credentials = file(var.gcp_crendetials)
     project     = var.project_name
     region      = var.region
-    zone        =  var.zone
+    zone        = var.zone
 }
 
 module "kubernetes" {
     source              = "../kubernetes/gcp"
     project_name        = var.project_name
     location            = var.region
-}
-module "kubeconfig" {
-    source              = "../kubeconfig"
-    kube_config         = module.kubernetes.kube_config
+    node_size           = var.node_size
+    node_count          = var.node_count
 }
 
 
@@ -34,31 +42,92 @@ module "static_ip" {
     domain              = var.domain
 }
 
-resource "local_file" "kube_config" {
-    content             = module.kubeconfig.kube_config_raw
-    filename            = "kube_config"
+provider "kubernetes" {
+    load_config_file       = "false"
+    host                   = module.kubernetes.kube_config.host
+    username               = module.kubernetes.kube_config.username
+    password               = module.kubernetes.kube_config.password
+    client_certificate     = base64decode(module.kubernetes.kube_config.client_certificate)
+    client_key             = base64decode(module.kubernetes.kube_config.client_key)
+    cluster_ca_certificate = base64decode(module.kubernetes.kube_config.cluster_ca_certificate)
 }
 
+
+provider "helm" {
+    kubernetes {
+        load_config_file       = "false"
+        host                   = module.kubernetes.kube_config.host
+        username               = module.kubernetes.kube_config.username
+        password               = module.kubernetes.kube_config.password
+        client_certificate     = base64decode(module.kubernetes.kube_config.client_certificate)
+        client_key             = base64decode(module.kubernetes.kube_config.client_key)
+        cluster_ca_certificate = base64decode(module.kubernetes.kube_config.cluster_ca_certificate)
+    }
+}
+
+provider "kubectl" {
+    load_config_file       = false
+    host                   = module.kubernetes.kube_config.host
+    username               = module.kubernetes.kube_config.username
+    password               = module.kubernetes.kube_config.password
+    client_certificate     = base64decode(module.kubernetes.kube_config.client_certificate)
+    client_key             = base64decode(module.kubernetes.kube_config.client_key)
+    cluster_ca_certificate = base64decode(module.kubernetes.kube_config.cluster_ca_certificate)
+    apply_retry_count      = 15
+}
+
+
+resource "kubernetes_storage_class" "default" {
+    metadata {
+        name = "default"
+    }
+    storage_provisioner = "kubernetes.io/gce-pd"
+    reclaim_policy      = "Retain"
+    parameters = {
+        type = "pd-standard"
+    }
+    depends_on = [ module.kubernetes ]
+}
+
+############################################################
+### KUBERNETES ADDONS (INGRESS + CERT MANAGER)
+############################################################
 module "kubernetes_addons" {
     source              = "../kubernetes_addons"
-    kube_config         = module.kubernetes.kube_config
-    kube_config_file    = local_file.kube_config.filename
     public_ip           = module.static_ip.public_ip_address
-    aks_group           = azurerm_resource_group.kathra.name
+    domain              = var.domain
 }
 
-module "factory" {
-    source                      = "../factory"
-    ingress_class               = module.kubernetes_addons.ingress_controller
+############################################################
+### KATHRA INSTANCE
+############################################################
+module "kathra" {
+    source                      = "../kathra"
+    ingress_controller          = module.kubernetes_addons.ingress_controller
+    ingress_cert_manager_issuer = module.kubernetes_addons.ingress_cert_manager_issuer
     domain                      = var.domain
-    namespace                   = "factory"
     kube_config                 = module.kubernetes.kube_config
-    kube_config_raw             = module.kubernetes.kube_config_raw
+    kathra_version              = var.kathra_version
 }
+
+############################################################
+### OUTPUT
+############################################################
+
+module "kube_config" {
+    source                      = "../kubeconfig"
+    kube_config                 = module.kubernetes.kube_config
+}
+
 
 output "kubernetes" {
-    value = module.kubernetes
+    value                       = module.kubernetes
 }
-output "kubeconfig_path" {
-    value = module.kubernetes.kubeconfig_path
+
+output "kubeconfig_content" {
+    value                       = module.kube_config.kube_config_raw
+}
+
+output "kathra" {
+    value                       = module.kathra
 }

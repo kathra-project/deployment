@@ -3,7 +3,7 @@ kind: Service
 metadata:
   labels:
     app: resource
-    product: kathra
+    project: kathra
     project: resource
   name: resource-db
 spec:

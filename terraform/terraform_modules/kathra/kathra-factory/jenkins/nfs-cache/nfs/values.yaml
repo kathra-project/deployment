@@ -1,0 +1,5 @@
+configuration:
+  persistence:
+    size: 5Gi
+    resourcePolicy: none
+    storageClassName: default

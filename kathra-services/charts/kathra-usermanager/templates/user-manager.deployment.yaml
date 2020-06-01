@@ -1,11 +1,11 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
 {{ include "kathra.labels" . | indent 4 }}
     app: usermanager
     impl: keycloak
-    product: kathra
+    project: kathra
   name: usermanager-keycloak
 spec:
   replicas: 1
@@ -13,14 +13,13 @@ spec:
     matchLabels:
       app: usermanager
       impl: keycloak
-      product: kathra
+      project: kathra
   template:
     metadata:
       labels:
         app: usermanager
         impl: keycloak
-        product: kathra
-      namespace: kathra-dev
+        project: kathra
     spec:
       containers:
       - env:

@@ -4,7 +4,7 @@ metadata:
   name: deploymanager
   labels:
 {{ include "factory.labels" . | indent 4 }}
-    product: kathra
+    project: kathra
     app: deploymanager
 spec:
   ports:
@@ -13,5 +13,5 @@ spec:
     targetPort: 8080
   selector:
     app: deploymanager
-    product: kathra
+    project: kathra
   type: ClusterIP

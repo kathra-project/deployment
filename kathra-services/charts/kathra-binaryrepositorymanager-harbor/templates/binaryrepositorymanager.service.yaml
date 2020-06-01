@@ -4,7 +4,7 @@ metadata:
   name: "binaryrepositorymanager-harbor"
   labels:
 {{ include "kathra.labels" . | indent 4 }}
-    product: "kathra"
+    project: "kathra"
     app: "binaryrepositorymanager"
 spec:
   ports:
@@ -12,7 +12,7 @@ spec:
     port: 80
     targetPort: 8080
   selector:
-    product: "kathra"
+    project: "kathra"
     app: "binaryrepositorymanager"
     impl: "harbor"
   type: ClusterIP

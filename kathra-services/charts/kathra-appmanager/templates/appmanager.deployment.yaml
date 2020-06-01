@@ -1,18 +1,23 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: "appmanager-swagger"
   labels:
 {{ include "kathra.labels" . | indent 4 }}
-    product: kathra
+    project: kathra
     app: appmanager
-    impl: "swagger"
+    impl: swagger
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      project: kathra
+      app: appmanager
+      impl: swagger
   template:
     metadata:
       labels:
-        product: kathra
+        project: kathra
         app: appmanager
         impl: swagger
     spec:
