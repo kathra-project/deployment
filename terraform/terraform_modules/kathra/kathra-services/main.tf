@@ -4,7 +4,8 @@ variable "namespace" {
 variable "kathra" {
   default = {
         images = {
-          registry_url    = "registry.hub.docker.com"
+          #registry_url    = "registry.hub.docker.com/"
+          registry_url    = "docker.io/"
           root_repository = "kathra"
           docker_conf     = ""
           tag             = "stable"
@@ -15,6 +16,21 @@ variable "kathra" {
             host              = "appmanager.kathra.org"
             class             = ""
             tls_secret_name   = "appmanager-cert"
+          }
+          resourcemanager = {
+            host              = "resourcemanager.kathra.org"
+            class             = ""
+            tls_secret_name   = "resourcemanager-cert"
+          }
+          pipelinemanager = {
+            host              = "pipelinemanager.kathra.org"
+            class             = ""
+            tls_secret_name   = "pipelinemanager-cert"
+          }
+          sourcemanager = {
+            host              = "sourcemanager.kathra.org"
+            class             = ""
+            tls_secret_name   = "sourcemanager-cert"
           }
           dashboard = {
             host              = "dashboard.kathra.org"
@@ -103,6 +119,7 @@ kathra-appmanager:
   version: "${var.kathra.images.tag}"
   tls: true
   delete_zip_file: "true"
+  image_registry_host: "${replace(replace(var.harbor.url, "https://", ""), "http://", "")}"
   services_url:
     codegen_helm: codegen-helm/api/v1
     codegen_swagger: codegen-swagger/api/v1
@@ -112,6 +129,9 @@ kathra-appmanager:
     resource_manager: resourcemanager/api/v1
     catalogmanager: catalogmanager/api/v1
     pipeline_webhook: https://${var.kathra.ingress.appmanager.host}/api/v1/webhook
+  technicalUser:
+    username: "${var.keycloak.user.username}"
+    password: "${var.keycloak.user.password}"
   resources:
     limits:
       cpu: 900m
@@ -157,6 +177,36 @@ kathra-binaryrepositorymanager-harbor:
     - hosts:
       - binaryrepositorymanager-harbor.${var.kathra.domain}
       secretName: binaryrepositorymanager-harbor-cert
+
+
+kathra-binaryrepositorymanager-nexus:
+  image: binaryrepositorymanager-nexus
+  version: "${var.kathra.images.tag}"
+  services_url:
+    resource_manager: resourcemanager/api/v1
+  nexus:
+    url: "${var.nexus.url}"
+    username: "${var.nexus.username}"
+    password: "${var.nexus.password}"
+  keycloak:
+    username: "${var.keycloak.user.username}"
+    password: "${var.keycloak.user.password}"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 768Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  ingress:
+    annotations:
+      kubernetes.io/ingress.class: "${var.kathra.ingress.class}"
+      cert-manager.io/issuer: "${var.kathra.ingress.cert-manager_issuer}"
+      ingress.kubernetes.io/force-ssl-redirect: "true"
+    tls:
+    - hosts:
+      - binaryrepositorymanager-nexus.${var.kathra.domain}
+      secretName: binaryrepositorymanager-nexus-cert
 
 
 kathra-catalogmanager:
@@ -286,7 +336,7 @@ kathra-pipelinemanager:
     tls:
     - hosts:
       - pipelinemanager.${var.kathra.domain}
-      secretName: pipelinemanager-cert
+      secretName: "${var.kathra.ingress.pipelinemanager.tls_secret_name}"
 
 kathra-platformmanager:
   image: platformmanager-kube
@@ -341,7 +391,7 @@ kathra-resourcemanager:
     tls:
     - hosts:
       - resourcemanager.${var.kathra.domain}
-      secretName: resourcemanager-cert
+      secretName: "${var.kathra.ingress.resourcemanager.tls_secret_name}"
 
 db:
   db:
@@ -361,6 +411,11 @@ kathra-sourcemanager:
     parent_group: "${var.gitlab.root_project}"
   user_manager:
     url: usermanager
+  services_url:
+    resource_manager: http://resourcemanager/api/v1
+  keycloak:
+    username: "${var.keycloak.user.username}"
+    password: "${var.keycloak.user.password}"
   resources:
     limits:
       cpu: 500m
@@ -376,7 +431,7 @@ kathra-sourcemanager:
     tls:
     - hosts:
       - sourcemanager.${var.kathra.domain}
-      secretName: sourcemanager-cert
+      secretName: "${var.kathra.ingress.sourcemanager.tls_secret_name}"
 
 kathra-usermanager:
   image: usermanager-keycloak
@@ -428,4 +483,24 @@ output "namespace" {
 }
 output "name" {
     value = helm_release.kathra.name
+}
+
+output "services" {
+  value = {
+    dashboard = {
+      host = "dashboard.${var.kathra.domain}"
+    },
+    appmanager = {
+      host = "appmanager.${var.kathra.domain}"
+    },
+    resourcemanager = {
+      host = "resourcemanager.${var.kathra.domain}"
+    },
+    pipelinemanager = {
+      host = "pipelinemanager.${var.kathra.domain}"
+    },
+    sourcemanager = {
+      host = "sourcemanager.${var.kathra.domain}"
+    }
+  }
 }

@@ -4,6 +4,8 @@ variable "username" {
 }
 variable "password" {
 }
+variable "vm_depends_on" {
+}
 
 provider "nexus" {
     insecure = true
@@ -37,6 +39,8 @@ resource "nexus_repository" "pypi_public" {
         authentication {
         }
     }
+
+    depends_on = [var.vm_depends_on]
 }
 
 resource "nexus_repository" "maven_sonatype_public" {
@@ -67,15 +71,17 @@ resource "nexus_repository" "maven_sonatype_public" {
         }
     }
 
+    depends_on = [var.vm_depends_on]
+
 }
 
 data "nexus_repository" "maven_central" {
     name = "maven-central"
-    depends_on = [var.nexus_url]
+    depends_on = [var.vm_depends_on]
 }
 data "nexus_repository" "maven_releases" {
     name = "maven-releases"
-    depends_on = [var.nexus_url]
+    depends_on = [var.vm_depends_on]
 }
 data "nexus_repository" "maven_snapshots" {
     name = "maven-snapshots"
@@ -84,11 +90,10 @@ data "nexus_repository" "maven_snapshots" {
 
 data "nexus_repository" "maven_public" {
     name = "maven-public"
-    depends_on = [var.nexus_url]
+    depends_on = [var.vm_depends_on]
 }
-/*
 resource "nexus_repository" "maven_group_all" {
-    name   = "maven-public-2"
+    name   = "maven-all"
     format = "maven2"
     type   = "group"
     group {
@@ -96,15 +101,15 @@ resource "nexus_repository" "maven_group_all" {
             data.nexus_repository.maven_central.name,
             data.nexus_repository.maven_releases.name,
             data.nexus_repository.maven_snapshots.name,
-            //nexus_repository.maven_sonatype_public.name
+            nexus_repository.maven_sonatype_public.name
         ]
     }
     storage {
         blob_store_name                = "default"
         strict_content_type_validation = true
     }
+    depends_on = [var.vm_depends_on]
 }
-*/
 
 resource "nexus_repository" "pypi_hosted" {
     name   = "pip-snapshots"
@@ -116,6 +121,7 @@ resource "nexus_repository" "pypi_hosted" {
         strict_content_type_validation = true
         write_policy                   = "ALLOW"
     }
+    depends_on = [var.vm_depends_on]
 }
 
 resource "nexus_repository" "pypi_group_all" {
@@ -125,7 +131,7 @@ resource "nexus_repository" "pypi_group_all" {
     online = true
     group {
         member_names = [
-            //nexus_repository.pypi_public.name,
+            nexus_repository.pypi_public.name,
             nexus_repository.pypi_hosted.name
         ]
     }
@@ -133,6 +139,7 @@ resource "nexus_repository" "pypi_group_all" {
         blob_store_name                = "default"
         strict_content_type_validation = true
     }
+    depends_on = [var.vm_depends_on]
 }
 
 output "repositories" {
@@ -141,12 +148,10 @@ output "repositories" {
         data.nexus_repository.maven_releases,
         data.nexus_repository.maven_snapshots,
 
-        data.nexus_repository.maven_public,
+        //data.nexus_repository.maven_public,
+        nexus_repository.maven_group_all,
         //data.nexus_repository.pip_all,
 
-        //nexus_repository.maven_sonatype_public,
-        //nexus_repository.maven_group_all,
-        //nexus_repository.pypi_public,
         nexus_repository.pypi_hosted,
         nexus_repository.pypi_group_all
     ]

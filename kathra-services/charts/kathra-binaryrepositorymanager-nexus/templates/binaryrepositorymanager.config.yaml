@@ -2,12 +2,12 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: binaryrepositorymanager-harbor-config
+  name: binaryrepositorymanager-nexus-config
   labels:
 {{ include "kathra.labels" . | indent 4 }}
     project: kathra
     app: binaryrepositorymanager
 data:
-  HARBOR_URL: {{ .Values.harbor.url }}
+  NEXUS_URL: {{ .Values.nexus.url }}
   RESOURCE_MANAGER_URL: {{ .Values.services_url.resource_manager }}
   SCHEDULE_REFRESH_TOKEN_DELAY: "60s"

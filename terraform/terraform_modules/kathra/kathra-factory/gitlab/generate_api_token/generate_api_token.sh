@@ -8,7 +8,7 @@ export debug=1
 . ${SCRIPT_DIR}/../../sh/gitlab.func.sh
 
 export retrySecondInterval=2
-export max_attempts=5
+export max_attempts=10
 
 printDebug "$*"
 declare gitlab_host=$1

@@ -96,6 +96,9 @@ output "auth_url" {
 output "well_known_url" {
   value = "${var.keycloak_url}/auth/realms/${keycloak_realm.realm.realm}/.well-known/openid-configuration"
 }
+output "logout_url" {
+  value = "${var.keycloak_url}/auth/realms/${keycloak_realm.realm.realm}/protocol/openid-connect/logout?redirect_uri=encodedRedirectUri"
+}
 output "url" {
   value = "${var.keycloak_url}/auth/realms/${keycloak_realm.realm.realm}"
 }

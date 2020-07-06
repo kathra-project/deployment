@@ -39,7 +39,7 @@ resource "helm_release" "harbor" {
     chart      = "harbor"
     namespace  = var.namespace
     timeout    = 800
-    version    = "v1.3.2"
+    version    = "v1.3.0"
 
     values = [<<EOF
 externalURL: https://${var.ingress_host}
@@ -191,6 +191,7 @@ resource "null_resource" "harbor_oidc_config" {
             HARBOR_CONFIGURATIONS_ENDPOINT = "https://${var.ingress_host}/api/configurations"
             OIDC_ENDPOINT                  = var.oidc_url
             OIDC_SCOPE                     = "openid,email"
+            OIDC_GROUP_CLAIM               = "groups"
             OIDC_CLIENT_ID                 = var.oidc_client_id
             OIDC_CLIENT_SECRET             = var.oidc_client_secret
         }

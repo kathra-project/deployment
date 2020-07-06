@@ -5,16 +5,21 @@
 function startMinikube() {
     printDebug "startMinikube(minikubeCpus: $minikubeCpus, minikubeMemory: $minikubeMemory, minikubeDiskSize: $minikubeDiskSize)"
     downloadMinikube
-    downloadKubectl
+    installKubectl
     [ $(minikube status | grep -e "host: Running\|kubelet: Running\|apiserver: Running\|kubectl: Correctly Configured\|kubeconfig: Configured" | wc -l) -eq 4 ] && minikube addons enable ingress && printInfo "Minikube already started" && return 0
-    if [ $minikubeVmDriver == "none" ]
+    if [ "$minikubeVmDriver" == "none" ]
     then
         $sudo minikube start --vm-driver="none" --kubernetes-version v$kubernetesVersion || printErrorAndExit "Unable to install minikube"
+        rm -Rf $HOME/.minikube $HOME/.kube
+        $sudo mv /root/.kube /root/.minikube $HOME
+        $sudo chown -R $USER $HOME/.kube $HOME/.minikube
+        sudo chown -R $USER /etc/kubernetes
+        sed -i "s#/root/#${HOME}/#g" $HOME/.kube/config
     else
         minikube start --vm-driver=$minikubeVmDriver --cpus $minikubeCpus --memory $minikubeMemory --disk-size $minikubeDiskSize --kubernetes-version v$kubernetesVersion || printErrorAndExit "Unable to install minikube"
     fi
     printInfo "Minikubed started"
-    minikube addons enable ingress
+    minikube addons enable ingress                                              || printErrorAndExit "Unable to enable ingress"
     addDefaultCertNginxController "kathra-services" "default-tls"               || printErrorAndExit "Unable to Configure Nginx"
     return 0
 }
@@ -110,15 +115,6 @@ function downloadMinikube() {
 }
 export -f downloadMinikube
 
-function downloadKubectl() {
-    printDebug "downloadKubectl()"
-    which kubectl > /dev/null 2> /dev/null && return 0
-    sudo curl -L -o $tmp/kubectl https://storage.googleapis.com/kubernetes-release/release/v$kubernetesVersion/bin/linux/amd64/kubectl 
-    sudo chmod +x $tmp/kubectl 
-    sudo mv $tmp/kubectl /usr/local/bin/kubectl
-}
-export -f downloadKubectl
-
 function coreDnsAddRecords() {
     local domain=$1
     local ip=$2
@@ -147,8 +143,8 @@ EOF
         kubectl apply -f $tmp/coredns.deployment.updated.json || printErrorAndExit "Unable to update coredns deployment: $tmp/coredns.deployment.updated.json"
     fi
 
-    ## Test config
-    checkCommandAndRetry "kubectl run -it --rm --restart=Never --image=infoblox/dnstools:latest dnstools -- '-c' \"host $domain\" | tee | grep \"$domain has address $ip\" > /dev/null" || printErrorAndExit "Unable to run pod dnstools and check hostname"
+    ## Test DNS config
+    checkCommandAndRetry "kubectl delete pods check-dns ; kubectl run -it --rm --restart=Never --image=infoblox/dnstools:latest check-dns -- '-c' \"host $domain\" | tee | grep \"$domain has address $ip\" > /dev/null" || printErrorAndExit "Unable to run pod dnstools and check hostname"
     printInfo "CoreDNS Configured"
     return 0
 }
@@ -173,12 +169,15 @@ function generateCertsDnsChallenge() {
     local tlsCertOut=$2
     local tlsKeyOut=$3
     local email=contact@$domain
-    local certDir=/etc/letsencrypt/live/$domain
-    export tlsCert=$certDir/fullchain.pem
-    export tlsKey=$certDir/privkey.pem
+    local directoryName=$(sudo ls -l /etc/letsencrypt/archive/ | awk '{print $9}' | grep -E "$domain(-[0-9]+)*" | tail -n 1)
+    if [ ! $directoryName == "" ]
+    then
+        local certDir=/etc/letsencrypt/live/$directoryName
+        export tlsCert=$certDir/fullchain.pem
+        export tlsKey=$certDir/privkey.pem
 
-    sudo ls -l $tlsCert > /dev/null 2> /dev/null && sudo ls -l $tlsKey > /dev/null 2> /dev/null && printInfo "Certificate already exists: $tlsCert, $tlsKey" && sudo cp $tlsCert $tlsCertOut && sudo cp $tlsKey $tlsKeyOut && return 0
-
+        sudo ls -l $tlsCert > /dev/null 2> /dev/null && sudo ls -l $tlsKey > /dev/null 2> /dev/null && printInfo "Certificate already exists: $tlsCert, $tlsKey" && sudo cp $tlsCert $tlsCertOut && sudo cp $tlsKey $tlsKeyOut && sudo chown $USER $tlsKeyOut && sudo chown $USER $tlsCertOut && return 0
+    fi
     printInfo "Generate new wildcard certificate for domain *.$domain with Let's Encrypt"
 
     ! dpkg -s python-minimal > /dev/null && sudo apt-get install -y python-minimal
@@ -188,82 +187,20 @@ function generateCertsDnsChallenge() {
     [ -d /opt/certbot ] && sudo rm -Rf /opt/certbot 
     cd /opt && sudo git clone https://github.com/certbot/certbot.git && cd certbot && ./certbot-auto
     ./certbot-auto certonly --manual --preferred-challenges=dns --email=$email --agree-tos -d *.$domain  || printErrorAndExit "Unable to generate certificate for domain *.$domain"
-    chmod +r -R $certDir
+
+    local directoryName=$(sudo ls -l /etc/letsencrypt/archive/ | awk '{print $9}' | grep -E "$domain(-[0-9]+)*" | tail -n 1)
+    local certDir=/etc/letsencrypt/live/$directoryName
+    export tlsCert=$certDir/fullchain.pem
+    export tlsKey=$certDir/privkey.pem
+
+    sudo chmod +r -R $certDir
     sudo ls -l $tlsCert > /dev/null || printErrorAndExit "File $tlsCert not found"
     sudo ls -l $tlsKey > /dev/null || printErrorAndExit "File $tlsKey not found"
     printInfo "Certificate FullChain and PrivateKey generated: $tlsCert, $tlsKey"
     sudo cp $tlsCert $tlsCertOut
     sudo cp $tlsKey $tlsKeyOut
+    sudo chown $USER $tlsCertOut
+    sudo chown $USER $tlsKeyOut
     return 0
 }
 export -f generateCertsDnsChallenge
-
-
-function installTerraform() {
-    printDebug "installTerraform()"
-    which terraform > /dev/null 2> /dev/null && return 0
-    sudo apt-get install unzip
-    [ -f /tmp/terraform.zip ] && rm -f /tmp/terraform.zip
-    curl https://releases.hashicorp.com/terraform/${terraformVersion}/terraform_${terraformVersion}_linux_amd64.zip > /tmp/terraform.zip
-    unzip /tmp/terraform.zip
-    sudo mv terraform /usr/local/bin/terraform
-}
-export -f installTerraform
-
-function installTerraformPlugin() {
-    printDebug "installTerraformPlugin(pluginName: $1, pluginVersion: $2, pluginSourceCommit: $3, pluginSourceCommit: $4)"
-    local pluginName=$1
-    local pluginVersion=$2
-    local pluginSourceRepositoryGit=$3
-    local pluginSourceCommit=$4
-    local system="linux"
-    [ "$OSTYPE" == "win32" ] && system="windows"
-    [ "$OSTYPE" == "win32" ] && system="windows"
-    
-    local bin=$SCRIPT_DIR/.terraform/plugins/${system}_amd64/terraform-provider-${pluginName}_v$pluginVersion
-    
-    [ -f $bin ] && return 0
-    [ -d /tmp/terraform-provider-$pluginName ] && rm -rf /tmp/terraform-provider-$pluginName 
-    git clone ${pluginSourceRepositoryGit} /tmp/terraform-provider-$pluginName || return 1
-    cd /tmp/terraform-provider-$pluginName || return 1
-    git checkout $pluginSourceCommit || return 1
-    go build -o terraform-provider-$pluginName || return 1
-    [ ! -d "$(dirname $bin)" ] && mkdir "$(dirname $bin)"
-    mv terraform-provider-$pluginName $bin || return 1
-    cd $SCRIPT_DIR
-}
-
-function printErrorAndExit(){
-    echo -e "\033[31;1m $* \033[0m" 1>&2 && exit 1
-}
-export -f printErrorAndExit
-function printError(){
-    echo -e "\033[31;1m $* \033[0m" 1>&2 && return 0
-}
-export -f printError
-function printWarn(){
-    echo -e "\033[33;1m $* \033[0m" 1>&2 && return 0
-}
-export -f printWarn
-function printInfo(){
-    echo -e "\033[33;1m $* \033[0m" 1>&2 && return 0
-}
-export -f printInfo
-function printDebug(){
-    [ "$debug" == "1" ] && echo -e "\033[94;1m $* \033[0m" 1>&2
-    return 0
-}
-export -f printDebug
-
-function findInArgs() {
-    local keyToFind=$1
-    shift 
-    POSITIONAL=()
-    while [[ $# -gt 0 ]]
-    do
-        [ "$(echo "$1" | cut -d'=' -f1)" == "${keyToFind}" ] && echo $(echo "$1" | cut -d'=' -f2) && return 0
-        shift
-    done
-    return 1
-}
-export -f findInArgs

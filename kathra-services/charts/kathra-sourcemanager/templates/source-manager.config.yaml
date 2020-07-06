@@ -14,3 +14,4 @@ data:
   KATHRA_SOURCEMANAGER_MAXIMAL_TRY_NUMBER_TO_CREATE_DIRECTORY: {{ .Values.dir_creation_max_retry | quote }}
   KATHRA_SOURCEMANAGER_DELETE_FOLDER_AFTER_GIT: {{ .Values.delete_temp_folder | quote }}
   KATHRA_SOURCEMANAGER_DELETE_ZIP_FILE: {{ .Values.delete_temp_zip | quote }}
+  RESOURCE_MANAGER_URL: {{ .Values.services_url.resource_manager }}

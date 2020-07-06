@@ -95,22 +95,6 @@ function main() {
     showHelp
 }
 
-function checkDependencies() {
-    printDebug "checkDependencies()"
-    which curl > /dev/null          || sudo apt-get install curl -y > /dev/null 2> /dev/null 
-    which jq >  /dev/null           || sudo apt-get install jq -y > /dev/null 2> /dev/null 
-    which unzip > /dev/null         || sudo apt-get install unzip -y > /dev/null 2> /dev/null 
-    which go > /dev/null            || sudo apt-get install golang-go > /dev/null 2> /dev/null 
-    which gcloud > /dev/null        || installKubectl
-    which kubectl > /dev/null       || installKubectl
-    which terraform > /dev/null     || installTerraform
-    
-    installTerraformPlugin "keycloak" "1.18.0" "https://github.com/mrparkers/terraform-provider-keycloak.git" "1.18.0"   || printErrorAndExit "Unable to install keycloak terraform plugin"
-    installTerraformPlugin "kubectl"  "1.3.5"  "https://github.com/gavinbunney/terraform-provider-kubectl"    "v1.3.5"   || printErrorAndExit "Unable to install kubectl terraform plugin"
-    installTerraformPlugin "nexus"    "1.6.2"  "https://github.com/datadrivers/terraform-provider-nexus"      "v1.6.2"   || printErrorAndExit "Unable to install nexus terraform plugin"
-}
-export -f checkDependencies
-
 function deploy() {
     printDebug "deploy()"
     checkDependencies

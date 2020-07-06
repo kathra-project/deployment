@@ -31,6 +31,9 @@ kathra-appmanager:
     resource_manager: resourcemanager/api/v1
     catalogmanager: catalogmanager/api/v1
     pipeline_webhook: https://appmanager.${BASE_DOMAIN}/api/v1/webhook
+  technicalUser:
+    username: undefined
+    password: undefined
   resources:
     limits:
       cpu: 900m
@@ -56,6 +59,26 @@ kathra-binaryrepositorymanager-harbor:
     url: https://harbor.${BASE_DOMAIN}
     username: ${HARBOR_ADMIN_LOGIN}
     password: ${HARBOR_ADMIN_PASSWORD}
+  keycloak:
+    username: ${SYNCMANAGER_LOGIN}
+    password: ${SYNCMANAGER_PASSWORD}
+  resources:
+    limits:
+      cpu: 500m
+      memory: 768Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+kathra-binaryrepositorymanager-nexus:
+  image: binaryrepositorymanager-nexus
+  version: ${KATHRA_IMAGE_TAG}
+  services_url:
+    resource_manager: resourcemanager/api/v1
+  nexus:
+    url: https://nexus.${BASE_DOMAIN}
+    username: ${NEXUS_ADMIN_LOGIN}
+    password: ${NEXUS_ADMIN_PASSWORD}
   keycloak:
     username: ${SYNCMANAGER_LOGIN}
     password: ${SYNCMANAGER_PASSWORD}
@@ -221,8 +244,13 @@ kathra-sourcemanager:
     url: https://gitlab.${BASE_DOMAIN}
     api_token: ${GITLAB_API_TOKEN}
     parent_group: kathra-projects
+  services_url:
+    resource_manager: resourcemanager/api/v1
   user_manager:
     url: usermanager
+  keycloak:
+    username: ${SYNCMANAGER_LOGIN}
+    password: ${SYNCMANAGER_PASSWORD}
   resources:
     limits:
       cpu: 500m

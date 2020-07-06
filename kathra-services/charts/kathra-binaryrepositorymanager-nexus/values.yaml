@@ -11,16 +11,21 @@ global:
       id: <kathra_services_client_id>
       secret: <kathra_services_client_secret>
 
-image: codegen-swagger
+image: binaryrepositorymanager-nexus
 version: 1.0.0
-tls: true
-repository:
-  url: https://nexus.dev-irtsysx.fr
-  pythonRepo: pip-public/simple
+nexus:
+  url: https://registry.hub.docker.com/api
+  username: <nexus_svc_username>
+  password: <nexus_svc_password>
+keycloak:
+  username: <username>
+  password: <password>
+services_url:
+  resource_manager: <undefined>
 resources:
   limits:
     cpu: 300m
-    memory: 512Mi
+    memory: 768Mi
   requests:
     cpu: 50m
-    memory: 256Mi
+    memory: 128Mi

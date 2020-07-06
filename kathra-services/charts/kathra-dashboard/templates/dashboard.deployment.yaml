@@ -24,7 +24,7 @@ spec:
       imagePullSecrets:
       - name: regcred
       containers:
-      - image: "{{ .Values.global.docker.registry.url }}/{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
+      - image: "{{ .Values.global.docker.registry.url }}{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
         imagePullPolicy: Always
         name: dashboard-angular
         env:

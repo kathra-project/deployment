@@ -45,7 +45,7 @@ function gitlabGenerateApiToken() {
 
         curl -v -H "Cookie: $GA $GA_SESSION" $locationFinishLogin 2> $tmp/gitlab.finishLogin.err > $tmp/gitlab.finishLogin
             
-        gitlabDefineAccountAsAdmin ${login} ${kubeconfigFile} ${namespace} ${releaseName}
+        gitlabDefineAccountAsAdmin ${login} ${kubeconfigFile} ${namespace} ${releaseName} || printError "Unable to define user ${login} as admin"
         local GA_SESSION_FINAL=$(getHttpHeaderSetCookie $tmp/gitlab.finishLogin.err "_gitlab_session")
         curl https://${gitlab_host}/profile -H "Cookie: $GA $GA_SESSION_FINAL" 2> $tmp/gitlab.profile.err  > $tmp/gitlab.profile
         local AUTH_TOKEN=$(grep "name=\"authenticity_token\"" < $tmp/gitlab.profile  | sed "s/.* value=\"\([^\"]*\)\".*/\1/" | sed 's/amp;//g' | tr -d '\n')
@@ -75,13 +75,18 @@ export -f gitlabGenerateApiToken
 ###
 function gitlabDefineAccountAsAdmin() {
     printDebug "gitlabDefineAccountAsAdmin(accountName: $1, kubeconfigFile: $2, namespace: $3, release=$4)"
+    local accountName=$1
+    local kubeconfigFile=$2
+    local namespace=$3
+    local release=$4
     local dbUser=postgres
     local dbName=gitlabhq_production
-    local dbPasswordB64=$(kubectl --kubeconfig=$2 -n $3 get secret $4-postgresql-password -o json | jq -r '.data."postgresql-postgres-password"')
+    local dbPasswordB64=$(kubectl --kubeconfig=$kubeconfigFile -n $namespace get secret $release-postgresql-password -o json | jq -r '.data."postgresql-postgres-password"')
     local dbPassword=$(echo $dbPasswordB64 | base64 -d)
-    local podIdentifier=$(kubectl --kubeconfig=$2 -n $3 get pods -l app=postgresql,release=$4 -o json | jq -r -c '.items[0] | .metadata.name')
-    kubectl --kubeconfig=$2 -n $3 exec -it ${podIdentifier} -- bash -c "export PGPASSWORD=$dbPassword ; echo \"update users set admin=true where username like '${1}';\" | psql -U $dbUser -d $dbName" 2> /dev/null > /dev/null
-    return $?
+    local podIdentifier=$(kubectl --kubeconfig=$kubeconfigFile -n $namespace get pods -l app=postgresql,release=$release -o json | jq -r -c '.items[0] | .metadata.name')
+    kubectl --kubeconfig=$kubeconfigFile -n $namespace exec -it ${podIdentifier} -- bash -c "export PGPASSWORD=\"$dbPassword\" ; echo \"update users set admin=true where username like '${accountName}';\" | psql -U $dbUser -d $dbName" 2> /dev/null > $tmp/gitlabDefineAccountAsAdmin.updateDb
+    grep "UPDATE 1" < $tmp/gitlabDefineAccountAsAdmin > /dev/null || return 1
+    return 0
 }
 export -f gitlabDefineAccountAsAdmin
 

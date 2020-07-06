@@ -1,30 +1,30 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: "binaryrepositorymanager-harbor"
+  name: "binaryrepositorymanager-nexus"
   labels:
 {{ include "kathra.labels" . | indent 4 }}
     project: kathra
     app: binaryrepositorymanager
-    impl: harbor
+    impl: nexus
 spec:
   replicas: 1
   selector:
     matchLabels:
       project: kathra
       app: binaryrepositorymanager
-      impl: harbor
+      impl: nexus
   template:
     metadata:
       labels:
         project: kathra
         app: binaryrepositorymanager
-        impl: harbor
+        impl: nexus
     spec:
       imagePullSecrets:
       - name: regcred
       containers:
-      - name: binaryrepositorymanager-harbor
+      - name: binaryrepositorymanager-nexus
         image: "{{ .Values.global.docker.registry.url }}{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
         imagePullPolicy: Always
         ports:
@@ -41,32 +41,32 @@ spec:
             valueFrom:
               configMapKeyRef:
                 key: RESOURCE_MANAGER_URL
-                name: binaryrepositorymanager-harbor-config
-          - name: HARBOR_URL
+                name: binaryrepositorymanager-nexus-config
+          - name: NEXUS_URL
             valueFrom:
               configMapKeyRef:
-                key: HARBOR_URL
-                name: binaryrepositorymanager-harbor-config
-          - name: HARBOR_USERNAME
+                key: NEXUS_URL
+                name: binaryrepositorymanager-nexus-config
+          - name: NEXUS_USERNAME
             valueFrom:
               secretKeyRef:
-                key: HARBOR_USERNAME
-                name: binaryrepositorymanager-harbor-secret
-          - name: HARBOR_PASSWORD
+                key: NEXUS_USERNAME
+                name: binaryrepositorymanager-nexus-secret
+          - name: NEXUS_PASSWORD
             valueFrom:
               secretKeyRef:
-                key: HARBOR_PASSWORD
-                name: binaryrepositorymanager-harbor-secret
+                key: NEXUS_PASSWORD
+                name: binaryrepositorymanager-nexus-secret
           - name: USERNAME
             valueFrom:
               secretKeyRef:
                 key: USERNAME
-                name: binaryrepositorymanager-harbor-secret
+                name: binaryrepositorymanager-nexus-secret
           - name: PASSWORD
             valueFrom:
               secretKeyRef:
                 key: PASSWORD
-                name: binaryrepositorymanager-harbor-secret
+                name: binaryrepositorymanager-nexus-secret
           - name: KEYCLOAK_AUTH_URL
             valueFrom:
               configMapKeyRef:

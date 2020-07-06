@@ -9,6 +9,9 @@ variable "tag" {
 }
 variable "deployment_registry" {
 }
+variable "ingress_base" {
+
+}
 
 resource "helm_release" "deploymanager" {
   name       = "deploymanager"
@@ -20,11 +23,12 @@ image: ${var.image}
 tag: ${var.tag}
 mode: master
 targetCluster: interne
+domain: ${var.ingress_base}
 protocol: https
 
 docker:
-  KATHRA_DOCKER_URL: registry.hub.docker.com
-  KATHRA_DOCKER_AUTH: undefined:undefined
+  KATHRA_DOCKER_URL: ${var.deployment_registry.host}
+  KATHRA_DOCKER_URL: ${var.deployment_registry.username}:${var.deployment_registry.password}
   TARGET_DOCKER_URL: ${var.deployment_registry.host}
   TARGET_DOCKER_AUTH: ${var.deployment_registry.username}:${var.deployment_registry.password}
 

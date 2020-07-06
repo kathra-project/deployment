@@ -8,7 +8,7 @@ export debug=1
 . ${SCRIPT_DIR}/../../sh/jenkins.func.sh
 
 export retrySecondInterval=2
-export max_attempts=5
+export max_attempts=10
 
 printDebug "$*"
 declare jenkins_host=$1
@@ -36,7 +36,6 @@ then
     printDebug "Verify in k8s factory-token-store "
     token=$(getValueInSecretK8S $kubeconfig_file $namespace $secret_name $secret_key)
     printDebug "Token found factory-token-store : $token"
-
     if [ "$token" == "" ]
     then
         jenkinsGenerateApiToken "$jenkins_host" "$keycloak_host" "$username" "$password" "$tmp/jenkins.api_token" "true" > /dev/null

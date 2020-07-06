@@ -29,8 +29,9 @@ resource "helm_release" "sonarqube" {
   name       = "sonarqube"
   repository = data.helm_repository.oteemocharts.metadata[0].name
   chart      = "sonarqube"
-  version   = "6.2.2"
+  version    = "6.2.2"
   namespace  = var.namespace
+  timeout    = 600
 
   values = [<<EOF
 

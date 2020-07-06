@@ -57,6 +57,7 @@ resource "helm_release" "cert_manager" {
 
 resource "kubectl_manifest" "cluster_issuers" {
     yaml_body = data.template_file.clusterIssuer.rendered
+    depends_on = [helm_release.cert_manager]
 }
 
 output "namespace" {

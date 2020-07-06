@@ -70,75 +70,25 @@ prometheus:
 
 redis:
   resources:
-    limits:
-      cpu: "${var.resource_cpu_limit_per_pod}"
-      memory: "${var.resource_memory_limit_per_pod}"
-    requests:
-      cpu: 500m
-      memory: 1Gi
 
 gitlab:
   sidekiq:
     minReplicas: 6
-    maxReplicas: 10
-    resources:
-      limits:
-        cpu: "${var.resource_cpu_limit_per_pod}"
-        memory: "${var.resource_memory_limit_per_pod}"
-      requests:
-        cpu: 500m
-        memory: 1Gi
-  
-  gitlab-shell:
-    minReplicas: ${var.min_replicas}
-    maxReplicas: ${var.max_replicas}
-    resources:
-      limits:
-        cpu: "${var.resource_cpu_limit_per_pod}"
-        memory: "${var.resource_memory_limit_per_pod}"
-      requests:
-        cpu: 500m
-        memory: 256Mi
-
   webservice:
     minReplicas: 6
-    maxReplicas: 10
-    resources:
-      limits:
-        cpu: "${var.resource_cpu_limit_per_pod}"
-        memory: "${var.resource_memory_limit_per_pod}"
-      requests:
-        cpu: 500m
-        memory: 256Mi
-    workhorse:
-      resources:
-        limits:
-          cpu: "${var.resource_cpu_limit_per_pod}"
-          memory: "${var.resource_memory_limit_per_pod}"
-        requests:
-          cpu: 10m
-          memory: 10M
   unicorn:
     minReplicas: 6
-    maxReplicas: 10
     ingress:
       tls:
         secretName: ${var.ingress_tls_secret_name.unicorn == null ? "gitlab-unicorn-cert" : var.ingress_tls_secret_name.unicorn}
 registry:
   hpa:
-    minReplicas: ${var.min_replicas}
-    maxReplicas: ${var.max_replicas}
+    minReplicas: 1
+    maxReplicas: 2
   ingress:
     tls:
       secretName: ${var.ingress_tls_secret_name.registry == null ? "gitlab-registry-cert" : var.ingress_tls_secret_name.registry}
 minio:
-  resources:
-    limits:
-      cpu: "${var.resource_cpu_limit_per_pod}"
-      memory: "${var.resource_memory_limit_per_pod}"
-    requests:
-      memory: 64Mi
-      cpu: 10m
   ingress:
     tls:
       secretName: ${var.ingress_tls_secret_name.minio == null ? "gitlab-minio-cert" : var.ingress_tls_secret_name.minio}
@@ -199,6 +149,25 @@ EOF
   }
 }
 
+resource "kubernetes_service" "gitlab_ssh_node_port" {
+  metadata {
+    name = "gitlab-ssh"
+    namespace  = var.namespace
+  }
+  spec {
+    selector = {
+      app     = "gitlab-shell"
+      release = "gitlab"
+    }
+    port {
+      port        = 22
+      target_port = 2222
+      node_port    = 30022
+    }
+    type = "NodePort"
+  }
+}
+
 output "namespace" {
     value = helm_release.gitlab.namespace
 }
@@ -217,6 +186,9 @@ output "host" {
 }
 output "service" {
     value = "gitlab"
+}
+output "node_port" {
+    value = kubernetes_service.gitlab_ssh_node_port.spec[0].port[0].node_port
 }
 output "url" {
     value = "https://${yamldecode(helm_release.gitlab.metadata[0].values).global.hosts.domain}"

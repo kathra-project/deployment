@@ -235,7 +235,7 @@ module "sonarqube" {
     oidc_client_secret          = module.sonarqube_client.client_secret
 }
 output "sonarqube" {
-    value = module.nexus
+    value = module.sonarqube
 }
 
 /****************************
@@ -246,6 +246,7 @@ module "deploymanager" {
     namespace                   = var.namespace
 
     tag                         = var.deploymanager.tag
+    ingress_base                = var.domain
     deployment_registry         = {
         host     = module.harbor.host
         username = module.harbor.username
@@ -285,9 +286,9 @@ module "jenkins" {
 
     oidc                        = {
         host            = module.keycloak.host
-        token_url       = "${module.keycloak.url}/auth/realms/${module.realm.name}/protocol/openid-connect/token"
-        auth_url        = "${module.keycloak.url}/auth/realms/${module.realm.name}/protocol/openid-connect/auth"
-        well_known_url  = "${module.keycloak.url}/auth/realms/${module.realm.name}/.well-known/openid-configuration"
+        token_url       = module.realm.token_url
+        auth_url        = module.realm.auth_url
+        well_known_url  = module.keycloak.url
         client_id       = module.jenkins_client.client_id
         client_secret   = module.jenkins_client.client_secret
         group_admin     = var.kathra_group_admin
@@ -363,7 +364,7 @@ module "jenkins_user_init_api_token" {
 
 
 /********************
-    KATHRA USER
+    KATHRA SERVICE ACCOUNT
 ***********************/
 module "user_sync" {
     source      = "./user"
@@ -386,9 +387,11 @@ module "user_sync" {
     kube_config = var.kube_config
 }
 
-output "user_sync" {
+output "kathra_service_account" {
     value = module.user_sync
 }
+
+
 
 /********************
     KATHRA GROUP

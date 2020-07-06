@@ -42,7 +42,7 @@ nexusProxy:
 nexus:
   adminPassword: ${var.password}
   imageName: sonatype/nexus3
-  imageTag: 3.23.0
+  imageTag: 3.24.0
   resources:
     limits:
       cpu: 2
@@ -75,31 +75,48 @@ EOF
 
 }
 
+
+resource "nexus_user" "kathra_user" {
+    userid    = "kathra_admin"
+    firstname = "Administrator"
+    lastname  = "User"
+    email     = "nexus@example.com"
+    password  = var.password
+    roles     = ["nx-admin"]
+    status    = "active"
+}
+
+resource "null_resource" "allow_anonymous" {
+    provisioner "local-exec" {
+      command = <<EOT
+for attempt in $(seq 1 100); do sleep 5 && curl --fail -u "${nexus_user.kathra_user.userid}:${nexus_user.kathra_user.password}" -X PUT "https://${yamldecode(helm_release.nexus.metadata[0].values).nexusProxy.env.nexusHttpHost}/service/rest/beta/security/anonymous" -H  "accept: application/json" -H  "Content-Type: application/json" -d "{  \"enabled\": true,  \"userId\": \"anonymous\",  \"realmName\": \"NexusAuthorizingRealm\"}"  && exit 0 || echo "Unable to update anonymous access ($attempt/100)"; done
+    EOT
+      interpreter = ["bash", "-c"]
+    }
+    depends_on = [ nexus_user.kathra_user, helm_release.nexus ]
+}
+
 module "default_repositories" {
     source = "./repositories"
     nexus_url = "https://${yamldecode(helm_release.nexus.metadata[0].values).nexusProxy.env.nexusHttpHost}"
     username  = "admin"
     password  = "admin123"
+    vm_depends_on = [ null_resource.allow_anonymous ]
 }
+/*
 output "repositories" {
     value = module.default_repositories
 }
+*/
+
+
+
 
 provider "nexus" {
     insecure = true
     url      = "https://${yamldecode(helm_release.nexus.metadata[0].values).nexusProxy.env.nexusHttpHost}"
     username = "admin"
     password = "admin123"
-}
-
-resource "nexus_user" "kathra_user" {
-  userid    = "kathra_admin"
-  firstname = "Administrator"
-  lastname  = "User"
-  email     = "nexus@example.com"
-  password  = var.password
-  roles     = ["nx-admin"]
-  status    = "active"
 }
 
 output "namespace" {

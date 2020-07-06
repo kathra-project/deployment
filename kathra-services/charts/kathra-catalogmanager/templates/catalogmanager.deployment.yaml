@@ -28,7 +28,7 @@ spec:
         secret:
           secretName: catalogmanager-secret
       containers:
-      - image: "{{ .Values.global.docker.registry.url }}/{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
+      - image: "{{ .Values.global.docker.registry.url }}{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
         imagePullPolicy: Always
         name: kathra-catalogmanager-helm
         env:

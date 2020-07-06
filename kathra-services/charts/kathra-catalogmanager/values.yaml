@@ -3,7 +3,7 @@ global:
   tld: dev-irtsysx.fr
   docker:
     registry: 
-      url: registry.hub.docker.com
+      url: registry.hub.docker.com/
       root_repository: kathra
       secret_b64: <base64_k8s_dockerconfig_secret>
 

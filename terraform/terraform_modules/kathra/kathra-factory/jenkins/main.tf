@@ -43,9 +43,9 @@ variable "resources" {
 
 
 
-data "helm_repository" "stable" {
-    name = "stable"
-    url  = "https://kubernetes-charts.storage.googleapis.com"
+data "helm_repository" "codecentric" {
+    name = "codecentric"
+    url  = "https://codecentric.github.io/helm-charts"
 }
 
 module "registry_config" {
@@ -55,6 +55,15 @@ module "registry_config" {
     username                = var.binaries.registry.username
     password                = var.binaries.registry.password
 }
+
+module "sonar_scanner_config" {
+    source                  = "./sonar_scanner_config"
+    namespace               = var.namespace
+    host                    = var.sonar.url
+    username                = var.sonar.username
+    password                = var.sonar.password
+}
+
 
 module "maven_config" {
     source                  = "./maven_settings"
@@ -117,6 +126,11 @@ resource "kubernetes_persistent_volume" "jenkins_mvn_cache_pv" {
         }
         persistent_volume_reclaim_policy = "Retain"
     }
+
+    lifecycle {
+      prevent_destroy = true
+      ignore_changes  = [ spec[0].persistent_volume_source[0].nfs[0].server ]
+    }
 }
 
 resource "kubernetes_persistent_volume_claim" "jenkins_mvn_cache_pvc" {
@@ -136,77 +150,107 @@ resource "kubernetes_persistent_volume_claim" "jenkins_mvn_cache_pvc" {
     }
 }
 
+data "external" "get_host_ip" {
+    program = ["bash", "-c", "${path.module}/resolv_host.sh"]
+    query = {
+       host  = regex("^(?:(?P<scheme>[^:/?#]+):)?(?://(?P<host>[^/?#]*))?", var.binaries.pypi.url).host
+    }
+}
 
 resource "helm_release" "jenkins" {
     name          = "jenkins"
-    repository    = data.helm_repository.stable.metadata[0].name
-    chart         = "jenkins"
+    repository    = data.helm_repository.codecentric.metadata[0].name
+    chart         = "codecentric/jenkins"
+    version       = "1.6.1"
     namespace     = var.namespace
     timeout       = 800
     values = [<<EOF
 
-master:
-  adminUser: ${var.password}
-  securityRealm: |
-    <securityRealm class="org.jenkinsci.plugins.oic.OicSecurityRealm" plugin="oic-auth@1.0">
-        <clientId>${var.oidc.client_id}</clientId>
-        <clientSecret>${var.oidc.client_secret}</clientSecret>
-        <tokenServerUrl>${var.oidc.token_url}</tokenServerUrl>
-        <authorizationServerUrl>${var.oidc.auth_url}</authorizationServerUrl>
-        <userNameField>preferred_username</userNameField>
-        <groupsFieldName>groups</groupsFieldName>
-        <scopes>openid profile</scopes>
-        <automanualconfigure>none</automanualconfigure>
-    </securityRealm>
-  resources:
-    limits:
-      cpu: ${var.resources.cpu}
-      memory: ${var.resources.memory}
-    requests:
-      cpu: 1
-      memory: 1Gi
-  ingress:
-    enabled: true
-    tls:
-    - hosts:
-      - ${var.ingress_host}
-      secretName: ${var.ingress_tls_secret_name == null ? "jenkins-cert" : var.ingress_tls_secret_name}
-    path: /
-    hostName: ${var.ingress_host}
-    labels:
-      ingress: tls
-    annotations:
-      kubernetes.io/ingress.class: ${var.ingress_class}
-      cert-manager.io/issuer: "${var.ingress_cert_manager_issuer}"
-  
-  HostName: https://${var.ingress_host}/
-  
-  overwritePlugins: true
-  installPlugins:
-  - kubernetes:1.25.3
-  - kubernetes-credentials:0.6.2
-  - workflow-aggregator:2.6
-  - workflow-job:2.33
-  - credentials-binding:1.23
-  - git:4.2.2
-  - oic-auth:1.6
-  - matrix-auth:2.6.1
-  - cloudbees-folder:6.12
-  - pipeline-utility-steps:2.3.0
-  - configuration-as-code:1.35
-  - configuration-as-code-support:1.18
+ingress:
+  enabled: true
+  hosts:
+  - ${var.ingress_host}
+  tls:
+  - hosts:
+    - ${var.ingress_host}
+    secretName: ${var.ingress_tls_secret_name == null ? "jenkins-cert" : var.ingress_tls_secret_name}
+  paths: 
+  - /
+  hostName: ${var.ingress_host}
+  labels:
+    ingress: tls
+  annotations:
+    kubernetes.io/ingress.class: ${var.ingress_class}
+    cert-manager.io/issuer: "${var.ingress_cert_manager_issuer}"
+    
+resources:
+  requests:
+    cpu: 1
+    memory: 1Gi
+  limits:
+    cpu: 2
+    memory: 2Gi
 
-  JCasC:
-    defaultConfig: true
-    enabled: true
-    PluginVersion: 1.35
-    SupportPluginVersion: 1.18
-    configScripts:
-      welcome-message: |
+casc:
+  secrets:
+    ADMIN_USER: admin
+    ADMIN_PASSWORD: ${var.password}
+
+referenceContent:
+  - relativeDir: init.groovy.d
+    data:
+      - fileName: init.groovy
+        fileContent: |
+          import jenkins.model.*
+          import hudson.util.*;
+          import jenkins.install.*;
+
+          def instance = Jenkins.getInstance()
+
+          instance.setInstallState(InstallState.INITIAL_SETUP_COMPLETED)
+  - data:
+    - fileName: plugins.txt
+      fileContent: |
+        kubernetes
+        kubernetes-credentials
+        workflow-aggregator
+        workflow-job
+        credentials-binding
+        git
+        oic-auth
+        matrix-auth
+        pipeline-utility-steps
+        configuration-as-code
+
+    - fileName: jenkins.yaml
+      fileContent: |
         jenkins:
           agentProtocols:
           - "JNLP4-connect"
           - "Ping"
+          securityRealm:
+            oic:
+              clientId: "${var.oidc.client_id}"
+              clientSecret: "${var.oidc.client_secret}"
+              wellKnownOpenIDConfigurationUrl: "${var.oidc.well_known_url}"
+              userInfoServerUrl: ""
+              tokenFieldToCheckKey: ""
+              tokenFieldToCheckValue: ""
+              fullNameFieldName: ""
+              groupsFieldName: "groups"
+              disableSslVerification: false
+              logoutFromOpenidProvider: ""
+              postLogoutRedirectUrl: ""
+              escapeHatchEnabled: false
+              escapeHatchUsername: ""
+              escapeHatchSecret: ""
+              escapeHatchGroup: ""
+              automanualconfigure: ""
+              emailFieldName: "email"
+              userNameField: "preferred_username"
+              tokenServerUrl: "${var.oidc.token_url}"
+              authorizationServerUrl: "${var.oidc.auth_url}"
+              scopes: "openid profile email"
           authorizationStrategy:
             projectMatrix:
               permissions:
@@ -219,17 +263,10 @@ master:
               - "Overall/Administer:${var.oidc.user_admin}"
           clouds:
           - kubernetes:
-              containerCap: 10
-              containerCapStr: "10"
               jenkinsTunnel: "jenkins-agent:50000"
-              jenkinsUrl: "http://jenkins:8080"
-              maxRequestsPerHost: 32
-              maxRequestsPerHostStr: "32"
+              jenkinsUrl: "http://jenkins-master:8080"
               name: "kubernetes"
               namespace: "${var.namespace}"
-              podLabels:
-              - key: "jenkins/jenkins-jenkins-slave"
-                value: "true"
               serverUrl: "https://kubernetes.default"
               templates:
               - containers:
@@ -237,20 +274,19 @@ master:
                   envVars:
                   - containerEnvVar:
                       key: "JENKINS_URL"
-                      value: "http://jenkins.${var.namespace}.svc.cluster.local:8080"
+                      value: "http://jenkins-master.${var.namespace}.svc.cluster.local:8080"
                   image: "jenkins/jnlp-slave:3.40-1"
                   name: "jnlp"
                   resourceLimitCpu: "512m"
                   resourceLimitMemory: "512Mi"
                   resourceRequestCpu: "512m"
                   resourceRequestMemory: "512Mi"
-                  workingDir: "/home/jenkins"
+                  workingDir: ""
                 label: "jenkins-jenkins-slave "
                 name: "default"
                 nodeUsageMode: "NORMAL"
                 podRetention: "never"
-                serviceAccount: "jenkins"
-                yamlMergeStrategy: "override"
+                serviceAccount: "jenkins-master"
               - containers:
                 - args: "cat"
                   command: "/bin/sh -c"
@@ -268,11 +304,11 @@ master:
                   resourceRequestCpu: "200m"
                   resourceRequestMemory: "256Mi"
                   ttyEnabled: true
-                  workingDir: "/home/jenkins"
+                  workingDir: ""
                 label: "docker"
                 name: "docker"
                 namespace: "${var.namespace}"
-                serviceAccount: "jenkins"
+                serviceAccount: "jenkins-master"
                 volumes:
                 - secretVolume:
                     mountPath: "/home/jenkins/.docker"
@@ -280,7 +316,6 @@ master:
                 - hostPathVolume:
                     hostPath: "/var/run/docker.sock"
                     mountPath: "/var/run/docker.sock"
-                yamlMergeStrategy: "override"
               - containers:
                 - args: "cat"
                   command: "/bin/sh -c"
@@ -291,17 +326,16 @@ master:
                   resourceRequestCpu: "1250m"
                   resourceRequestMemory: "128Mi"
                   ttyEnabled: true
-                  workingDir: "/home/jenkins"
+                  workingDir: ""
                 inheritFrom: "docker"
                 label: "helm"
                 name: "helm"
                 namespace: "${var.namespace}"
-                serviceAccount: "jenkins"
+                serviceAccount: "jenkins-master"
                 volumes:
                 - secretVolume:
                     mountPath: "/etc/ssh"
-                    secretName: "${module.maven_config.name}"
-                yamlMergeStrategy: "override"
+                    secretName: "${module.gitlab_ssh_config.name}"
               - containers:
                 - args: "cat"
                   command: "/bin/sh -c"
@@ -322,12 +356,12 @@ master:
                   resourceRequestCpu: "400m"
                   resourceRequestMemory: "512Mi"
                   ttyEnabled: true
-                  workingDir: "/home/jenkins"
+                  workingDir: ""
                 inheritFrom: "docker"
                 label: "maven"
                 name: "maven"
                 namespace: "${var.namespace}"
-                serviceAccount: "jenkins"
+                serviceAccount: "jenkins-master"
                 volumes:
                 - persistentVolumeClaim:
                     claimName: "${kubernetes_persistent_volume_claim.jenkins_mvn_cache_pvc.metadata[0].name}"
@@ -342,7 +376,6 @@ master:
                 - hostPathVolume:
                     hostPath: "/var/run/docker.sock"
                     mountPath: "/var/run/docker.sock"
-                yamlMergeStrategy: "override"
               - containers:
                 - args: "cat"
                   command: "/bin/sh -c"
@@ -353,16 +386,36 @@ master:
                   resourceRequestCpu: "400m"
                   resourceRequestMemory: "512Mi"
                   ttyEnabled: true
-                  workingDir: "/home/jenkins"
+                  workingDir: ""
+                - args: "cat"
+                  command: "/bin/sh -c"
+                  image: "registry.hub.docker.com/sonarsource/sonar-scanner-cli:latest"
+                  name: "sonar-scanner"
+                  resourceLimitCpu: "250m"
+                  resourceLimitMemory: "512Mi"
+                  resourceRequestCpu: "100m"
+                  resourceRequestMemory: "64Mi"
+                  ttyEnabled: true
+                  workingDir: ""
+                  envVars:
+                  - envVar:
+                      key: "SONAR_PROJECT_BASE_DIR"
+                      value: "/home/jenkins/"
+                  - envVar:
+                      key: "SONAR_CONFIG_PATH"
+                      value: "/home/jenkins/sonar/sonar-project.properties"
                 inheritFrom: "docker"
                 label: "pip"
                 name: "pip"
                 namespace: "${var.namespace}"
-                serviceAccount: "jenkins"
+                serviceAccount: "jenkins-master"
                 volumes:
                 - secretVolume:
                     mountPath: "/etc/ssh"
                     secretName: "${module.gitlab_ssh_config.name}"
+                - secretVolume:
+                    mountPath: "/home/jenkins/sonar"
+                    secretName: "${module.sonar_scanner_config.name}"
                 yaml: |
                   apiVersion: v1
                   kind: Pod
@@ -374,21 +427,7 @@ master:
                       - mountPath: /home/jenkins/.pypirc
                         name: pypi-config
                         subPath: .pypirc
-                    volumes:
-                    - name: pypi-config
-                      secret:
-                        secretName: ${module.pypi_config.name}
-                yamlMergeStrategy: "override"
-                yamls:
-                - |
-                  apiVersion: v1
-                  kind: Pod
-                  spec:
-                    containers:
-                    - name: pip
-                      image: registry.hub.docker.com/kathra/pip-builder:${var.image_builder_version}
-                      volumeMounts:
-                      - mountPath: /home/jenkins/.pypirc
+                      - mountPath: /root/.pypirc
                         name: pypi-config
                         subPath: .pypirc
                     volumes:
@@ -400,6 +439,8 @@ master:
               env:
               - key: "DEPLOYMANAGER_URL"
                 value: "${var.deploymanager_url}"
+              - key: "DOCKER_BUILD_EXTRA_ARGS"
+                value: "--add-host=${data.external.get_host_ip.result.host}:${data.external.get_host_ip.result.ip}"
 
         security:
           scriptApproval:
@@ -410,7 +451,7 @@ master:
         unclassified:
           globalLibraries:
             libraries:
-            - defaultVersion: "dev"
+            - defaultVersion: "feature/factory_tf"
               implicit: true
               includeInChangesets: false
               name: "kathra-pipeline-library"
@@ -421,17 +462,33 @@ master:
                       id: "278451db-b355-48c8-82c1-7fa0c0d1f9cb"
                       remote: "https://gitlab.com/kathra/factory/jenkins/pipeline-library.git"
 
-
-  sidecars:
-    configAutoReload:
-      enabled: true
-
-
 persistence:
   enabled: true
 
+
+serviceAccount:
+  master:
+    create: true
+    name: jenkins-master
+
 rbac:
-  create: true
+  master:
+    create: true
+    rules:
+    - apiGroups: [""]
+      resources: ["pods"]
+      verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+    - apiGroups: [""]
+      resources: ["pods/exec"]
+      verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+    - apiGroups: [""]
+      resources: ["pods/log"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: [""]
+      resources: ["secrets"]
+      verbs: ["get", "list", "watch"]
+
+
 
 EOF
 ]
@@ -447,11 +504,11 @@ output "username" {
     value = "admin"
 }
 output "password" {
-    value = yamldecode(helm_release.jenkins.metadata[0].values).master.adminUser
+    value = yamldecode(helm_release.jenkins.metadata[0].values).casc.secrets.ADMIN_PASSWORD
 }
 output "host" {
-    value = yamldecode(helm_release.jenkins.metadata[0].values).master.ingress.hostName
+    value = yamldecode(helm_release.jenkins.metadata[0].values).ingress.hostName
 }
 output "url" {
-    value = "https://${yamldecode(helm_release.jenkins.metadata[0].values).master.ingress.hostName}"
+    value = "https://${yamldecode(helm_release.jenkins.metadata[0].values).ingress.hostName}"
 }

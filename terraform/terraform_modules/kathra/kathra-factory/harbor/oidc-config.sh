@@ -7,6 +7,7 @@ cat > /tmp/config.json <<EOF
         "oidc_endpoint": "${OIDC_ENDPOINT}",
         "oidc_scope": "${OIDC_SCOPE}",
         "oidc_client_id": "${OIDC_CLIENT_ID}",
+        "oidc_groups_claim": "${OIDC_GROUP_CLAIM}",
         "oidc_client_secret":  "${OIDC_CLIENT_SECRET}"
     }
 EOF

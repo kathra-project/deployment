@@ -12,9 +12,8 @@ export domain=""
 export azureStackModule=$SCRIPT_DIR
 export azureGroupName="kathra"
 export azureLocation="francecentral"
-export terraformVersion="0.12.21"
-export kathraChartVersion="master"
 export kathraImagesTag="stable"
+export kubernetesVersion="1.15.10"
 
 export veleroVersion="1.2.0"
 export veleroBin=$tmp/velero/velero-v$veleroVersion-linux-amd64/velero
@@ -39,7 +38,6 @@ function showHelpDeploy() {
     printInfo "Deploy options : "
     printInfo "--domain=<my-domain.xyz>                       :        Full base domain"
     printInfo ""
-    printInfo "--charts-version=<branch|tag>                  :        Charts version [default: $kathraChartsVersion]"
     printInfo "--images-version=<tag>                         :        Images tags [default: $kathraImagesTag]"
     printInfo ""
     printInfo "--azure-group-name=<group-name>                :        Azure Group Name [default: $azureGroupName]"
@@ -78,8 +76,7 @@ function parseArgs() {
         local value=${argument#*=}
         case "$key" in
             --domain)                       domain=$value;;
-            --charts-version)               kathraChartsVersion=$value;;
-            --images-tag)                   kathraImagesTag=$value;;
+            --images-version)                   kathraImagesTag=$value;;
             --azure-group-name)             azureGroupName=$value;;
             --azure-location)               azureLocation=$value;;
             --azure-subscribtion-id)        ARM_SUBSCRIPTION_ID=$value;;
@@ -115,6 +112,7 @@ function initTfVars() {
     echo "group = \"$azureGroupName\"" >> $file
     echo "location = \"$azureLocation\"" >> $file
     echo "domain = \"$domain\"" >> $file
+    echo "kathra_version = \"$kathraImagesTag\"" >> $file
     echo "k8s_client_id = \"$ARM_CLIENT_ID\"" >> $file
     echo "k8s_client_secret = \"$ARM_CLIENT_SECRET\"" >> $file
     echo "subscribtion_id = \"$ARM_SUBSCRIPTION_ID\"" >> $file
@@ -125,7 +123,7 @@ function initTfVars() {
 function deploy() {
     printDebug "deploy()"
 
-    [ "$domain" == "" ] && printError "Domain and Azure Domain Label are undefined" && showHelpDeploy && exit 1
+    [ "$domain" == "" ] && printError "Domain are undefined" && showHelpDeploy && exit 1
     cd $azureStackModule
     initTfVars $azureStackModule/terraform.tfvars
 
@@ -133,8 +131,23 @@ function deploy() {
 
     # Deploy Kubernetes and configure
     terraform init || printErrorAndExit "Terraform : Unable to init"
-    terraform apply -auto-approve || printErrorAndExit "Terraform : Unable to apply"
+
+
+    local retrySecondInterval=10
+    local attempt_counter=0
+    local max_attempts=5
+    while true; do
+        terraform apply -auto-approve && return 0 
+        printError "Terraform : Unable to apply, somes resources may be not ready, try again.. attempt ($attempt_counter/$max_attempts) "
+        [ ${attempt_counter} -eq ${max_attempts} ] && printError "Check $1, error" && return 1
+        attempt_counter=$(($attempt_counter+1))
+        sleep $retrySecondInterval
+    done
+
     terraform output kubeconfig_content > $KUBECONFIG  || printErrorAndExit "Terraform : Unable to get kubeconfig_content"
+
+    # Post install
+    postInstall
 }
 export -f deploy
 

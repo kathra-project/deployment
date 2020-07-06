@@ -101,13 +101,25 @@ module "kubernetes_addons" {
 ############################################################
 ### KATHRA INSTANCE
 ############################################################
+resource "kubernetes_namespace" "factory" {
+    metadata {
+        name = "kathra-factory"
+    }
+}
+resource "kubernetes_namespace" "services" {
+    metadata {
+        name = "kathra-services"
+    }
+}
 module "kathra" {
     source                      = "../kathra"
     ingress_controller          = module.kubernetes_addons.ingress_controller
     ingress_cert_manager_issuer = module.kubernetes_addons.ingress_cert_manager_issuer
     domain                      = var.domain
-    kube_config                 = module.kubernetes.kube_config
     kathra_version              = var.kathra_version
+    kube_config                 = module.kubernetes.kube_config
+    factory_namespace           = kubernetes_namespace.factory.metadata[0].name
+    services_namespace          = kubernetes_namespace.services.metadata[0].name
 }
 
 ############################################################

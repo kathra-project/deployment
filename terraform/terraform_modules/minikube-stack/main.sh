@@ -6,10 +6,7 @@ export debug=0
 [ ! -d $tmp ] && mkdir $tmp
 
 . ${SCRIPT_DIR}/sh/functions.sh
-
-
-
-
+. ${SCRIPT_DIR}/../common.sh
 
 
 ## Default values
@@ -18,18 +15,14 @@ export tlsCert=
 export tlsKey=
 export manualDnsChallenge=0
 export automaticDnsChallenge=0
-export hostNetworkDevice=$(ip -4 addr show | grep '^[0-9]*:' | awk '{print $2;}' | sed 's/\://g' | grep -v 'lo' | head -n 1)
 export nodePortHTTP=80
 export nodePortHTTPS=443
-export minikubeCpus=8
+export minikubeCpus=10
 export minikubeMemory=20000
 export minikubeDiskSize="50000mb"
 export minikubeVersion="1.3.1"
-export minikubeVmDriver="virtualbox"
+export minikubeVmDriver="none"
 export kubernetesVersion="1.15.1"
-export helmVersion="2.14.3"
-export kubeDbVersion="0.8.0"
-export traefikChartVersion="1.78.2"
 export sudo=""
 
 
@@ -59,7 +52,6 @@ function showHelp() {
 
     printInfo ""
     printInfo "Optionnals: "
-    printInfo "--network-device                Network device to expose [default: $hostNetworkDevice]"
     printInfo "--cpus                          Number of cpu [default: $minikubeCpus]"
     printInfo "--memory                        Memory size [default: $minikubeMemory]"
     printInfo "--disk-size                     Disk size [default: $minikubeDiskSize]"
@@ -82,11 +74,10 @@ function parseArgs() {
             --manual-acme)                  manualDnsChallenge=1;;
             --acme-dns-provider)            automaticDnsChallenge=1 && acmeDnsProvider="$value";;
             --acme-dns-config)              automaticDnsChallenge=1 && acmeDnsConfig="$value";;
-            --network-device)               hostNetworkDevice=$value;;
             --cpus)                         minikubeCpus=$value;;
             --memory)                       minikubeMemory=$value;;
             --disk-size)                    minikubeDiskSize=$value;;
-            --minikube-version)             minikubeVersion=$value;;
+            --minikube-version)             minikubeVersion=$value && echo "value=$value";;
             --vm-driver)                    minikubeVmDriver=$value;;
             --kubernetes-version)           kubernetesVersion=$value;;
             --verbose)                      debug=1;;
@@ -97,13 +88,12 @@ function parseArgs() {
 
 function main() {
     printDebug "main()"
-    parseArgs "$1" "$2" "$3" "$4" "$5" "$5" "$6"
+    parseArgs "$1" "$2" "$3" "$4" "$5" "$5" "$6" "$7"
 
     ## check OS
     lsb_release -a 2> /dev/null | grep -E "Ubuntu|Debian" > /dev/null || printErrorAndExit "Only for Ubuntu or Debian Distrib"
     [ "$minikubeVmDriver" == "none" ] && export sudo="sudo"
     
-
     findInArgs "deploy"  $* > /dev/null         && deploy $*          && return 0
     findInArgs "destroy" $* > /dev/null         && destroy $*         && return 0
     findInArgs "backup-install" $* > /dev/null  && backupConfigure $* && return 0
@@ -123,6 +113,7 @@ function initTfVars() {
 
 function deploy() {
     printDebug "deploy()"
+    export START_KATHRA_INSTALL=`date +%s`
     checkDependencies
     [ "$domain" == "" ]           && printErrorAndExit "Domain is not specifed"                    || printDebug "domain=$domain"
     [ $manualDnsChallenge -eq 1 ] && generateCertsDnsChallenge $domain $tmp/tls.cert $tmp/tls.key
@@ -132,15 +123,27 @@ function deploy() {
     getKubeConfig > $tmp/kathra_minikube_kubeconfig                             || printErrorAndExit "Unable to get kubeconfig"
     
     initTfVars $SCRIPT_DIR/terraform.tfvars
-    
-    local hostIP=$(ip -4 addr show $hostNetworkDevice | grep -oP '(?<=inet\s)[\da-f.]+')
-    local subdomains=( "keycloak" "jenkins" "gitlab" "harbor" "nexus" "appmanager" "dashboard" "resourcemanager" "pipelinemanager" "sourcemanager" )
+
+    local subdomains=( "keycloak" "sonarqube" "jenkins" "gitlab" "harbor" "nexus" "appmanager" "dashboard" "resourcemanager" "pipelinemanager" "sourcemanager" "codegen-helm" "codegen-swagger" "binaryrepositorymanager-harbor" "binaryrepositorymanager-nexus" )
     for subdomain in ${subdomains[@]}; do addEntryHostFile "$subdomain.$domain" "$(minikube ip)"; done;
     
     # Deploy Kubernetes and configure
     cd $SCRIPT_DIR
     terraform init                      || printErrorAndExit "Unable to init terraform"
-    terraform apply -auto-approve       || printErrorAndExit "Unable to apply terraform"
+
+    local retrySecondInterval=10
+    local attempt_counter=0
+    local max_attempts=5
+    while true; do
+        terraform apply -auto-approve && return 0 
+        printError "Terraform : Unable to apply, somes resources may be not ready, try again.. attempt ($attempt_counter/$max_attempts) "
+        [ ${attempt_counter} -eq ${max_attempts} ] && printError "Check $1, error" && return 1
+        attempt_counter=$(($attempt_counter+1))
+        sleep $retrySecondInterval
+    done
+
+    # Post install
+    postInstall
 
     return $?
 }
@@ -155,17 +158,5 @@ function destroy() {
     return 0
 }
 export -f destroy
-
-function checkDependencies() {
-    ! dpkg -s socat > /dev/null     && sudo apt-get install -y socat
-    ! dpkg -s jq > /dev/null        && sudo apt-get install -y jq
-    ! dpkg -s curl > /dev/null      && sudo apt-get install -y curl
-    
-    installTerraform
-    
-    installTerraformPlugin "keycloak" "1.17.1" "https://github.com/mrparkers/terraform-provider-keycloak.git" "1.17.1"   || printErrorAndExit "Unable to install keycloak terraform plugin"
-    installTerraformPlugin "kubectl"  "1.3.5"  "https://github.com/gavinbunney/terraform-provider-kubectl"    "v1.3.5"   || printErrorAndExit "Unable to install keycloak terraform plugin"
-    installTerraformPlugin "nexus"    "1.6.2"  "https://github.com/datadrivers/terraform-provider-nexus"      "v1.6.Z"   || printErrorAndExit "Unable to install keycloak terraform plugin"
-}
 
 main "$1" "$2" "$3" "$4" "$5" "$5" "$6"

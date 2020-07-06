@@ -65,3 +65,7 @@ output "kube_config" {
         cluster_ca_certificate    =  azurerm_kubernetes_cluster.k8s.kube_config.0.cluster_ca_certificate
     }
 }
+
+output "azure_group" {
+    value = "MC_${var.group}_${var.cluster_name}_${var.location}"
+}

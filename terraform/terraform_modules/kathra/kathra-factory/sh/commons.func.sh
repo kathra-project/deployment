@@ -53,8 +53,10 @@ function getValueInSecretK8S() {
     local secret_name=$3
     local secret_key=$4
     printDebug "getValueInSecretK8S(kube_config_file: $kube_config_file, namespace: $namespace, secret_name: $secret_name, secret_key: $secret_key)"
-    kubectl --kubeconfig=$kube_config_file -n $namespace get secret $secret_name -o json 2> /dev/null | jq -r ".data.\"$secret_key\"" | base64 -d
-    return $?
+    local value=$(kubectl --kubeconfig=$kube_config_file -n $namespace get secret $secret_name -o json 2> /dev/null | jq -r ".data.\"$secret_key\"") 
+    [ $? -ne 0 ] && return 1
+    [ "$value" == "null" ] && return 0
+    echo $value | base64 -d
 }
 export -f getValueInSecretK8S
 
@@ -66,7 +68,7 @@ function setValueInSecretK8S() {
     local secret_value=$5
     printDebug "setValueInSecretK8S(kube_config_file: $kube_config_file, namespace: $namespace, secret_name: $secret_name, secret_key: $secret_key, secret_value: $secret_value)"
     kubectl --kubeconfig=$kube_config_file -n $namespace get secret $secret_name > /dev/null 2> /dev/null 
-    [ $rc -ne 0 ] && kubectl --kubeconfig=$kube_config_file -n $namespace create secret generic $secret_name --from-literal="$secret_key"="$secret_value" > /dev/null && return 0
+    [ $? -ne 0 ] && kubectl --kubeconfig=$kube_config_file -n $namespace create secret generic $secret_name --from-literal="$secret_key"="$secret_value" > /dev/null && return 0
     kubectl --kubeconfig=$kube_config_file -n $namespace patch secret $secret_name -p="{\"data\":{\"$secret_key\": \"$(echo $secret_value | base64 -w0)\"}}" > /dev/null
     return $?
 }
@@ -75,7 +77,9 @@ export -f setValueInSecretK8S
 function generateKubeFile() {
     local kube_config="$1"
     local kube_config_file="$2"
-    local host=$(echo ${kube_config} | jq -r '.host')
+    local server=$(echo ${kube_config} | jq -r '.host')
+    server=${server/https:\/\//}
+    server=${server/http:\/\//}
     local user=$(echo ${kube_config} | jq -r '.username')
     local password=$(echo ${kube_config} | jq -r '.password')
     local client_cert=$(echo ${kube_config} | jq -r '.client_certificate')
@@ -95,7 +99,7 @@ contexts:
   name: default
 clusters:
 - cluster:
-    server: https://$host
+    server: https://$server
     certificate-authority-data: "$cluster_ca"
   name: default
 users:
