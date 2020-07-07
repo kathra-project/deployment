@@ -13,6 +13,8 @@ function jenkinsGenerateApiToken() {
     local tokenName="token-generated-by-kathra"
     printDebug "jenkinsGenerateApiToken(jenkinsHost: $jenkinsHost, keycloakHost: $keycloakHost, login: $login, password: $password, fileOut: $fileOut, renewIfExist: $renewIfExist)"
 
+    checkCommandAndRetry "curl -vvI https://${jenkinsHost} 2>&1 | grep \"SSL certificate problem: self signed certificate\"" 
+    [ $? -ne 0 ] && printError "https://${jenkinsHost} is not ready, TLS is self signed" && exit 1
 
     checkCommandAndRetry "curl -v https://${jenkinsHost}/me/configure 2>&1 | grep \"HTTP.* 403\" > /dev/null"
     [ $? -ne 0 ] && printError "https://${jenkinsHost} is not ready" && exit 1

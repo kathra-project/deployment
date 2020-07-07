@@ -6,7 +6,7 @@ variable "node_count" {
     default = 2
 }
 variable "node_size" {
-    default = "Standard_DS3_v2"
+    default = "Standard_D8s_v3"
 }
 
 variable "ssh_public_key" {

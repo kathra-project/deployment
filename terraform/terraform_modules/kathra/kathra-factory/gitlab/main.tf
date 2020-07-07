@@ -187,6 +187,13 @@ output "host" {
 output "service" {
     value = "gitlab"
 }
+output "ssh" {
+    value = {
+        node_port  = kubernetes_service.gitlab_ssh_node_port.spec[0].port[0].node_port
+        cluster_ip = kubernetes_service.gitlab_ssh_node_port.spec[0].cluster_ip
+    }
+}
+
 output "node_port" {
     value = kubernetes_service.gitlab_ssh_node_port.spec[0].port[0].node_port
 }
