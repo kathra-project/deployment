@@ -3,10 +3,21 @@ variable "project_name" {
 variable location {
 }
 variable "node_count" {
+<<<<<<< HEAD
     default = 2
 }
 variable "kubernetes_version" {
     default = "1.15.10"
+=======
+    default = 4
+}
+variable "node_size" {
+    default = "n1-standard-4"
+}
+
+variable "kubernetes_version" {
+    default = "1.16.8-gke.15"
+>>>>>>> feature/factory_tf
 }
 
 resource "random_id" "username" {
@@ -30,7 +41,11 @@ resource "google_container_cluster" "kubernetes" {
     }
 
     node_config {
+<<<<<<< HEAD
         machine_type = "n1-standard-4"
+=======
+        machine_type = var.node_size
+>>>>>>> feature/factory_tf
 
         oauth_scopes = [
             "https://www.googleapis.com/auth/compute",
@@ -41,6 +56,7 @@ resource "google_container_cluster" "kubernetes" {
 
         tags = ["kathra-cluster"]
     }
+<<<<<<< HEAD
 }
 
 data "template_file" "kubeconfig" {
@@ -138,3 +154,22 @@ output "kubeconfig_content" {
 }
 
 
+=======
+
+    min_master_version = var.kubernetes_version
+}
+
+
+
+output "kube_config" {
+    value = {
+        name                      =  google_container_cluster.kubernetes.name
+        host                      =  google_container_cluster.kubernetes.endpoint
+        username                  =  google_container_cluster.kubernetes.master_auth[0].username
+        password                  =  google_container_cluster.kubernetes.master_auth[0].password
+        client_certificate        =  google_container_cluster.kubernetes.master_auth[0].client_certificate
+        client_key                =  google_container_cluster.kubernetes.master_auth[0].client_key
+        cluster_ca_certificate    =  google_container_cluster.kubernetes.master_auth[0].cluster_ca_certificate
+    }
+}
+>>>>>>> feature/factory_tf

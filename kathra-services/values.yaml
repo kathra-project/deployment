@@ -5,7 +5,7 @@ global:
   domain: <base-domain-name>
   docker:
     registry: 
-      url: registry.hub.docker.com
+      url: registry.hub.docker.com/
       root_repository: kathra
       secret: eyJhdXRocyI6eyJoYXJib3IuaXJ0c3lzeC5mciI6eyJ1c2VybmFtZSI6ImplbmtpbnMuaGFyYm9yIiwicGFzc3dvcmQiOiJFd2RjREVJS0ZKOHlpU0NLeDAwWiIsImVtYWlsIjoiamVua2lucy5oYXJib3JAbm8tcmVwbHktaXJ0c3lzeC5mciIsImF1dGgiOiJhbVZ1YTJsdWN5NW9ZWEppYjNJNlJYZGtZMFJGU1V0R1NqaDVhVk5EUzNnd01Gbz0ifX19
   keycloak:
@@ -57,6 +57,26 @@ kathra-binaryrepositorymanager-harbor:
     requests:
       cpu: "100m"
       memory: "200Mi"
+
+kathra-binaryrepositorymanager-nexus:
+  image: binaryrepositorymanager-nexus
+  version: 1.0.0
+  services_url:
+    resource_manager: resourcemanager/api/v1
+  nexus:
+    url: https://<nexus-host>
+    username: <undefined>
+    password: <undefined>
+  keycloak:
+    username: <undefined>
+    password: <undefined>
+  resources:
+    limits:
+      cpu: 500m
+      memory: 768Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
 
 kathra-catalogmanager:
   image: catalogmanager-helm
@@ -186,8 +206,13 @@ kathra-sourcemanager:
     url: https://<gitlab-host>
     api_token: <undefined>
     parent_group: kathra-projects
+  services_url:
+    resource_manager: resourcemanager/api/v1
   user_manager:
     url: usermanager
+  keycloak:
+    username: ${SYNCMANAGER_LOGIN}
+    password: ${SYNCMANAGER_PASSWORD}
   resources:
     limits:
       cpu: 300m

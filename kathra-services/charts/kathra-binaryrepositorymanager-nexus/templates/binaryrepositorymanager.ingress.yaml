@@ -1,0 +1,25 @@
+{{ if .Values.ingress }}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: binaryrepositorymanager-nexus
+{{- with .Values.ingress.annotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    ingress: "{{ if .Values.tls }}tls{{ else }}plain{{ end }}"
+spec:
+  rules:
+  - host: "binaryrepositorymanager-nexus.{{ .Values.global.domain }}"
+    http:
+      paths:
+      - backend:
+          serviceName: binaryrepositorymanager-nexus
+          servicePort: 80
+{{- with .Values.ingress.tls }}
+  tls:
+{{ toYaml . | indent 4 }}
+{{- end }}
+{{ end }}

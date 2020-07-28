@@ -1,0 +1,31 @@
+global:
+  namespace: kathra-dev
+  tld: dev-irtsysx.fr
+  docker:
+    registry: 
+      url: registry.hub.docker.com/
+      root_repository: kathra
+      secret_b64: <base64_k8s_dockerconfig_secret>
+  keycloak:
+    kathra_services_client:
+      id: <kathra_services_client_id>
+      secret: <kathra_services_client_secret>
+
+image: binaryrepositorymanager-nexus
+version: 1.0.0
+nexus:
+  url: https://registry.hub.docker.com/api
+  username: <nexus_svc_username>
+  password: <nexus_svc_password>
+keycloak:
+  username: <username>
+  password: <password>
+services_url:
+  resource_manager: <undefined>
+resources:
+  limits:
+    cpu: 300m
+    memory: 768Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi

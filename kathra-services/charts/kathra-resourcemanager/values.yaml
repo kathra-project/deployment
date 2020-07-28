@@ -3,7 +3,7 @@ global:
   tld: dev-irtsysx.fr
   docker:
     registry: 
-      url: registry.hub.docker.com
+      url: registry.hub.docker.com/
       root_repository: kathra
       secret_b64: <base64_k8s_dockerconfig_secret>
   keycloak:
@@ -26,3 +26,12 @@ resources:
     memory: 2Gi
     cpu: 50m
     memory: 128Mi
+    
+#ingress:
+#  annotations:
+#    kubernetes.io/ingress.class: traefik
+#    cert-manager.io/issuer: letsencrypt-prod
+#  tls:
+#  - hosts:
+#    - resourcemanager.irtsystemx.org
+#    secretName: resourcemanager-cert

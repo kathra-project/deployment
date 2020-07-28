@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: binaryrepositorymanager-config
+  name: binaryrepositorymanager-harbor-config
   labels:
 {{ include "kathra.labels" . | indent 4 }}
     project: kathra

@@ -1,25 +1,27 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kathra-deploymanager-k8s
   labels:
 {{ include "factory.labels" . | indent 4 }}
-    product: kathra
+    project: kathra
     app: deploymanager
     impl: k8s
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      project: kathra
+      app: deploymanager
+      impl: k8s
   template:
     metadata:
       labels:
-{{ include "factory.labels" . | indent 8 }}
-        product: kathra
+        project: kathra
         app: deploymanager
         impl: k8s
     spec:
       serviceAccountName: deploymanager
-      imagePullSecrets:
-      
       containers:
       - name: deploymanager-k8s
         image: "{{ .Values.image }}:{{ .Values.tag }}"

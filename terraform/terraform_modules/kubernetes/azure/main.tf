@@ -2,9 +2,19 @@ variable "k8s_client_id" {
 }
 variable "k8s_client_secret" {
 }
+<<<<<<< HEAD
 variable "agent_count" {
     default = 2
 }
+=======
+variable "node_count" {
+    default = 2
+}
+variable "node_size" {
+    default = "Standard_D8s_v3"
+}
+
+>>>>>>> feature/factory_tf
 variable "ssh_public_key" {
     default = "~/.ssh/id_rsa.pub"
 }
@@ -14,7 +24,7 @@ variable "dns_prefix" {
 variable "group" {
 }
 variable cluster_name {
-    default = "kathra-k8s"
+    default = "k8s-instance"
 }
 variable location {
 }
@@ -39,8 +49,13 @@ resource "azurerm_kubernetes_cluster" "k8s" {
 
     default_node_pool {
         name            = "agentpool"
+<<<<<<< HEAD
         node_count      = var.agent_count
         vm_size         = "Standard_DS3_v2"
+=======
+        node_count      = var.node_count
+        vm_size         = var.node_size
+>>>>>>> feature/factory_tf
     }
 
     service_principal {
@@ -49,6 +64,19 @@ resource "azurerm_kubernetes_cluster" "k8s" {
     }
 }
 
-output "kube_config" {
+output "kube_config_raw" {
     value = azurerm_kubernetes_cluster.k8s.kube_config_raw
+}
+
+output "kube_config" {
+    value = {
+        host                      =  azurerm_kubernetes_cluster.k8s.kube_config.0.host
+        client_certificate        =  azurerm_kubernetes_cluster.k8s.kube_config.0.client_certificate
+        client_key                =  azurerm_kubernetes_cluster.k8s.kube_config.0.client_key
+        cluster_ca_certificate    =  azurerm_kubernetes_cluster.k8s.kube_config.0.cluster_ca_certificate
+    }
+}
+
+output "azure_group" {
+    value = "MC_${var.group}_${var.cluster_name}_${var.location}"
 }

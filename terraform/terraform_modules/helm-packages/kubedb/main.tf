@@ -1,6 +1,7 @@
 variable "version_chart" {
     default = "0.8.0"
 }
+<<<<<<< HEAD
 variable "kube_config_file" {
     default =  ""
 }
@@ -19,6 +20,13 @@ provider "helm" {
 
 provider "kubernetes" {
   config_path = var.kube_config_file
+=======
+
+resource "kubernetes_namespace" "kubedb" {
+  metadata {
+    name = "kubedb"
+  }
+>>>>>>> feature/factory_tf
 }
 
 data "helm_repository" "stable" {

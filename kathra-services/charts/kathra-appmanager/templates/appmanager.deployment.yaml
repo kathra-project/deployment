@@ -1,18 +1,23 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: "appmanager-swagger"
   labels:
 {{ include "kathra.labels" . | indent 4 }}
-    product: kathra
+    project: kathra
     app: appmanager
-    impl: "swagger"
+    impl: swagger
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      project: kathra
+      app: appmanager
+      impl: swagger
   template:
     metadata:
       labels:
-        product: kathra
+        project: kathra
         app: appmanager
         impl: swagger
     spec:
@@ -20,7 +25,7 @@ spec:
       - name: regcred
       containers:
       - name: appmanager-swagger
-        image: "{{ .Values.global.docker.registry.url }}/{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
+        image: "{{ .Values.global.docker.registry.url }}{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
         imagePullPolicy: Always
         ports:
         - name: web
@@ -102,6 +107,16 @@ spec:
             secretKeyRef:
               name: keycloak-secret
               key: KEYCLOAK_CLIENT_SECRET
+        - name: USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: appmanager-secret
+              key: USERNAME
+        - name: PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: appmanager-secret
+              key: PASSWORD
         - name: JAVA_OPTS
           value: "-XX:+UnlockExperimentalVMOptions  -XX:MaxRAMFraction=1 -Xms128M -Xmx512M"
 {{- if .Values.resources }}

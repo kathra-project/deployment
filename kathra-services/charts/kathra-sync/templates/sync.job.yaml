@@ -18,7 +18,7 @@ spec:
           - name: regcred
           containers:
           - name: kathra-synchro
-            image: "{{ .Values.global.docker.registry.url }}/{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
+            image: "{{ .Values.global.docker.registry.url }}{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
             imagePullPolicy: Always
             env:
             - name: SOURCE_MANAGER_URL

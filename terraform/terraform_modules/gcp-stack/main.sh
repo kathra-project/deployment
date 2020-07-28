@@ -5,10 +5,16 @@ export tmp=/tmp/kathra.azure.Wrapper
 export KUBECONFIG=$tmp/kube_config
 [ ! -d $tmp ] && mkdir $tmp
 
+<<<<<<< HEAD
+=======
+. $SCRIPT_DIR/../common.sh
+
+>>>>>>> feature/factory_tf
 cd $SCRIPT_DIR
 
 export debug=1
 export domain=""
+<<<<<<< HEAD
 export domainLabel=""
 
 export kathraChartVersion="master"
@@ -17,12 +23,22 @@ export kathraImagesTag="stable"
 export veleroVersion="1.2.0"
 export veleroBin=$tmp/velero/velero-v$veleroVersion-linux-amd64/velero
 
+=======
+
+export kathraImagesTag="stable"
+
+>>>>>>> feature/factory_tf
 export terraformModules=$SCRIPT_DIR/../terraform_modules
 export gcpStackModule=$SCRIPT_DIR
 
 export gcpProjectName="kathra-project"
+<<<<<<< HEAD
 export gcpServiceAccount="kathra-sa"
 export gcpCredentials="/tmp/terraform-gke-keyfile.json"
+=======
+export gcpServiceAccount="kathra-sa-test"
+export gcpCredentials="/$HOME/terraform-gke-keyfile.json"
+>>>>>>> feature/factory_tf
 export gcpRegion="us-central1"
 export gcpZone="us-central1-a"
 
@@ -86,7 +102,14 @@ function parseArgs() {
 }
 
 function main() {
+<<<<<<< HEAD
     parseArgs $*    
+=======
+    parseArgs $*   
+
+    which gcloud > /dev/null        || installGoogleCloudSDK
+     
+>>>>>>> feature/factory_tf
     [ "$domain" == "" ] && printError "Domain is undefined" && showHelpDeploy && exit 1
     #[ "$gcpCredentials" == "" ] && printError "Define gcp credentials file" && showHelpDeploy && exit 1
     #[ ! -f $gcpCredentials ] && printError "File gcp credentials is not found : $gcpCredentials" && showHelpDeploy && exit 1
@@ -95,6 +118,7 @@ function main() {
     showHelp
 }
 
+<<<<<<< HEAD
 function checkDependencies() {
     printDebug "checkDependencies()"
     which gcloud > /dev/null || installGoogleCloudSDK
@@ -102,6 +126,8 @@ function checkDependencies() {
     which terraform > /dev/null || installTerraform
 }
 
+=======
+>>>>>>> feature/factory_tf
 function deploy() {
     printDebug "deploy()"
     checkDependencies
@@ -114,6 +140,7 @@ function deploy() {
     terraform init || printErrorAndExit "Terraform : Unable to init"
     terraform apply -auto-approve || printErrorAndExit "Terraform : Unable to apply"
     terraform output kubeconfig_content > $KUBECONFIG  || printErrorAndExit "Terraform : Unable to get kubeconfig_content"
+<<<<<<< HEAD
 
     kubectl get nodes || printErrorAndExit "Unable to connect to Kubernetes server"
 
@@ -122,6 +149,8 @@ function deploy() {
     printInfo "export KUBECONFIG=$KUBECONFIG"
     printInfo "install.sh --domain=$domain --chart-version=$kathraChartsVersion --kathra-image-tag=$kathraImagesTag --enable-tls-ingress --verbose"
     $SCRIPT_DIR/../install.sh --domain=$domain --chart-version=$kathraChartsVersion --kathra-image-tag=$kathraImagesTag --enable-tls-ingress --verbose
+=======
+>>>>>>> feature/factory_tf
 }
 export -f deploy
 
@@ -145,11 +174,20 @@ function initTfVars() {
     echo "zone = \"$gcpZone\"" >> $file
     echo "domain = \"$domain\"" >> $file
     echo "gcp_crendetials = \"$gcpCredentials\"" >> $file
+<<<<<<< HEAD
+=======
+    echo "kathra_version = \"$kathraImagesTag\"" >> $file
+    
+>>>>>>> feature/factory_tf
 }
 export -f initTfVars
 
 function configureServiceAccount() {
     #gcloud init
+<<<<<<< HEAD
+=======
+    [ -f $gcpCredentials ] && return
+>>>>>>> feature/factory_tf
 
     # enable services
     gcloud services enable compute.googleapis.com && printInfo "Enable service compute.googleapis.com"                              || printErrorAndExit "Unable to enable service compute.googleapis.com "
@@ -159,8 +197,13 @@ function configureServiceAccount() {
 
     # create service acount
     local iamAccount=$gcpServiceAccount@$gcpProjectName.iam.gserviceaccount.com
+<<<<<<< HEAD
     gcloud iam service-accounts list --filter email=$iamAccount > /dev/null || gcloud iam service-accounts create $gcpServiceAccount
     gcloud iam service-accounts list --filter email=$iamAccount > /dev/null || printErrorAndExit "Unable to create service account $iamAccount"
+=======
+    gcloud iam service-accounts list --filter email=$iamAccount | grep $iamAccount || gcloud iam service-accounts create $gcpServiceAccount
+    gcloud iam service-accounts list --filter email=$iamAccount | grep $iamAccount || printErrorAndExit "Unable to create service account $iamAccount"
+>>>>>>> feature/factory_tf
 
     # create key if not exist
     [ ! -f $gcpCredentials ] && gcloud iam service-accounts keys create $gcpCredentials --iam-account=$iamAccount
@@ -171,12 +214,18 @@ function configureServiceAccount() {
     gcloud projects add-iam-policy-binding $gcpProjectName --member serviceAccount:$iamAccount --role roles/iam.serviceAccountUser          > /dev/null || printErrorAndExit "Unable to add role roles/iam.serviceAccountUser to $iamAccount"
     gcloud projects add-iam-policy-binding $gcpProjectName --member serviceAccount:$iamAccount --role roles/resourcemanager.projectIamAdmin > /dev/null || printErrorAndExit "Unable to add role roles/resourcemanager.projectIamAdmin to $iamAccount"
 
+<<<<<<< HEAD
     gcloud iam service-accounts keys create $gcpCredentials --iam-account=$iamAccount
 }
 export -f configureServiceAccount
 
 
 
+=======
+}
+export -f configureServiceAccount
+
+>>>>>>> feature/factory_tf
 function installGoogleCloudSDK() {
     printDebug "installGoogleCloudSDK()"
     echo "deb https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
@@ -185,6 +234,7 @@ function installGoogleCloudSDK() {
 }
 export -f installGoogleCloudSDK
 
+<<<<<<< HEAD
 function installKubectl() {
     printDebug "installKubectl()"
     which kubectl > /dev/null 2> /dev/null && return 0
@@ -240,6 +290,8 @@ function findInArgs() {
 }
 export -f findInArgs
 
+=======
+>>>>>>> feature/factory_tf
 main $*
 
 exit $?

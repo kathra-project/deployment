@@ -1,19 +1,24 @@
-apiVersion: extensions/v1beta1
+apiVersion:  apps/v1
 kind: Deployment
 metadata:
   name: rabbitmq-deploymanager
   labels:
 {{ include "factory.labels" . | indent 4 }}
-    product: kathra
+    project: kathra
     app: rabbitmq-deploymanager
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+{{ include "factory.labels" . | indent 6 }}
+      app: rabbitmq-deploymanager
+      project: kathra
   template:
     metadata:
       labels:
 {{ include "factory.labels" . | indent 8 }}
         app: rabbitmq-deploymanager
-        product: kathra
+        project: kathra
     spec:
       containers:
       - name: rabbitmq

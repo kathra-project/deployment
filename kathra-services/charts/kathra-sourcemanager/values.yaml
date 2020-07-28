@@ -3,7 +3,7 @@ global:
   tld: dev-irtsysx.fr
   docker:
     registry: 
-      url: registry.hub.docker.com
+      url: registry.hub.docker.com/
       root_repository: kathra
       secret_b64: <base64_k8s_dockerconfig_secret>
   keycloak:
@@ -23,6 +23,11 @@ gitlab:
   parent_group: kathra-projects
 user_manager:
   url: usermanager.kathra-dev.svc
+keycloak:
+  username: <username>
+  password: <password>
+services_url:
+  resource_manager: <undefined>
 resources:
   limits:
     cpu: 300m
@@ -30,3 +35,11 @@ resources:
   requests:
     cpu: 50m
     memory: 128Mi
+#ingress:
+#  annotations:
+#    kubernetes.io/ingress.class: traefik
+#    cert-manager.io/issuer: letsencrypt-prod
+#  tls:
+#  - hosts:
+#    - sourcemanager.irtsystemx.org
+#    secretName: sourcemanager-cert

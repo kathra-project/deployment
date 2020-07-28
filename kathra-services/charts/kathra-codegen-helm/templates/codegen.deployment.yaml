@@ -1,30 +1,30 @@
-apiVersion: extensions/v1beta1
+apiVersion:  apps/v1
 kind: Deployment
 metadata:
   name: kathra-codegen-helm
   labels:
 {{ include "kathra.labels" . | indent 4 }}
     app: codegen
-    product: kathra
+    project: kathra
     impl: helm
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: codegen
-      product: kathra
+      project: kathra
       impl: helm
   template:
     metadata:
       labels:
         app: codegen
-        product: kathra
+        project: kathra
         impl: helm
     spec:
       imagePullSecrets:
       - name: regcred
       containers:
-      - image: "{{ .Values.global.docker.registry.url }}/{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
+      - image: "{{ .Values.global.docker.registry.url }}{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
         imagePullPolicy: Always
         name: codegen-helm
         env:

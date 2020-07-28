@@ -1,18 +1,23 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: "binaryrepositorymanager-harbor"
   labels:
 {{ include "kathra.labels" . | indent 4 }}
-    product: kathra
+    project: kathra
     app: binaryrepositorymanager
-    impl: "harbor"
+    impl: harbor
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      project: kathra
+      app: binaryrepositorymanager
+      impl: harbor
   template:
     metadata:
       labels:
-        product: kathra
+        project: kathra
         app: binaryrepositorymanager
         impl: harbor
     spec:
@@ -20,7 +25,7 @@ spec:
       - name: regcred
       containers:
       - name: binaryrepositorymanager-harbor
-        image: "{{ .Values.global.docker.registry.url }}/{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
+        image: "{{ .Values.global.docker.registry.url }}{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
         imagePullPolicy: Always
         ports:
         - name: web
@@ -36,12 +41,12 @@ spec:
             valueFrom:
               configMapKeyRef:
                 key: RESOURCE_MANAGER_URL
-                name: binaryrepositorymanager-config
+                name: binaryrepositorymanager-harbor-config
           - name: HARBOR_URL
             valueFrom:
               configMapKeyRef:
                 key: HARBOR_URL
-                name: binaryrepositorymanager-config
+                name: binaryrepositorymanager-harbor-config
           - name: HARBOR_USERNAME
             valueFrom:
               secretKeyRef:

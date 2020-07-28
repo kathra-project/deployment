@@ -1,121 +1,120 @@
-variable "group" {
-    default = "kathra-backup"
+variable "group" {}
+variable location {}
+variable "tenant_id" {}
+variable "subscribtion_id" {}
+variable "velero_client_id" {}
+variable "velero_client_secret" {}
+variable "namespace" {}
+variable "kubernetes_azure_group_name" {
+  default = "MC_kathra6_k8s-instance_francecentral"
 }
 
-variable location {
-    default = "East US"
-}
-
-variable "client_secret" {
-    default = ""
-}
-variable "tenant_id" {
-    default = ""
-}
-variable "subscribtion_id" {
-    default = ""
-}
-variable "velero_client_id" {
-    default = ""
-}
-variable "velero_client_secret" {
-    default = ""
-}
-
-
-
-variable "kube_config_file" {
-    default =  ""
-}
-
-provider "helm" {
-  kubernetes {
-    config_path = var.kube_config_file
-  }
-  version = "0.10.4"
-}
 
 data "helm_repository" "vmware-tanzu" {
-  name = "vmware-tanzu"
-  url  = "https://vmware-tanzu.github.io/helm-charts"
+    name = "vmware-tanzu"
+    url  = "https://vmware-tanzu.github.io/helm-charts"
 }
 
-resource "azurerm_resource_group" "example" {
-  name      = var.group
-  location  = var.location
+
+resource "kubernetes_namespace" "kathra_backup" {
+    metadata {
+        name = var.namespace
+    }
 }
 
-resource "azurerm_storage_account" "example" {
-  name                     = "kathrabackupaccountname"
-  resource_group_name      = azurerm_resource_group.example.name
-  location                 = var.location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
+resource "azurerm_storage_account" "kathra_backup" {
+    name                     = "kathrabackupaccountname"
+    resource_group_name      = var.group
+    location                 = var.location
+    account_tier             = "Standard"
+    account_replication_type = "LRS"
 }
 
-resource "azurerm_storage_container" "example" {
-  name                  = "kathrabackupcontainer"
-  resource_group_name   = azurerm_resource_group.example.name
-  storage_account_name  = azurerm_storage_account.example.name
-  container_access_type = "private"
-}
-
-data "template_file" "credential" {
-  template = file("${path.module}/velero.credential.tpl")
-  
-  vars = {
-    ARM_SUBSCRIPTION_ID = var.subscribtion_id
-    ARM_TENANT_ID = var.tenant_id
-    ARM_CLIENT_ID = var.velero_client_id
-    ARM_CLIENT_SECRET = var.velero_client_secret
-    AKS_RESOURCE_GROUP = azurerm_resource_group.example.name
-  }
+resource "azurerm_storage_container" "kathra_backup" {
+    name                  = "kathrabackupcontainer"
+    storage_account_name  = azurerm_storage_account.kathra_backup.name
+    container_access_type = "private"
 }
 
 resource "helm_release" "velero" {
   name       = "velero"
   repository = data.helm_repository.vmware-tanzu.metadata[0].name
   chart      = "vmware-tanzu/velero"
-  version    = "2.7.4"
-  namespace  = "velero"
+  version    = "2.12.0"
+  namespace  = kubernetes_namespace.kathra_backup.metadata[0].name
 
-  values  = ["${data.template_file.credential.rendered}"]
+  values     = [<<EOF
+configuration:
+  provider: azure
+  backupStorageLocation:
+    bucket: ${azurerm_storage_container.kathra_backup.name}
+    config:
+      resourceGroup: ${var.group}
+      subscriptionId: ${var.subscribtion_id}
+      storageAccount: ${azurerm_storage_account.kathra_backup.name}
+  volumeSnapshotLocation:
+    config:
+      apiTimeout: "600s"
+      resourceGroup: ${var.group}
+      subscriptionId: ${var.subscribtion_id}
+credentials:
+    secretContents:
+        cloud: |
+            AZURE_SUBSCRIPTION_ID=${var.subscribtion_id}
+            AZURE_TENANT_ID=${var.tenant_id}
+            AZURE_CLIENT_ID=${var.velero_client_id}
+            AZURE_CLIENT_SECRET=${var.velero_client_secret}
+            AZURE_RESOURCE_GROUP=${var.kubernetes_azure_group_name}
+            AZURE_CLOUD_NAME=AzurePublicCloud
 
+
+initContainers:
+  - name: velero-plugin-for-azure
+    image: velero/velero-plugin-for-microsoft-azure:v1.1.0
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+      - mountPath: /target
+        name: plugins
+
+EOF
+]
+/*
   set {
     name  = "configuration.provider"
     value = "azure"
   }
   set {
     name  = "configuration.backupStorageLocation.name"
-    value = "azure"
+    value = "azure-backup"
   }
   set {
     name  = "configuration.backupStorageLocation.bucket"
-    value = azurerm_storage_container.example.name
+    value = azurerm_storage_container.kathra_backup.name
   }
   set {
     name  = "configuration.backupStorageLocation.config.storageAccount"
-    value = azurerm_storage_account.example.name
+    value = azurerm_storage_account.kathra_backup.name
   }
   set {
     name  = "configuration.backupStorageLocation.config.resourceGroup"
-    value = azurerm_resource_group.example.name
+    value = azurerm_resource_group.kathra_backup.name
   }
+  /*
   set {
     name  = "configuration.volumeSnapshotLocation.name"
-    value = "azure"
+    value = "azure-snapshot"
   }
   set {
     name  = "configuration.volumeSnapshotLocation.bucket"
-    value = azurerm_storage_container.example.name
+    value = azurerm_storage_container.kathra_backup.name
   }
   set {
     name  = "configuration.volumeSnapshotLocation.config.storageAccount"
-    value = azurerm_storage_account.example.name
+    value = azurerm_storage_account.kathra_backup.name
   }
   set {
     name  = "configuration.volumeSnapshotLocation.config.resourceGroup"
-    value = azurerm_resource_group.example.name
+    value = azurerm_resource_group.kathra_backup.name
   }
   set {
     name  = "image.repository"
@@ -123,11 +122,7 @@ resource "helm_release" "velero" {
   }
   set {
     name  = "image.tag"
-    value = "v1.2.0"
-  }
-  set {
-    name  = "image.pullPolicy"
-    value = "IfNotPresent"
+    value = "v1.4.0"
   }
   set {
     name  = "initContainers[0].name"
@@ -135,7 +130,7 @@ resource "helm_release" "velero" {
   }
   set {
     name  = "initContainers[0].image"
-    value = "velero/velero-plugin-for-microsoft-azure:v1.0.0"
+    value = "velero/velero-plugin-for-microsoft-azure:v1.1.0"
   }
   set {
     name  = "initContainers[0].volumeMounts[0].mountPath"
@@ -145,5 +140,6 @@ resource "helm_release" "velero" {
     name  = "initContainers[0].volumeMounts[0].name"
     value = "plugins"
   }
+  */
 
 }

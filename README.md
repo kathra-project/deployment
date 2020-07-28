@@ -1,283 +1,105 @@
-# How to install KATHRA
+# How to install Kathra
 
-## Quickstart 
+## Microsoft Azure
 
-Three ways are availables to install Kathra.
-You can install Kathra on :
- * your workstation for testing usage 
- * your cloud provider (using Terraform)
- * your own Kubernetes cluster
+### Requirements
+- Microsoft Azure Account
+- Sufficient CPU Quota (by default : 2 x Standard_D8s_v3)
+- Public DNS Provider : For cert-manager
+- Terraform, Kubectl, Golang
 
-### For testing - On local instance with Minikube
+### Install
 
-#### Requirements
-- Computer with 8 CPU and 16 Go Memory
+During installation, you have to register public IP provided by Azure into you DNS Provider. 
+
+```sh
+export ARM_SUBSCRIPTION_ID="xxxxxx-xxxx-xxxx-xxxx-xxxxxxxxx"
+export ARM_CLIENT_ID="xxxxxx-xxxx-xxxx-xxxx-xxxxxxxxx"
+export ARM_CLIENT_SECRET="xxxxxx-xxxx-xxxx-xxxx-xxxxxxxxx"
+export ARM_TENANT_ID="xxxxxx-xxxx-xxxx-xxxx-xxxxxxxxx"
+
+git clone git@gitlab.com:kathra/deployment.git
+./deployment/terraform/terraform_modules/minikube-stack
+./main.sh deploy --domain=kathra.azure.my-domain.org --azure-group-name=kathra --azure-location=francecentral --verbose
+
+terraform output kubeconfig_content > /tmp/kubeconfig_content
+export KUBECONFIG=/tmp/kubeconfig_content
+```
+
+## Google Cloud Provider
+
+### Requirements
+- GCP Account
+- Sufficient CPU Quota (by default : 4 x n1-standard-4)
+- Public DNS Provider : For cert-manager
+- Terraform, Kubectl, Golang
+
+### Install
+
+During installation, you have to register public IP provided by Azure into you DNS Provider. 
+
+```sh
+git clone git@gitlab.com:kathra/deployment.git
+./deployment/terraform/terraform_modules/gcp-stack
+./main.sh deploy --domain=kathra.gcp.my-domain.org --gcp-project-name=<project-name> --gcp-credentials=<gcp_credentials_file> --verbose
+
+terraform output kubeconfig_content > /tmp/kubeconfig_content
+export KUBECONFIG=/tmp/kubeconfig_content
+```
+
+
+## Minikube
+
+### Requirements
+- Computer with 10 CPU and 20 Go Memory
 - Large bandwidth : Only for images pulling
 - DNS Provider : For DNS Challing with Let's Encrypt
 - Ubuntu or Debian OS : Not tested on other distrib
+- Terraform, Kubectl, Golang
 - Root access : For additionnals packages and DNS configuration
 
-#### Step 1. Install Minikube
+### Install with Minikube
 
 For the first installation, you have to make DNS Challenge with Let's Encrypt to generate TLS certificate (eg: For kathra.my-own-domain.org you have to add TXT record for domain _acme-challenge.kathra.my-own-domain.org with TOKEN provided by Let's Encrypt). 
 
-```
-./install-minikube.sh --domain=kathra.my-own-domain.org --generateCertsDnsChallenge --cpus=8 --memory=16000 --verbose
+#### Manual ACME
+```sh
+git clone git@gitlab.com:kathra/deployment.git
+./deployment/terraform/terraform_modules/minikube-stack
+./main.sh deploy --domain=local.my-domain.org --manual-acme
 ```
 
-This procedure installs Minikube and configure somes features (Traefik, KubeDB and internal DNS).
-
-#### Step 2. Install Kathra and the software factory
-
-
-```
-./install.sh --domain=kathra.my-own-domain.org --verbose
-```
+This procedure installs Minikube and configures somes features (Traefik, KubeDB and internal DNS).
 
 By default, the login is 'user' and password '123'. You can override this configure during installation.
 
-### For production - On Azure
-
-#### Requirements
-- DNS Provider : For Cert-Manager
-- Azure account with credentials
-
-#### Init credential with env. variable
-
-```
-export ARM_SUBSCRIPTION_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-export ARM_CLIENT_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-export ARM_CLIENT_SECRET="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-export ARM_TENANT_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+#### Auto ACME
+ACME with Terraform Provider https://www.terraform.io/docs/providers/acme/
+```sh
+git clone git@gitlab.com:kathra/deployment.git
+./deployment/terraform/terraform_modules/minikube-stack
+./main.sh deploy --domain=local.my-domain.org --acme-dns-provider=ovh --acme-dns-config='{"OVH_APPLICATION_KEY": "app-key", "OVH_APPLICATION_SECRET": "app-secret","OVH_CONSUMER_KEY": "consumer-key","OVH_ENDPOINT": "ovh-eu"}'
 ```
 
-#### Deploy on Azure
-
-
-```
-./terraform/install-on-azure.sh deploy --domain=kathra.my-own-domain.org
-```
-During the deploing, you have to registrer add DNS Record on *.kathra.my-own-domain.org targeting on your ingress controller exposed.
-Password are stored on your local desktop. 
-You can connect to dashboard with default login/password (user/123)
-
-For more details :
-```
-./terraform/install-on-azure.sh deploy -h
+#### Own TLS Cert
+```sh
+git clone git@gitlab.com:kathra/deployment.git
+./deployment/terraform/terraform_modules/minikube-stack
+./main.sh deploy --domain=local.my-domain.org --tlsCert=<path> --tlsKey=<path>
 ```
 
-Kubernetes config :
-```
-kubectl --kubeconfig=/tmp/kathra.azure.wrapper/kube_config get nodes
-```
-
-#### Destroy on Azure
-
-
-```
-./terraform/install-on-azure.sh destroy
-```
-
-### For production - On Kubernetes cluster
-
-#### Requirements
- - Kubernetes version between v1.9.11 and v1.15.1
-
-#### Step 1. Ingress configuration
- - Install Treafik as ingress controller (https://docs.traefik.io/getting-started/install-traefik/)
- - Configure DNS and TLS certificates for domain names following :
-    - dashboard.your-domain.xyz
-    - appmanager.your-domain.xyz
-    - plateform.your-domain.xyz
-    - keycloak.your-domain.xyz
-    - gitlab.your-domain.xyz
-    - jenkins.your-domain.xyz
-    - harbor.your-domain.xyz
-    - nexus.your-domain.xyz
-
-#### Step 3. Install KubeDB
-
- - Install KubeDB v0.8.0 (https://kubedb.com/docs/0.8.0/setup/install/)
-
-#### Step 2. Install Kathra
-
-To install from scratch, you have two ways
-
-##### Way 1 - Quick install (recommended)
-
-```
-./install.sh --domain=kathra.my-own-domain.org --verbose
-```
-
-For more options
-```
-./install.sh -h
-```
-
-##### Way 2 - Interactive mode
-
-```
-install.sh --interactive --verbose
-```
-
-The procedure asks arguments bellow :
- - K8S namespace for factory (Gitlab, Jenkins, Nexus, Harbor)
- - K8S namespace for KATHRA's services
- - Domain name exposing factory and KATHRA's services
- - LDAP configuration
- - Username, password and ssh public key for KATHRA's user
- - JQ is required : if it is not installed, sudo password will be asked to install with APT
-
-
-Your output console should display this :
-
-```
-KATHRA INSTALLER (VERSION : stable)
- Factory's namespace [default:factory-kathra] ?
- Kathra's namespace [default:kathra] ?
- Domain name [default:kathra-opensourcing.irtsystemx.org] ?
- your-domain.xyz
- Username to first user [default:user] ?
- Password [default:123] ?
- SSH PublicKey file [default:/home/my-user/.ssh/id_rsa.pub] ?
- Do you want configure LDAP authentication ? [Y/N] ?
- N
-
-[                                                                                ]   0 % Download Helm v2.13.1-linux-amd64 ... OK
-[####                                                                            ]   5 % Check Helm Tiller...
- Tiller namespace [default:tiller] ?
- Tiller existing into namespace tiller
- OK
-[########                                                                        ]  10 % Check KubeDB... OK
-[############                                                                    ]  15 % Check Treafik... OK
-[################                                                                ]  20 % Clone Charts from version 'stable'... OK
-[###################                                                             ]  24 % Generating password... Use existing passwords from file '/home/my-user/.kathra_pwd' or generated....
- OK
-[####################                                                            ]  25 % Install Keycloak... OK
-[####################                                                            ]  30 % Install Harbor... OK
-[########################                                                        ]  35 % Install NFS-Server... OK
- Install Jenkins... Pending
- Install GitLab-CE... Pending
- Install Nexus... Pending
- Install DeployManager... Pending
- Install DeployManager... OK
- Install Jenkins... OK
- Install Nexus... OK
- Install GitLab-CE... OK
-[########################################################################        ]  90 % Install KATHRA services... OK
-[################################################################################] 100 % Done... Kathra is installed in 515 secondes
-```
-
-Installed, you can check if all services are available.
-```
-> kubectl -n factory-kathra get pods
-NAME                                                            READY     STATUS        RESTARTS   AGE
-factory-kathra-harbor-harbor-adminserver-5bcfdfc765-hkb6k     1/1       Running       1          13m
-factory-kathra-harbor-harbor-clair-74598bd478-qkx9b           1/1       Running       2          13m
-factory-kathra-harbor-harbor-core-998fc7bb4-qbjkp             1/1       Running       3          13m
-factory-kathra-harbor-harbor-database-0                       1/1       Running       0          12m
-factory-kathra-harbor-harbor-jobservice-754c45697d-lt8th      1/1       Running       2          13m
-factory-kathra-harbor-harbor-notary-server-d8cf9b979-wxrl7    1/1       Running       0          13m
-factory-kathra-harbor-harbor-notary-signer-54678d564d-45gqm   1/1       Running       0          13m
-factory-kathra-harbor-harbor-portal-85767589cb-8twkq          1/1       Running       0          13m
-factory-kathra-harbor-harbor-redis-0                          1/1       Running       0          13m
-factory-kathra-harbor-harbor-registry-69958f665c-pl6fm        2/2       Running       0          13m
-factory-kathra-jenkins-869fb9b7c6-xzv2b                       1/1       Running       0          13m
-factory-kathra-key-0                                          1/1       Running       0          14m
-factory-kathra-nexus-sonatype-nexus-bf77f7b8b-hpnmn           2/2       Running       0          13m
-gitlab-7fcc7cdf86-cxvs4                                         1/1       Running       0          13m
-keycloak-configuration-sr864                                    0/1       Completed     0          15m
-keycloak-postgres-kubedb-0                                      1/1       Running       0          16m
-maven-33hgv                                                     0/3       Terminating   0          15d
-nfs-server-775bd89bdd-wpj8r                                     1/1       Running       0          13m
-rabbitmq-deploymanager-6fbd9f86d-h424c                          1/1       Running       0          13m
-kathra-deploymanager-k8s-77f989bb5c-696jq                        1/1       Running       0          13m
-
-> kubectl -n kathra services
-NAME                                            READY     STATUS      RESTARTS   AGE
-appmanager-swagger-679b646789-9r6s2             1/1       Running     0          8m
-binaryrepositorymanager-harbor-5f6fff8d-kzxnj   1/1       Running     0          8m
-catalog-icons-nginx-5cb765c7f4-rzgxs            1/1       Running     0          8m
-dashboard-angular-5ffc4549b7-kvmtc              1/1       Running     0          8m
-pipelinemanager-jenkins-55cdbf8d9c-4qbrl        1/1       Running     0          8m
-resource-arangodb-69656fd7fd-dhxtw              1/1       Running     0          8m
-resourcemanager-arangodb-775bbbb856-bvsjz       1/1       Running     0          8m
-kathra-catalog-updater-qngst                     0/1       Completed   0          8m
-kathra-catalogmanager-kube-77fff58f75-srvms      1/1       Running     0          8m
-kathra-codegen-swagger-d7c4c5f65-x7kht           1/1       Running     0          8m
-kathra-platformmanager-java-8564ffcdd-26x8f      1/1       Running     0          8m
-kathra-synchro-1564671300-mtzg2                  0/1       Completed   0          3m
-kathra-synchro-1564671360-q6pm2                  0/1       Completed   0          2m
-kathra-synchro-1564671420-gnldt                  0/1       Completed   0          1m
-kathra-synchro-1564671480-gz64x                  1/1       Running     0          12s
-sourcemanager-gitlab-685f59c5b4-rcfgg           1/1       Running     0          8m
-usermanager-keycloak-6b5749df67-wnxfc           1/1       Running     0          8m
-
-> kubectl -n factory-kathra get ingress
-NAME                                     HOSTS                                                                                      ADDRESS   PORTS     AGE
-kathra-factory-harbor-harbor-ingress   harbor.your-domain.xyz,harbor-notary.your-domain.xyz             80        14m
-kathra-factory-jenkins                 jenkins.your-domain.xyz                                                            80        14m
-kathra-factory-key                     keycloak.your-domain.xyz                                                           80        18m
-kathra-factory-nexus-sonatype-nexus    nexus.your-domain.xyz,nexus.your-domain.xyz                      80        14m
-gitlab                                   gitlab.your-domain.xyz                                                             80        14m
-
-> kubectl -n kathra get ingress
-NAME                   HOSTS                                               ADDRESS   PORTS     AGE
-appmanager             appmanager.your-domain.xyz                  80        8m
-codegen                codegen.your-domain.xyz                     80        8m
-dashboard              dashboard.your-domain.xyz                   80        8m
-icons                  icons.your-domain.xyz                       80        8m
-pipelinemanager        pipelinemanager.your-domain.xyz             80        8m
-platformmanager       platformmanager.your-domain.xyz             80        8m
-resourcemanager        resourcemanager.your-domain.xyz             80        8m
-kathra-catalogmanager   catalogmanager.your-domain.xyz              80        8m
-sourcemanager          sourcemanager.your-domain.xyz               80        8m
-usermanager            usermanager.your-domain.xyz                 80        8m
-```
-
-For the first use, you have to connect into gitlab with your user : https://gitlab.your-domain.xyz . 
-
-Once the GitLab have been aware your existence, you can connect to https://dashboard.your-domain.xyz
-
-Each user created into Keycloak have to connect GitLab before any operation with KATHRA.
-
-
-
-You can retreive generated passwords : 
-```
-cat ~/.kathra_pwd 
-{
-  "KEYCLOAK_ADMIN_PASSWORD": "PYmYiRiNH209EgXiKauK",
-  "JENKINS_PASSWORD": "wFftO1FUrKKdHzN7dK4P",
-  "SYNCMANAGER_PASSWORD": "oDLp8Cj2P8AzOJ9bagGo",
-  "ARANGODB_PASSWORD": "jSd65QX6DqcKSlLUVJyN",
-  "HARBOR_ADMIN_PASSWORD": "6yNQ9HvL5IrTJXvhadQc",
-  "HARBOR_USER_PASSWORD": "NeVA7IiFhIKcd559rlwV",
-  "JENKINS_API_TOKEN": "11ffda2d769a7c407f3fcda2e6be7a12f1",
-  "GITLAB_API_TOKEN": "pspxnsFs9zG1Ttg3G7qc",
-  "NEXUS_ADMIN_PASSWORD": "2GeRbAZVX1jtBM2RMENl",
-  "USER_LOGIN": "user",
-  "USER_PASSWORD": "123",
-  "GITLAB_API_TOKEN_USER": "QwJ9j6v1f7noQKSoxXqL"
-}
-```
-
-
-#### Tunning your instance
-
-We recommand to increase number of deployment's replicas in deployment. 
-
-#### Backup your instance
+# Backup your instance
 
 If you want to backup your kathra instance, we have to backup Kathra Database (ArangoDB) and factory tools (Keycloak, Gitlab, Nexus, Harbor, Jenkins) at the same time.
 
 You can use Velero with Restic (https://velero.io/docs/master/restic/)
 
 
-### Developers settings
-#### GitLab - SSH Agent
+# Developers settings
+## GitLab - SSH Agent
 To pull source repositories, you have to configure your SSH client to connect throught gitlab's NodePort.
 ```
+terraform output -json kathra | jq -r '.factory.gitlab.ssh.node_port'
 kubectl -n kathra-factory get svc gitlab
 NAME      TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)                     AGE
 gitlab    NodePort   10.233.23.197   <none>        80:32739/TCP,22:30000/TCP   5m
@@ -287,15 +109,17 @@ InternalIP:  192.168.208.52
 ```
 
 Add settings to ssh's config
-```
+```ssh
+export nodePort=$(terraform output -json kathra | jq -r '.factory.gitlab.ssh.node_port')
+export clusterIp=$(terraform output -json kathra | jq -r '.factory.gitlab.ssh.cluster_ip')
 cat <<EOF >$FILE
 Host gitlab.your-domain.xyz
-        Port 30000
-        HostName 192.168.208.52
+        Port $nodePort
+        HostName $clusterIp
 EOF
 ```
 
-#### For Java developers : Nexus - Maven Repository
+## For Java developers : Nexus - Maven Repository
 You have to configure you maven setting if you want to pull artifacts from your Nexus.
 You need to add "repository" section into your ~/.m2/settings.xml 
 
@@ -315,7 +139,7 @@ You need to add "repository" section into your ~/.m2/settings.xml
 </repository>
 ```
 
-#### For Docker users : Harbor - Images Repository
+## For Docker users : Harbor - Images Repository
 If you want to pull images from Harbor's repository, you have to configure your docker client (~/.docker/config).
 You can use "jenkins.harbor" account to pull image with password generated into ~/.kathra_pwd.
 But, we recommend to create specific account with read only access.
@@ -323,139 +147,47 @@ But, we recommend to create specific account with read only access.
 docker login --username "jenkins.harbor" --password "$(cat ~/.kathra_pwd | jq -r '.HARBOR_ADMIN_PASSWORD')" https://harbor.your-domain.xyz
 ```
 
-## Troubleshootings tips
+# Troubleshootings tips
 
-### Improve
+## Nexus init : "Error: could not read repository 'maven-snapshots': HTTP: 503, Service Unavailable"
 
-### To Reinstall 
-Be careful, this command erases all services and storages (Kathra, Jenkins, Harbor, Nexus, GitLab, Keycloak)
-> install.sh --purge
+Nexus is not ready during Terraform initialization.
+Wait few minutes and re-apply.
 
-### GitLab-CE issues
-#### Unable to init ApiKey
+## Token generation : "https://xxxxx.org is not ready, TLS is self signed"
 
-After GitLab-CE installation, somes operations are executed :
- - Confirm admin password
- - Enable kathra technical user as admin
- - Create API Key 
-
-One of these operation can fails : the first cause, GitLab's initialization takes too long.
-Your cluster can be undersized.
- 
-
-### Jenkins issues
-
-#### Kubernetes v1.16 and later
-Jenkins can be installed, but the plugin 'Kubernetes' have to be upgraded.
-
-#### Error: release factory-kathra-jenkins failed: timed out waiting for the condition
-
-
-During Jenkins installation, init script downloads plugins required from updates.jenkins.io,  jenkins's servers can sometimes have somes troubles.
-
-To verify this, you can check Jenkins's pod status :
-> kubectl -n factory-kathra get pods -l app=factory-kathra-jenkins
-```
-NAME                                   READY     STATUS    RESTARTS   AGE
-factory-kathra-jenkins-58d45655bd-9wcj6   0/1       Running   1          13m
+TLS certificates are not generated by CertManager, you have to delete 
+```sh
+terraform output kubeconfig_content > /tmp/kubeconfig_content
+export KUBECONFIG=/tmp/kubeconfig_content
+kubectl get certificates --all-namespaces
+NAMESPACE        NAME                   READY   SECRET                 AGE
+kathra-factory   gitlab-minio-cert      True    gitlab-minio-cert      28m
+kathra-factory   gitlab-registry-cert   True    gitlab-registry-cert   28m
+kathra-factory   gitlab-unicorn-cert    True    gitlab-unicorn-cert    28m
+kathra-factory   harbor-cert            True    harbor-cert            29m
+kathra-factory   harbor-notary-cert     True    harbor-notary-cert     29m
+kathra-factory   jenkins-cert           False   jenkins-cert           16m
+kathra-factory   keycloak-cert          True    keycloak-cert          30m
+kathra-factory   nexus-cert             True    nexus-cert             30m
+kathra-factory   sonarqube-cert         True    sonarqube-cert         29m
 ```
 
-And see logs during pod initialization
-> kubectl -n factory-kathra logs -l app=factory-kathra-jenkins -c copy-default-config
-
-```
-curl: (56) Recv failure: Connection reset by peer
-09:30:00 Failure (56) Retrying in 1 seconds...
-09:30:01 Failed in the last attempt (curl -sSfL --connect-timeout 20 --retry 3 --retry-delay 0 --retry-max-time 60 https://updates.jenkins.io/download/plugins/ssh-credentials-plugin/latest/ssh-credentials-plugin.hpi -o /usr/share/jenkins/ref/plugins/ssh-credentials-plugin.jpi)
-Failed to download plugin: ssh-credentials or ssh-credentials-plugin
-curl: (52) Empty reply from server
-09:30:39 Failure (52) Retrying in 1 seconds...
-curl: (56) Recv failure: Connection reset by peer
-09:31:10 Failure (56) Retrying in 1 seconds...
-09:31:11 Failed in the last attempt (curl -sSfL --connect-timeout 20 --retry 3 --retry-delay 0 --retry-max-time 60 https://updates.jenkins.io/download/plugins/oic-auth/1.6/oic-auth.hpi -o /usr/share/jenkins/ref/plugins/oic-auth.jpi)
-Downloading plugin: oic-auth-plugin from https://updates.jenkins.io/download/plugins/oic-auth-plugin/1.6/oic-auth-plugin.hpi
-curl: (22) The requested URL returned error: 404 Not Found
-09:32:01 Failure (22) Retrying in 1 seconds...
-curl: (35) Unknown SSL protocol error in connection to updates.jenkins.io:443
-09:32:42 Failure (35) Retrying in 1 seconds...
-curl: (35) Unknown SSL protocol error in connection to updates.jenkins.io:443
-09:33:02 Failure (35) Retrying in 1 seconds...
-09:33:03 Failed in the last attempt (curl -sSfL --connect-timeout 20 --retry 3 --retry-delay 0 --retry-max-time 60 https://updates.jenkins.io/download/plugins/oic-auth-plugin/1.6/oic-auth-plugin.hpi -o /usr/share/jenkins/ref/plugins/oic-auth-plugin.jpi)
-Failed to download plugin: oic-auth or oic-auth-plugin
-```
-
-Solution : To be patient until updates.jenkins.io is available and retry
-
-#### Error: Unable to generate api token jenkins
-This error can occured during api token generation
-```
-[########################################################################        ]  90 % Install KATHRA services...
-jenkinsGenerateApiToken(login: kathra-pipelinemanager, password: LeIrLA9WqSIVuwAwDO3r, fileOut: /home/kathra/.kathra-tmp-install/jenkins.tokenValue)
- getHttpHeaderSetCookie(file: /home/kathra/.kathra-tmp-install/jenkins.configure.me.err, cookie: JSESSIONID)
- getHttpHeaderSetCookie(file: /home/kathra/.kathra-tmp-install/jenkins.commence.login.err, cookie: AUTH_SESSION_ID)
- getHttpHeaderSetCookie(file: /home/kathra/.kathra-tmp-install/jenkins.commence.login.err, cookie: KC_RESTART)
- getHttpHeaderLocation(file: /home/kathra/.kathra-tmp-install/jenkins.commence.login.err)
- getHttpHeaderLocation(file: /home/kathra/.kathra-tmp-install/jenkins.authenticate.err)
-parse error: Invalid numeric literal at line 2, column 0
- Unable to generate api token jenkins
-```
-
-You can check Jenkins logs to verify its startup, some plugins can be not installed.
-Jenkins is running but some errors occured during its first startup. 
-
-This issue is caused by updates.jenkins.io
-
-```
-kubectl -n kathra-factory logs kathra-factory-jenkins-5798956669-blbqb
-
-SEVERE: Failed Loading plugin Configuration as Code Support Plugin v1.15 (configuration-as-code-support)
-java.io.IOException: Configuration as Code Support Plugin version 1.15 failed to load.
- - configuration-as-code version 1.15 is missing. To fix, install version 1.15 or later.
-        at hudson.PluginWrapper.resolvePluginDependencies(PluginWrapper.java:821)
-        at hudson.PluginManager$2$1$1.run(PluginManager.java:544)
-        at org.jvnet.hudson.reactor.TaskGraphBuilder$TaskImpl.run(TaskGraphBuilder.java:169)
-        at org.jvnet.hudson.reactor.Reactor.runTask(Reactor.java:296)
-        at jenkins.model.Jenkins$5.runTask(Jenkins.java:1096)
-        at org.jvnet.hudson.reactor.Reactor$2.run(Reactor.java:214)
-        at org.jvnet.hudson.reactor.Reactor$Node.run(Reactor.java:117)
-        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-        at java.lang.Thread.run(Thread.java:748)
-
-```
+Cause possible : 
+- Certificat quota exceeded (https://letsencrypt.org/docs/rate-limits/)
 
 
-
-Solution: You have to retry later when updates.jenkins.io is avaliable
-
-
-
+# Product version
 
 ##  Factory products compatibilities
 
-| Product 	      | Recommended version 	|
+| Product 	      | Version 	|
 |--------------	|---------------------	|
 | Kubernetes   	| 1.15.1             	|
 | Treafik      	| 1.7.9               	|
-| KubeDb       	| 0.8.0               	|
-| Keycloak     	| 4.2.1               	|
-| Gitlab-ci    	| 11.2.3              	|
-| Nexus        	| 3.15.2              	|
-| Harbor       	| 1.8.2               	|
-| Jenkins      	| 2.164.3             	|
-
-##  Jenkins plugins compatibilities
-
-| Plugin            	      | Recommended version 	|
-|------------------------	|---------------------	|
-| Kubernetes             	| 1.14.9              	|
-| Kubernetes credential  	| 0.4.0               	|
-| Workflow aggregator    	| 2.6                 	|
-| Workflow job           	| 2.32                	|
-| Credential binding     	| 1.18                	|
-| Docker Pipeline        	| 1.20                	|
-| Git                    	| 3.9.3               	|
-| OpenId connect auth    	| 1.6                 	|
-| Pipeline utility steps 	| 2.3.0               	|
-| Pipeline Job           	| 2.32                	|
-| Matrix auth            	| 2.4.2               	|
+| Keycloak     	| 10.0.0               	|
+| Gitlab-ci    	| 12.10.6              	|
+| Nexus        	| 3.21.2              	|
+| Harbor       	| 1.10.0               	|
+| Jenkins      	| 2.190.1             	|
+| SonarQube      	| 8.2                	|

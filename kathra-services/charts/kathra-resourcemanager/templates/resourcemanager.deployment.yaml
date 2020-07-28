@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: "resourcemanager-arangodb"
@@ -6,25 +6,25 @@ metadata:
 {{ include "kathra.labels" . | indent 4 }}
     app: resourcemanager
     impl: arangodb
-    product: kathra
+    project: kathra
 spec:
   replicas: 2
   selector:
     matchLabels:
       app: resourcemanager
       impl: arangodb
-      product: kathra
+      project: kathra
   template:
     metadata:
       labels:
         app: resourcemanager
         impl: arangodb
-        product: kathra
+        project: kathra
     spec:
       imagePullSecrets:
       - name: regcred
       containers:
-      - image: "{{ .Values.global.docker.registry.url }}/{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
+      - image: "{{ .Values.global.docker.registry.url }}{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
         imagePullPolicy: Always
         name: resourcemanager-arangodb
         livenessProbe:

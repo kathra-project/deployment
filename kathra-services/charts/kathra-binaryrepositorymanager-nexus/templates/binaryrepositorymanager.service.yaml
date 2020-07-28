@@ -1,0 +1,18 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "binaryrepositorymanager-nexus"
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    project: "kathra"
+    app: "binaryrepositorymanager"
+spec:
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  selector:
+    project: "kathra"
+    app: "binaryrepositorymanager"
+    impl: "nexus"
+  type: ClusterIP

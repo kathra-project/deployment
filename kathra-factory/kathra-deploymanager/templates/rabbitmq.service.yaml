@@ -5,7 +5,7 @@ metadata:
   name: rabbitmq-webui
   labels:
 {{ include "factory.labels" . | indent 4 }}
-    product: kathra
+    project: kathra
     app: rabbitmq-deploymanager
 spec:
   ports:
@@ -13,7 +13,7 @@ spec:
       port: 80
       targetPort: 15672
   selector:
-    product: kathra
+    project: kathra
     app: rabbitmq-deploymanager
 
 ---
@@ -23,7 +23,7 @@ metadata:
   name: rabbitmq
   labels:
 {{ include "factory.labels" . | indent 4 }}
-    product: kathra
+    project: kathra
     app: rabbitmq-deploymanager
 spec:
   ports:
@@ -37,5 +37,5 @@ spec:
   type: ClusterIP
 {{ end }}
   selector:
-    product: kathra
+    project: kathra
     app: rabbitmq-deploymanager

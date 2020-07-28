@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "binaryrepositorymanager-nexus"
+  labels:
+{{ include "kathra.labels" . | indent 4 }}
+    project: kathra
+    app: binaryrepositorymanager
+    impl: nexus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      project: kathra
+      app: binaryrepositorymanager
+      impl: nexus
+  template:
+    metadata:
+      labels:
+        project: kathra
+        app: binaryrepositorymanager
+        impl: nexus
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: binaryrepositorymanager-nexus
+        image: "{{ .Values.global.docker.registry.url }}{{ .Values.global.docker.registry.root_repository }}/{{ .Values.image }}:{{ .Values.version }}"
+        imagePullPolicy: Always
+        ports:
+        - name: web
+          containerPort: 8080
+          protocol: TCP
+        env:
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          - name: RESOURCE_MANAGER_URL
+            valueFrom:
+              configMapKeyRef:
+                key: RESOURCE_MANAGER_URL
+                name: binaryrepositorymanager-nexus-config
+          - name: NEXUS_URL
+            valueFrom:
+              configMapKeyRef:
+                key: NEXUS_URL
+                name: binaryrepositorymanager-nexus-config
+          - name: NEXUS_USERNAME
+            valueFrom:
+              secretKeyRef:
+                key: NEXUS_USERNAME
+                name: binaryrepositorymanager-nexus-secret
+          - name: NEXUS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: NEXUS_PASSWORD
+                name: binaryrepositorymanager-nexus-secret
+          - name: USERNAME
+            valueFrom:
+              secretKeyRef:
+                key: USERNAME
+                name: binaryrepositorymanager-nexus-secret
+          - name: PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: PASSWORD
+                name: binaryrepositorymanager-nexus-secret
+          - name: KEYCLOAK_AUTH_URL
+            valueFrom:
+              configMapKeyRef:
+                key: KEYCLOAK_AUTH_URL
+                name: keycloak-config
+          - name: KEYCLOAK_REALM
+            valueFrom:
+              configMapKeyRef:
+                key: KEYCLOAK_REALM
+                name: keycloak-config
+          - name: KEYCLOAK_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                key: KEYCLOAK_CLIENT_ID
+                name: keycloak-secret
+          - name: KEYCLOAK_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                key: KEYCLOAK_CLIENT_SECRET
+                name: keycloak-secret
+          - name: JAVA_OPTS
+            value: "-XX:+UnlockExperimentalVMOptions  -XX:MaxRAMFraction=1 -Xms128M -Xmx512M"
+{{- if .Values.resources }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+{{- end }}

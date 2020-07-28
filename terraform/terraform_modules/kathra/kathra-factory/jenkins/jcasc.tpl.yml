@@ -1,0 +1,274 @@
+jenkins:
+  agentProtocols:
+  - "JNLP4-connect"
+  - "Ping"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+  clouds:
+  - kubernetes:
+      containerCap: 10
+      containerCapStr: "10"
+      jenkinsTunnel: "jenkins-agent:50000"
+      jenkinsUrl: "http://jenkins:8080"
+      maxRequestsPerHost: 32
+      maxRequestsPerHostStr: "32"
+      name: "kubernetes"
+      namespace: "${namespace}"
+      podLabels:
+      - key: "jenkins/jenkins-jenkins-slave"
+        value: "true"
+      serverUrl: "https://kubernetes.default"
+      templates:
+      - containers:
+        - args: "^$${computer.jnlpmac} ^$${computer.name}"
+          envVars:
+          - containerEnvVar:
+              key: "JENKINS_URL"
+              value: "http://jenkins.{namespace}.svc.cluster.local:8080"
+          image: "jenkins/jnlp-slave:3.27-1"
+          name: "jnlp"
+          resourceLimitCpu: "512m"
+          resourceLimitMemory: "512Mi"
+          resourceRequestCpu: "512m"
+          resourceRequestMemory: "512Mi"
+          workingDir: "/home/jenkins"
+        label: "jenkins-jenkins-slave "
+        name: "default"
+        nodeUsageMode: "NORMAL"
+        podRetention: "never"
+        serviceAccount: "default"
+        yamlMergeStrategy: "override"
+      - containers:
+        - args: "cat"
+          command: "/bin/sh -c"
+          envVars:
+          - envVar:
+              key: "DOCKER_CONFIG"
+              value: "/home/jenkins/.docker/"
+          - envVar:
+              key: "KUBERNETES_MASTER"
+              value: "kubernetes.default"
+          image: "docker:18.06.1-ce"
+          name: "docker"
+          resourceLimitCpu: "200m"
+          resourceLimitMemory: "256Mi"
+          resourceRequestCpu: "200m"
+          resourceRequestMemory: "256Mi"
+          ttyEnabled: true
+          workingDir: "/home/jenkins"
+        label: "docker"
+        name: "docker"
+        namespace: "{namespace}"
+        serviceAccount: "docker"
+        volumes:
+        - secretVolume:
+            mountPath: "/home/jenkins/.docker"
+            secretName: "jenkins-docker-config-json"
+        - hostPathVolume:
+            hostPath: "/var/run/docker.sock"
+            mountPath: "/var/run/docker.sock"
+        yamlMergeStrategy: "override"
+      - containers:
+        - args: "cat"
+          command: "/bin/sh -c"
+          image: "kathra/helm-builder:latest"
+          name: "helm"
+          resourceLimitCpu: "1250m"
+          resourceLimitMemory: "128Mi"
+          resourceRequestCpu: "1250m"
+          resourceRequestMemory: "128Mi"
+          ttyEnabled: true
+          workingDir: "/home/jenkins"
+        inheritFrom: "docker"
+        label: "helm"
+        name: "helm"
+        namespace: "{namespace}"
+        serviceAccount: "helm"
+        volumes:
+        - secretVolume:
+            mountPath: "/etc/ssh"
+            secretName: "sshconfig"
+        yamlMergeStrategy: "override"
+      - containers:
+        - args: "cat"
+          command: "/bin/sh -c"
+          envVars:
+          - envVar:
+              key: "DOCKER_CONFIG"
+              value: "/home/jenkins/.docker/"
+          - envVar:
+              key: "MAVEN_OPTS"
+              value: "-Duser.home=/home/jenkins/"
+          - envVar:
+              key: "KUBERNETES_MASTER"
+              value: "kubernetes.default"
+          image: "registry.hub.docker.com/kathra/maven-builder:dev"
+          name: "maven"
+          resourceLimitCpu: "1"
+          resourceLimitMemory: "1024Mi"
+          resourceRequestCpu: "400m"
+          resourceRequestMemory: "512Mi"
+          ttyEnabled: true
+          workingDir: "/home/jenkins"
+        inheritFrom: "docker"
+        label: "maven"
+        name: "maven"
+        namespace: "{namespace}"
+        serviceAccount: "maven"
+        volumes:
+        - persistentVolumeClaim:
+            claimName: "jenkins-mvn-local-repo"
+            mountPath: "/home/jenkins/.mvnrepository"
+            readOnly: false
+        - secretVolume:
+            mountPath: "/home/jenkins/.m2/"
+            secretName: "jenkins-maven-settings-xml"
+        - secretVolume:
+            mountPath: "/etc/ssh"
+            secretName: "sshconfig"
+        - hostPathVolume:
+            hostPath: "/var/run/docker.sock"
+            mountPath: "/var/run/docker.sock"
+        yamlMergeStrategy: "override"
+      - containers:
+        - args: "cat"
+          command: "/bin/sh -c"
+          image: "registry.hub.docker.com/kathra/pip-builder:1.0.1"
+          name: "pip"
+          resourceLimitCpu: "1"
+          resourceLimitMemory: "1024Mi"
+          resourceRequestCpu: "400m"
+          resourceRequestMemory: "512Mi"
+          ttyEnabled: true
+          workingDir: "/home/jenkins"
+        inheritFrom: "docker"
+        label: "pip"
+        name: "pip"
+        namespace: "factory"
+        serviceAccount: "pip"
+        volumes:
+        - secretVolume:
+            mountPath: "/etc/ssh"
+            secretName: "sshconfig"
+        yaml: |
+          apiVersion: v1
+          kind: Pod
+          spec:
+            containers:
+            - name: pip
+              image: registry.hub.docker.com/kathra/pip-builder:1.0.1
+              volumeMounts:
+              - mountPath: /home/jenkins/.pypirc
+                name: pypi-config
+                subPath: .pypirc
+            volumes:
+            - name: pypi-config
+              secret:
+                secretName: pypi-config
+        yamlMergeStrategy: "override"
+        yamls:
+        - |
+          apiVersion: v1
+          kind: Pod
+          spec:
+            containers:
+            - name: pip
+              image: registry.hub.docker.com/kathra/pip-builder:1.0.1
+              volumeMounts:
+              - mountPath: /home/jenkins/.pypirc
+                name: pypi-config
+                subPath: .pypirc
+            volumes:
+            - name: pypi-config
+              secret:
+                secretName: pypi-config
+  crumbIssuer:
+    standard:
+      excludeClientIPFromCrumb: true
+  disableRememberMe: false
+  globalNodeProperties:
+  - envVars:
+      env:
+      - key: "xxxxx"
+        value: "yyyyyy"
+  markupFormatter: "plainText"
+  mode: NORMAL
+  myViewsTabBar: "standard"
+  numExecutors: 0
+  primaryView:
+    all:
+      name: "all"
+  projectNamingStrategy: "standard"
+  quietPeriod: 5
+  remotingSecurity:
+    enabled: true
+  scmCheckoutRetryCount: 0
+  securityRealm: |-
+    <securityRealm class="org.jenkinsci.plugins.oic.OicSecurityRealm" plugin="oic-auth@1.0">
+        <clientId>${oidc_client_id}</clientId>
+        <clientSecret>${oidc_client_secret}</clientSecret>
+        <tokenServerUrl>${oidc_token_url}</tokenServerUrl>
+        <authorizationServerUrl>${oidc_auth_url}</authorizationServerUrl>
+        <userNameField>email</userNameField>
+        <scopes>openid email</scopes>
+        <automanualconfigure>none</automanualconfigure>
+    </securityRealm>
+
+  slaveAgentPort: 50000
+  updateCenter:
+    sites:
+    - id: "default"
+      url: "https://updates.jenkins.io/update-center.json"
+  views:
+  - all:
+      name: "all"
+  viewsTabBar: "standard"
+security:
+  apiToken:
+    creationOfLegacyTokenEnabled: false
+    tokenGenerationOnCreationEnabled: false
+    usageStatisticsEnabled: true
+  sSHD:
+    port: -1
+  scriptApproval:
+    approvedSignatures:
+    - "method groovy.lang.GroovyObject invokeMethod java.lang.String java.lang.Object"
+    - "staticMethod org.codehaus.groovy.runtime.DefaultGroovyMethods invokeMethod\
+      \ java.lang.Object java.lang.String java.lang.Object"
+unclassified:
+  globalLibraries:
+    libraries:
+    - defaultVersion: "dev"
+      implicit: true
+      includeInChangesets: false
+      name: "kathra-pipeline-library"
+      retriever:
+        modernSCM:
+          scm:
+            git:
+              id: "278451db-b355-48c8-82c1-7fa0c0d1f9cb"
+              remote: "https://gitlab.com/kathra/factory/jenkins/pipeline-library.git"
+  buildDiscarders:
+    configuredBuildDiscarders:
+    - "jobBuildDiscarder"
+  defaultFolderConfiguration:
+    healthMetrics:
+    - worstChildHealthMetric:
+        recursive: true
+  gitSCM:
+    createAccountBasedOnEmail: false
+  location:
+    adminAddress: "address not configured yet <nobody@nowhere>"
+    url: "https://${ingress_host}/"
+  mailer:
+    charset: "UTF-8"
+    useSsl: false
+    useTls: false
+  pollSCM:
+    pollingThreadCount: 10
+tool:
+  git:
+    installations:
+    - home: "git"
+      name: "Default"
