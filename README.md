@@ -73,7 +73,7 @@ This procedure installs Minikube and configures somes features (Traefik, KubeDB 
 
 By default, the login is 'user' and password '123'. You can override this configure during installation.
 
-#### Manual ACME
+#### Auto ACME
 ACME with Terraform Provider https://www.terraform.io/docs/providers/acme/
 ```sh
 git clone git@gitlab.com:kathra/deployment.git
@@ -81,7 +81,7 @@ git clone git@gitlab.com:kathra/deployment.git
 ./main.sh deploy --domain=local.my-domain.org --acme-dns-provider=ovh --acme-dns-config='{"OVH_APPLICATION_KEY": "app-key", "OVH_APPLICATION_SECRET": "app-secret","OVH_CONSUMER_KEY": "consumer-key","OVH_ENDPOINT": "ovh-eu"}'
 ```
 
-#### Owns TLS
+#### Own TLS Cert
 ```sh
 git clone git@gitlab.com:kathra/deployment.git
 ./deployment/terraform/terraform_modules/minikube-stack
