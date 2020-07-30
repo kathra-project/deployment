@@ -1,32 +1,11 @@
 variable "version_chart" {
     default = "0.8.0"
 }
-<<<<<<< HEAD
-variable "kube_config_file" {
-    default =  ""
-}
-variable "tiller_ns" {
-    default =  "kube-system"
-}
-
-
-provider "helm" {
-  kubernetes {
-    config_path = var.kube_config_file
-  }
-  version   = "0.10.4"
-  namespace = var.tiller_ns
-}
-
-provider "kubernetes" {
-  config_path = var.kube_config_file
-=======
 
 resource "kubernetes_namespace" "kubedb" {
   metadata {
     name = "kubedb"
   }
->>>>>>> feature/factory_tf
 }
 
 data "helm_repository" "stable" {

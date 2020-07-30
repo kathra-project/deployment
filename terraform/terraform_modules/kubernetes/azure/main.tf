@@ -2,11 +2,6 @@ variable "k8s_client_id" {
 }
 variable "k8s_client_secret" {
 }
-<<<<<<< HEAD
-variable "agent_count" {
-    default = 2
-}
-=======
 variable "node_count" {
     default = 2
 }
@@ -14,7 +9,6 @@ variable "node_size" {
     default = "Standard_D8s_v3"
 }
 
->>>>>>> feature/factory_tf
 variable "ssh_public_key" {
     default = "~/.ssh/id_rsa.pub"
 }
@@ -49,13 +43,8 @@ resource "azurerm_kubernetes_cluster" "k8s" {
 
     default_node_pool {
         name            = "agentpool"
-<<<<<<< HEAD
-        node_count      = var.agent_count
-        vm_size         = "Standard_DS3_v2"
-=======
         node_count      = var.node_count
         vm_size         = var.node_size
->>>>>>> feature/factory_tf
     }
 
     service_principal {

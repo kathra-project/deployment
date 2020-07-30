@@ -1,17 +1,6 @@
 variable "version_chart" {
     default = "1.86.1"
 }
-<<<<<<< HEAD
-
-variable "kube_config_file" {
-    default =  ""
-}
-variable "tiller_ns" {
-    default =  "kube-system"
-}
-
-=======
->>>>>>> feature/factory_tf
 variable "load_balancer_ip" {
     default =  ""
 }
@@ -19,23 +8,6 @@ variable "aks_group" {
     default =  "kathra"
 }
 
-<<<<<<< HEAD
-
-provider "helm" {
-  kubernetes {
-    config_path = var.kube_config_file
-  }
-  version = "0.10.4"
-  namespace = var.tiller_ns
-}
-
-provider "kubernetes" {
-  config_path = var.kube_config_file
-}
-
-
-=======
->>>>>>> feature/factory_tf
 data "helm_repository" "stable" {
   name = "stable"
   url  = "https://kubernetes-charts.storage.googleapis.com"
@@ -87,11 +59,7 @@ resource "helm_release" "traefik" {
   }
 }
 output "ingress_controller" {
-<<<<<<< HEAD
-  value = "treafik"
-=======
   value = "traefik"
->>>>>>> feature/factory_tf
 }
 output "namespace" {
   value = helm_release.traefik.namespace
