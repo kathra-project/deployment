@@ -16,7 +16,7 @@ function gitlabGenerateApiToken() {
     printDebug "$*"
     printDebug "gitlabGenerateApiToken(gitlab_host: $gitlab_host, keycloak_host:$keycloak_host login: $login, password: $password, fileOut: $fileOut, kubeconfigFile: $kubeconfigFile, namespace: $namespace releaseName: $releaseName)"
     
-    checkCommandAndRetry "curl -vvI https://${gitlab_host} 2>&1 | grep \"SSL certificate problem: self signed certificate\"" 
+    checkCommandAndRetry "curl -vvI https://${gitlab_host} 2>&1 | grep \"SSL certificate problem: self signed certificate\" && return 1 || return 0" 
     [ $? -ne 0 ] && printError "https://${gitlab_host} is not ready, TLS is self signed" && exit 1
 
     local attempt_counter=0

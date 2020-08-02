@@ -37,6 +37,7 @@ function showHelp() {
     printInfo "deploy : Deploy on Azure"
     printInfo "destroy : Destroy on Azure"
     printInfo "backup-install : Configure backup on Azure"
+    exit 0
 }
 export -f showHelp
 
@@ -46,8 +47,7 @@ function showHelpDeploy() {
     printInfo "Deploy options : "
     printInfo "--domain=<my-domain.xyz>                       :        Full base domain"
     printInfo ""
-    printInfo "--charts-version=<branch|tag>                  :        Charts version [default: $kathraChartsVersion]"
-    printInfo "--images-version=<tag>                         :        Images tags [default: $kathraImagesTag]"
+    printInfo "--images-tag=<tag>                             :        Images tags [default: $kathraImagesTag]"
     printInfo ""
     printInfo "--azure-group-name=<group-name>                :        Azure Group Name [default: $azureGroupName]"
     printInfo "--azure-location=<location>                    :        Azure Location [default: $azureLocation]"
@@ -85,7 +85,6 @@ function parseArgs() {
         local value=${argument#*=}
         case "$key" in
             --domain)                       domain=$value;;
-            --charts-version)               kathraChartsVersion=$value;;
             --images-tag)                   kathraImagesTag=$value;;
             --azure-group-name)             azureGroupName=$value;;
             --azure-location)               azureLocation=$value;;
@@ -104,7 +103,7 @@ function parseArgs() {
 function main() {
     parseArgs $*    
 
-    [ "$domain" == "" ] && printError "Domain and Azure Domain Label are undefined" && showHelpDeploy && exit 1
+    [ "$domain" == "" ] && printError "Domain undefined" && showHelpDeploy && exit 1
     [ "$ARM_SUBSCRIPTION_ID" == "" ] && printError "ARM_SUBSCRIPTION_ID undefined" && showHelpDeploy && exit 1
     [ "$ARM_CLIENT_ID" == "" ] && printError "ARM_CLIENT_ID undefined" && showHelpDeploy && exit 1
     [ "$ARM_CLIENT_SECRET" == "" ] && printError "ARM_CLIENT_SECRET undefined" && showHelpDeploy && exit 1
@@ -127,28 +126,30 @@ function initTfVars() {
     echo "k8s_client_id = \"$ARM_CLIENT_ID\"" >> $file
     echo "k8s_client_secret = \"$ARM_CLIENT_SECRET\"" >> $file
     echo "k8s_version = \"$kubernetesVersion\"" >> $file
+    echo "kathra_version = \"$kathraImagesTag\"" >> $file
 }
 
 function deploy() {
     printDebug "deploy()"
     checkDependencies
 
-    # Deploy Kubernetes and configure
-    terraform init || printErrorAndExit "Terraform : Unable to init"
-    terraform apply -auto-approve || printErrorAndExit "Terraform : Unable to apply"
-    terraform output kubeconfig_content > $KUBECONFIG  || printErrorAndExit "Terraform : Unable to get kubeconfig_content"
+    # Deploy Stack
+    cd $SCRIPT_DIR
+    terraform init                      || printErrorAndExit "Unable to init terraform"
 
-    kubectl get nodes || printErrorAndExit "Unable to connect to Kubernetes server"
+    local retrySecondInterval=10
+    local attempt_counter=0
+    local max_attempts=5
+    while true; do
+        terraform apply -auto-approve && break
+        printError "Terraform : Unable to apply, somes resources may be not ready, try again.. attempt ($attempt_counter/$max_attempts) "
+        [ ${attempt_counter} -eq ${max_attempts} ] && printError "Check $1, error" && return 1
+        attempt_counter=$(($attempt_counter+1))
+        sleep $retrySecondInterval
+    done
 
-    # Deploy Kathra
-    export KUBECONFIG=$KUBECONFIG
-    printInfo "Force to restart kubedb and kube-system pods [ aks issues ]"
-    kubectl -n kube-system delete pods --all
-    kubectl -n kubedb delete pods --all
-    printInfo "export KUBECONFIG=$KUBECONFIG"
-    printInfo "install.sh --domain=$domain --chart-version=$kathraChartsVersion --kathra-image-tag=$kathraImagesTag --enable-tls-ingress --verbose"
-    $SCRIPT_DIR/../install.sh --domain=$domain --chart-version=$kathraChartsVersion --kathra-image-tag=$kathraImagesTag --enable-tls-ingress --verbose
-    return $?
+    # Post install
+    postInstall
 }
 export -f deploy
 

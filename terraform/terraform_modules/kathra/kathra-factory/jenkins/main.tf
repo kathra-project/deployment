@@ -211,6 +211,7 @@ referenceContent:
   - data:
     - fileName: plugins.txt
       fileContent: |
+        credentials:2.3.10
         kubernetes
         kubernetes-credentials
         workflow-aggregator

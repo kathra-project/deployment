@@ -74,7 +74,7 @@ This procedure installs Minikube and configures somes features (Traefik, KubeDB 
 By default, the login is 'user' and password '123'. You can override this configure during installation.
 
 #### Auto ACME
-ACME with Terraform Provider https://www.terraform.io/docs/providers/acme/
+ACME with Terraform Provider https://www.terraform.io/docs/providers/acme/dns_providers/
 ```sh
 git clone git@gitlab.com:kathra/deployment.git
 ./deployment/terraform/terraform_modules/minikube-stack

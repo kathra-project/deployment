@@ -1,4 +1,3 @@
-
 #!/bin/bash
 export SCRIPT_DIR=$(realpath $(dirname `which $0`))
 export debug=0
@@ -24,13 +23,25 @@ export minikubeVersion="1.3.1"
 export minikubeVmDriver="none"
 export kubernetesVersion="1.15.1"
 export sudo=""
-export kathraChartVersion="master"
 export kathraImagesTag="stable"
 
 
 
 
 function showHelp() {
+    findInArgs "deploy" $* > /dev/null && showHelpDeploy $* && exit 0
+    findInArgs "destroy" $* > /dev/null && showHelpDestroy $* && exit 0 
+    printInfo "KATHRA Minikube Install Wrapper"
+    printInfo ""
+    printInfo "Usage: "
+    printInfo "deploy : Deploy on Minikube"
+    printInfo "destroy : Destroy on Minikube"
+    exit 0
+}
+export -f showHelp
+
+
+function showHelpDeploy() {
     printInfo "KATHRA + Minikube Install Wrapper"
     printInfo ""
     printInfo "Usage examples: "
@@ -39,10 +50,9 @@ function showHelp() {
     printInfo "deploy --domain=mydomain.org --tlsCert=my-cert --tlsKey=my-key"
     printInfo ""
     printInfo "Args: "
-    printInfo "--domain=<my-domain.xyz>        Base domain"
+    printInfo "--domain=<my-domain.xyz>                       : Base domain"
     printInfo ""
-    printInfo "--charts-version=<branch|tag>                  : Charts version [default: $kathraChartVersion]"
-    printInfo "--images-version=<tag>                         : Images tags [default: $kathraImagesTag]"
+    printInfo "--images-tag=<tag>                             : Images tags [default: $kathraImagesTag]"
     printInfo ""
     printInfo "Automatic TLS certificate generation from Let's Encrypt with DNS Challenge"
     printInfo "--acme-dns-provider                            : Provider name"
@@ -57,15 +67,24 @@ function showHelp() {
 
     printInfo ""
     printInfo "Optionnals: "
-    printInfo "--cpus                                         : Number of cpu [default: $minikubeCpus]"
-    printInfo "--memory                                       : Memory size [default: $minikubeMemory]"
-    printInfo "--disk-size                                    : Disk size [default: $minikubeDiskSize]"
+    printInfo "--cpus                                         : Number of cpu (with virtual machine) [default: $minikubeCpus]"
+    printInfo "--memory                                       : Memory size (with virtual machine) [default: $minikubeMemory]"
+    printInfo "--disk-size                                    : Disk size (with virtual machine) [default: $minikubeDiskSize]"
     printInfo "--minikube-version                             : Minikube version [default: $minikubeVersion]"
     printInfo "--vm-driver                                    : Minikube VM driver [default: $minikubeVmDriver]"
     printInfo "--kubernetes-version                           : Kubernetes version [default: $kubernetesVersion]"
     printInfo "--verbose                                      : Enable DEBUG log level"
-    exit 0
+
 }
+export -f showHelpDeploy
+
+function showHelpDestroy() {
+    printInfo "KATHRA Azure Install Wrapper"
+    printInfo ""
+    printInfo "Destroy options : "
+}
+export -f showHelpDestroy
+
 
 function parseArgs() {
     for argument in "$@" 
@@ -74,6 +93,7 @@ function parseArgs() {
         local value=${argument#*=}
         case "$key" in
             --domain)                       domain=$value;;
+            --images-tag)                   kathraImagesTag=$value;;
             --tls-cert)                      tlsCert=$value;;
             --tls-key)                       tlsKey=$value;;
             --manual-acme)                  manualDnsChallenge=1;;
@@ -86,7 +106,7 @@ function parseArgs() {
             --vm-driver)                    minikubeVmDriver=$value;;
             --kubernetes-version)           kubernetesVersion=$value;;
             --verbose)                      debug=1;;
-            --help|-h)                      showHelp;;
+            --help|-h)                      showHelp $*;;
         esac    
     done
 }
@@ -132,7 +152,7 @@ function deploy() {
     local subdomains=( "keycloak" "sonarqube" "jenkins" "gitlab" "harbor" "nexus" "appmanager" "dashboard" "resourcemanager" "pipelinemanager" "sourcemanager" "codegen-helm" "codegen-swagger" "binaryrepositorymanager-harbor" "binaryrepositorymanager-nexus" )
     for subdomain in ${subdomains[@]}; do addEntryHostFile "$subdomain.$domain" "$(minikube ip)"; done;
     
-    # Deploy Kubernetes and configure
+    # Deploy Stack
     cd $SCRIPT_DIR
     terraform init                      || printErrorAndExit "Unable to init terraform"
 
@@ -140,7 +160,7 @@ function deploy() {
     local attempt_counter=0
     local max_attempts=5
     while true; do
-        terraform apply -auto-approve && return 0 
+        terraform apply -auto-approve && break
         printError "Terraform : Unable to apply, somes resources may be not ready, try again.. attempt ($attempt_counter/$max_attempts) "
         [ ${attempt_counter} -eq ${max_attempts} ] && printError "Check $1, error" && return 1
         attempt_counter=$(($attempt_counter+1))
