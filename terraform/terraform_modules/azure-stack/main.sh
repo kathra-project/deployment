@@ -19,7 +19,7 @@ export azureLocation="eastus"
 export terraformVersion="0.12.21"
 export traefikChartVersion="1.85.0"
 
-export kubernetesVersion="1.15.10"
+export kubernetesVersion="1.16.10"
 
 export kathraChartVersion="master"
 export kathraImagesTag="stable"
@@ -123,6 +123,8 @@ function initTfVars() {
     echo "group = \"$azureGroupName\"" >> $file
     echo "location = \"$azureLocation\"" >> $file
     echo "domain = \"$domain\"" >> $file
+    echo "subscribtion_id = \"$ARM_SUBSCRIPTION_ID\"" >> $file
+    echo "tenant_id = \"$ARM_TENANT_ID\"" >> $file
     echo "k8s_client_id = \"$ARM_CLIENT_ID\"" >> $file
     echo "k8s_client_secret = \"$ARM_CLIENT_SECRET\"" >> $file
     echo "k8s_version = \"$kubernetesVersion\"" >> $file
