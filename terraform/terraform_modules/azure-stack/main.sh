@@ -5,6 +5,7 @@ export KUBECONFIG=$tmp/kube_config
 [ ! -d $tmp ] && mkdir $tmp
 
 cd $SCRIPT_DIR
+. ${SCRIPT_DIR}/../common.sh
 
 export debug=1
 export domain=""
@@ -21,7 +22,6 @@ export traefikChartVersion="1.85.0"
 
 export kubernetesVersion="1.16.10"
 
-export kathraChartVersion="master"
 export kathraImagesTag="stable"
 
 export veleroVersion="1.2.0"
@@ -134,6 +134,7 @@ function initTfVars() {
 function deploy() {
     printDebug "deploy()"
     checkDependencies
+    export START_KATHRA_INSTALL=`date +%s`
 
     # Deploy Stack
     cd $SCRIPT_DIR
@@ -152,6 +153,7 @@ function deploy() {
 
     # Post install
     postInstall
+    preConfigureKubeConfig
 }
 export -f deploy
 
@@ -159,7 +161,8 @@ function destroy() {
     printDebug "destroy()"
     checkDependencies
     terraform init 
-    terraform destroy
+    terraform state rm $(terraform state list | grep -E "module.factory|kubernetes_addons|helm_release.kathra|kubernetes_namespace")
+    terraform destroy --target=module.kubernetes.azurerm_kubernetes_cluster.k8s
     return $?
 }
 export -f destroy

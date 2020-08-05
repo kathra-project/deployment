@@ -85,6 +85,7 @@ function parseArgs() {
 
 function main() {
     parseArgs $*   
+    export START_KATHRA_INSTALL=`date +%s`
 
     which gcloud > /dev/null        || installGoogleCloudSDK
      
@@ -121,7 +122,7 @@ function deploy() {
 
     # Post install
     postInstall
-
+    preConfigureKubeConfig
 }
 export -f deploy
 
@@ -133,7 +134,8 @@ function destroy() {
     cd $gcpStackModule
 
     terraform init
-    terraform destroy
+    terraform state rm $(terraform state list | grep -E "module.factory|kubernetes_addons|helm_release.kathra|kubernetes_namespace")
+    terraform destroy --target=module.kubernetes.google_container_cluster.kubernetes
 }
 export -f destroy
 

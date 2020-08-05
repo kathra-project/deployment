@@ -30,7 +30,7 @@ function gitlabGenerateApiToken() {
 
         printDebug "authenticity_token: $authenticity_token"
         printDebug "_gitlab_session: $GA_SESSION"
-        curl -X POST -H "Content-Type: application/x-www-form-urlencoded" --data-urlencode "_method=post" --data-urlencode "authenticity_token=$authenticity_token" -v -H "Origin: https://gitlab.kathra.az3.boubechtoula.ovh" -H "Origin: https://gitlab.kathra.az3.boubechtoula.ovh/users/sign_in"  -H "Cookie: $GA_SESSION" https://${gitlab_host}/users/auth/openid_connect 2> $tmp/gitlab.openid_connect.err > $tmp/gitlab.openid_connect
+        curl -X POST -H "Content-Type: application/x-www-form-urlencoded" --data-urlencode "_method=post" --data-urlencode "authenticity_token=$authenticity_token" -v -H "Origin: https://${gitlab_host}" -H "Origin: https://${gitlab_host}/users/sign_in"  -H "Cookie: $GA_SESSION" https://${gitlab_host}/users/auth/openid_connect 2> $tmp/gitlab.openid_connect.err > $tmp/gitlab.openid_connect
         local locationKathra=$(getHttpHeaderLocation $tmp/gitlab.openid_connect.err)
         
         printDebug "GA: $GA"

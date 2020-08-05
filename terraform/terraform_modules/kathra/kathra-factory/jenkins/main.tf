@@ -452,7 +452,7 @@ referenceContent:
         unclassified:
           globalLibraries:
             libraries:
-            - defaultVersion: "feature/factory_tf"
+            - defaultVersion: "master"
               implicit: true
               includeInChangesets: false
               name: "kathra-pipeline-library"
