@@ -45,11 +45,12 @@ function addLocalIpInCoreDNS() {
 }
 
 function getKubeConfig() {
-    local ca_file=$(kubectl config view -o json | jq -r '.clusters[] | select(.name=="minikube") | .cluster."certificate-authority"')
-    local host=$(kubectl config view -o json | jq -r '.clusters[] | select(.name=="minikube") | .cluster.server')
-    local client_cert_file=$(kubectl config view -o json | jq -r '.users[] | select(.name=="minikube") | .user."client-certificate"')
-    local client_key_file=$(kubectl config view -o json | jq -r '.users[] | select(.name=="minikube") | .user."client-key"')
-    echo "{\"cluster_ca_certificate\": \"$(cat $ca_file | base64 -w0)\", \"host\":\"$host\", \"client_certificate\":\"$(cat $client_cert_file | base64 -w0)\", \"client_key\":\"$(cat $client_key_file | base64 -w0)\"}"
+    printDebug "getKubeConfig()"
+    local ca_file=$(kubectl config view -o json | jq -r '.clusters[] | select((.name=="minikube") or (.name=="docker-desktop")) | .cluster."certificate-authority"')
+    local host=$(kubectl config view -o json | jq -r '.clusters[] | select((.name=="minikube") or (.name=="docker-desktop")) | .cluster.server')
+    local client_cert_file=$(kubectl config view -o json | jq -r '.users[] | select((.name=="minikube") or (.name=="docker-desktop")) | .user."client-certificate"')
+    local client_key_file=$(kubectl config view -o json | jq -r '.users[] | select((.name=="minikube") or (.name=="docker-desktop")) | .user."client-key"')
+    echo "{\"cluster_ca_certificate\": \"$(echo $ca_file | base64 -w0)\", \"host\":\"$host\", \"client_certificate\":\"$(echo $client_cert_file | base64 -w0)\", \"client_key\":\"$(echo $client_key_file | base64 -w0)\"}"
 }
 
 function checkCommandAndRetry() {
@@ -204,3 +205,32 @@ function generateCertsDnsChallenge() {
     return 0
 }
 export -f generateCertsDnsChallenge
+
+function initTfVars() {
+    local file=$1
+    [ -f $file ] && rm $file
+    echo "domain = \"$domain\"" >> $file
+    echo "kube_config = $(getKubeConfig)" >> $file
+    echo "kathra_version = \"$kathraImagesTag\"" >> $file
+    [ $manualDnsChallenge -eq 1 ]    && echo "tls_cert_filepath = \"$tmp/tls.cert\""        >> $file
+    [ $manualDnsChallenge -eq 1 ]    && echo "tls_key_filepath = \"$tmp/tls.key\""          >> $file
+    [ $automaticDnsChallenge -eq 1 ] && echo "acme_provider = \"$acmeDnsProvider\""         >> $file
+    [ $automaticDnsChallenge -eq 1 ] && echo "acme_config = ${acmeDnsConfig}"               >> $file
+}
+export -f initTfVars
+
+
+function terraformInitAndApply() {
+    terraform init                      || printErrorAndExit "Unable to init terraform"
+    local retrySecondInterval=10
+    local attempt_counter=0
+    local max_attempts=5
+    while true; do
+        terraform apply -auto-approve && return 0 
+        printError "Terraform : Unable to apply, somes resources may be not ready, try again.. attempt ($attempt_counter/$max_attempts) "
+        [ ${attempt_counter} -eq ${max_attempts} ] && printError "Check $1, error" && return 1
+        attempt_counter=$(($attempt_counter+1))
+        sleep $retrySecondInterval
+    done
+}
+export -f terraformInitAndApply

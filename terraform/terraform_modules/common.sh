@@ -56,10 +56,14 @@ export -f checkCommandAndRetry
 
 function checkDependencies() {
     printDebug "checkDependencies()"
-    which curl > /dev/null          || sudo apt-get install curl -y > /dev/null 2> /dev/null 
-    which jq >  /dev/null           || sudo apt-get install jq -y > /dev/null 2> /dev/null 
-    which unzip > /dev/null         || sudo apt-get install unzip -y > /dev/null 2> /dev/null 
-    which go > /dev/null            || sudo apt-get install golang-go > /dev/null 2> /dev/null 
+    local packageInstall="sudo apt-get install"
+    [ "$OSTYPE" == "win32" ] && packageInstall="choco install"
+    [ "$OSTYPE" == "msys" ]  && packageInstall="choco install"
+
+    which curl > /dev/null          || $packageInstall curl -y > /dev/null 2> /dev/null 
+    which jq >  /dev/null           || $packageInstall jq -y > /dev/null 2> /dev/null 
+    which unzip > /dev/null         || $packageInstall unzip -y > /dev/null 2> /dev/null 
+    which go > /dev/null            || $packageInstall golang-go > /dev/null 2> /dev/null 
     which kubectl > /dev/null       || installKubectl
     which terraform > /dev/null     || installTerraform
     
@@ -76,10 +80,12 @@ function installTerraformPlugin() {
     local pluginSourceRepositoryGit=$3
     local pluginSourceCommit=$4
     local system="linux"
-    [ "$OSTYPE" == "win32" ] && system="windows"
-    [ "$OSTYPE" == "msys" ]  && system="windows"
+    local ext=""
+    local basePlugin=$SCRIPT_DIR/.terraform/plugins
+    [ "$OSTYPE" == "win32" ] && system="windows" && ext=".exe"
+    [ "$OSTYPE" == "msys" ]  && system="windows" && ext=".exe"
 
-    local bin=$SCRIPT_DIR/.terraform/plugins/${system}_amd64/terraform-provider-${pluginName}_v$pluginVersion
+    local bin=$basePlugin/${system}_amd64/terraform-provider-${pluginName}_v${pluginVersion}${ext}
     printDebug "$bin"
     [ -f $bin ] && return 0
     [ -d /tmp/terraform-provider-$pluginName ] && rm -rf /tmp/terraform-provider-$pluginName 
@@ -87,7 +93,7 @@ function installTerraformPlugin() {
     cd /tmp/terraform-provider-$pluginName || return 1
     git checkout $pluginSourceCommit || return 1
     go build -o terraform-provider-$pluginName || return 1
-    [ ! -d "$(dirname $bin)" ] && mkdir "$(dirname $bin)"
+    [ ! -d "$(dirname $bin)" ] && mkdir -p "$(dirname $bin)"
     mv terraform-provider-$pluginName $bin || return 1
     cd $SCRIPT_DIR
 }

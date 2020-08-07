@@ -76,7 +76,7 @@ function parseArgs() {
         local value=${argument#*=}
         case "$key" in
             --domain)                       domain=$value;;
-            --images-version)                   kathraImagesTag=$value;;
+            --images-version)               kathraImagesTag=$value;;
             --azure-group-name)             azureGroupName=$value;;
             --azure-location)               azureLocation=$value;;
             --azure-subscribtion-id)        ARM_SUBSCRIPTION_ID=$value;;

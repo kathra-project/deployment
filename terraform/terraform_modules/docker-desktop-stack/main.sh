@@ -1,11 +1,11 @@
 
 #!/bin/bash
-export SCRIPT_DIR=$(realpath $(dirname `which $0`))
+export SCRIPT_DIR=$(dirname $(readlink -f "$0"))
 export debug=0
 [ "$tmp" == "" ] && export tmp=/tmp/kathra.minikube.wrapper
 [ ! -d $tmp ] && mkdir $tmp
 
-. ${SCRIPT_DIR}/sh/functions.sh
+. ${SCRIPT_DIR}/../minikube-stack/sh/functions.sh
 . ${SCRIPT_DIR}/../common.sh
 
 
@@ -17,29 +17,19 @@ export manualDnsChallenge=0
 export automaticDnsChallenge=0
 export nodePortHTTP=80
 export nodePortHTTPS=443
-export minikubeCpus=10
-export minikubeMemory=20000
-export minikubeDiskSize="50000mb"
-export minikubeVersion="1.3.1"
-export minikubeVmDriver="none"
-export kubernetesVersion="1.15.1"
-export sudo=""
 export kathraImagesTag="stable"
 
-
-
-
 function showHelp() {
-    printInfo "Install Kathra on Minikube"
+    printInfo "Install Kathra on Docker Desktop (Windows)"
     printInfo ""
     printInfo "Usage examples: "
     printInfo "deploy --domain=mydomain.org --acme-dns-provider=ovh --acme-dns-config='{\"OVH_APPLICATION_KEY\": \"app-key\", \"OVH_APPLICATION_SECRET\": \"app-secret\",\"OVH_CONSUMER_KEY\": \"consumer-key\",\"OVH_ENDPOINT\": \"ovh-eu\"}'"
-    printInfo "deploy --domain=mydomain.org --manual-acme"
     printInfo "deploy --domain=mydomain.org --tlsCert=my-cert --tlsKey=my-key"
     printInfo ""
     printInfo "Args: "
     printInfo "--domain=<my-domain.xyz>        Base domain"
     printInfo "--images-version=<tag>          Images tags [default: $kathraImagesTag]"
+    printInfo ""
     printInfo ""
     printInfo "Automatic TLS certificate generation from Let's Encrypt with DNS Challenge"
     printInfo "--acme-dns-provider             Provider name"
@@ -49,17 +39,9 @@ function showHelp() {
     printInfo "--tls-cert=<path>                TLS cert file path"
     printInfo "--tls-key=<path>                 TLS key file path"
     printInfo ""
-    printInfo "Manualy TLS certificate generation from Let's Encrypt with DNS Challenge"
-    printInfo "--manual-acme          "
 
     printInfo ""
     printInfo "Optionnals: "
-    printInfo "--cpus                          Number of cpu [default: $minikubeCpus]"
-    printInfo "--memory                        Memory size [default: $minikubeMemory]"
-    printInfo "--disk-size                     Disk size [default: $minikubeDiskSize]"
-    printInfo "--minikube-version              Minikube version [default: $minikubeVersion]"
-    printInfo "--vm-driver                     Minikube VM driver [default: $minikubeVmDriver]"
-    printInfo "--kubernetes-version            Kubernetes version [default: $kubernetesVersion]"
     printInfo "--verbose                       Enable DEBUG log level"
     exit 0
 }
@@ -72,17 +54,10 @@ function parseArgs() {
         case "$key" in
             --domain)                       domain=$value;;
             --images-version)               kathraImagesTag=$value;;
-            --tls-cert)                      tlsCert=$value;;
-            --tls-key)                       tlsKey=$value;;
-            --manual-acme)                  manualDnsChallenge=1;;
+            --tls-cert)                     tlsCert=$value;;
+            --tls-key)                      tlsKey=$value;;
             --acme-dns-provider)            automaticDnsChallenge=1 && acmeDnsProvider="$value";;
             --acme-dns-config)              automaticDnsChallenge=1 && acmeDnsConfig="$value";;
-            --cpus)                         minikubeCpus=$value;;
-            --memory)                       minikubeMemory=$value;;
-            --disk-size)                    minikubeDiskSize=$value;;
-            --minikube-version)             minikubeVersion=$value;;
-            --vm-driver)                    minikubeVmDriver=$value;;
-            --kubernetes-version)           kubernetesVersion=$value;;
             --verbose)                      debug=1;;
             --help|-h)                      showHelp;;
         esac    
@@ -94,12 +69,10 @@ function main() {
     parseArgs "$1" "$2" "$3" "$4" "$5" "$5" "$6" "$7"
 
     ## check OS
-    lsb_release -a 2> /dev/null | grep -E "Ubuntu|Debian" > /dev/null || printErrorAndExit "Only for Ubuntu or Debian Distrib"
+    [ "$OS" == "Windows_NT" ] || printErrorAndExit "Only for Windows OS"
     [ "$minikubeVmDriver" == "none" ] && export sudo="sudo"
-    
     findInArgs "deploy"  $* > /dev/null         && deploy $*          && return 0
     findInArgs "destroy" $* > /dev/null         && destroy $*         && return 0
-    findInArgs "backup-install" $* > /dev/null  && backupConfigure $* && return 0
     showHelp
 }
 
@@ -107,28 +80,46 @@ function deploy() {
     printDebug "deploy()"
     export START_KATHRA_INSTALL=`date +%s`
     checkDependencies
-    [ "$domain" == "" ]           && printErrorAndExit "Domain is not specifed"                    || printDebug "domain=$domain"
-    [ $manualDnsChallenge -eq 1 ] && generateCertsDnsChallenge $domain $tmp/tls.cert $tmp/tls.key
-    startMinikube                                                               || printErrorAndExit "Unable to install minikube"
-    kubectl get nodes                                                           || printErrorAndExit "Unable to connect to minikube with kubectl"
-    coreDnsAddRecords $domain  "$(minikube ip)"                                 || printErrorAndExit "Unable to add dns entry into coredns"
+    [ "$domain" == "" ]           && printErrorAndExit "Domain is not specifed" || printDebug "domain=$domain"
+
+    kubectl get nodes                                                           || printErrorAndExit "Unable to connect with kubectl"
+    installIngressController                                                    || printErrorAndExit "Unable to configure Ingress Controller"
+
+    coreDnsAddRecords $domain  "$(getLocalIp)"                                  || printErrorAndExit "Unable to add dns entry into coredns"
     getKubeConfig > $tmp/kathra_minikube_kubeconfig                             || printErrorAndExit "Unable to get kubeconfig"
     
     initTfVars $SCRIPT_DIR/terraform.tfvars
 
     local subdomains=( "keycloak" "sonarqube" "jenkins" "gitlab" "harbor" "nexus" "appmanager" "dashboard" "resourcemanager" "pipelinemanager" "sourcemanager" "codegen-helm" "codegen-swagger" "binaryrepositorymanager-harbor" "binaryrepositorymanager-nexus" )
-    for subdomain in ${subdomains[@]}; do addEntryHostFile "$subdomain.$domain" "$(minikube ip)"; done;
+    for subdomain in ${subdomains[@]}; do addEntryHostFile "$subdomain.$domain" "$(getLocalIp)"; done;
     
     # Apply configuration
-    cd $SCRIPT_DIR
+    cp -R ${SCRIPT_DIR}/../minikube-stack/namespace_with_tls namespace_with_tls
+    cp ${SCRIPT_DIR}/../minikube-stack/main.tf main.tf
+    cd ${SCRIPT_DIR}
+
     terraformInitAndApply
-    
     # Post install
     postInstall
 
     return $?
 }
 export -f deploy
+
+function installIngressController() {
+    if [ "$(helm ls -o json | jq ".[] | select(.name==\"nginx\") | ({name: .name}) | length")" != "1" ]
+    then
+        printInfo "Install Nginx ingress controller"
+        helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+        helm repo update
+        helm install nginx ingress-nginx/ingress-nginx
+    else
+        printInfo "Nginx Ingress controller already installed"
+    fi
+    local ip=$(getLocalIp)
+    [ "$ip" == "" ] && printErrorAndExit "Unable to find ingress IP"
+    printInfo "Ingress exposed on IP : $ip"
+}
 
 function destroy() {
     printDebug "destroy()"
@@ -139,5 +130,24 @@ function destroy() {
     return 0
 }
 export -f destroy
+
+function addEntryHostFile() {
+    local domain=$1
+    local ip=$2
+    printDebug "addEntryHostFile(domain: $domain, ip: $ip)"
+    grep -v " $domain$" < /C/Windows/system32/drivers/etc/hosts > $tmp/addEntryHostFile && cp $tmp/addEntryHostFile /C/Windows/system32/drivers/etc/hosts
+    [ $? -ne 0 ] && printErrorAndExit "Error"
+    echo "$ip $domain" | tee -a /C/Windows/system32/drivers/etc/hosts
+}
+export -f addEntryHostFile
+
+function getLocalIp() {
+    printDebug "getLocalIp"
+    ipconfig | grep "IPv4" | sed 's/.*: //g' | while read -r ip ; do
+        curl -v $ip 2>&1 | grep "Server: nginx" > /dev/null && echo $ip && return 0
+    done
+    return 1
+}
+export -f getLocalIp
 
 main "$1" "$2" "$3" "$4" "$5" "$5" "$6"

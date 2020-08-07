@@ -47,8 +47,17 @@ terraform output kubeconfig_content > /tmp/kubeconfig_content
 export KUBECONFIG=/tmp/kubeconfig_content
 ```
 
+## Docker Desktop (Windows)
 
-## Minikube
+### Requirements
+- Computer with 10 CPU and 20 Go Memory
+- Large bandwidth : Only for images pulling
+- DNS Provider : For DNS Challing with Let's Encrypt
+- Docker Desktop for Windows
+- Terraform, Git Bash
+- Root access : For additionnals packages and DNS configuration
+
+## Minikube (Ubuntu/Debian)
 
 ### Requirements
 - Computer with 10 CPU and 20 Go Memory
@@ -73,7 +82,7 @@ This procedure installs Minikube and configures somes features (Traefik, KubeDB 
 
 By default, the login is 'user' and password '123'. You can override this configure during installation.
 
-#### Manual ACME
+#### Auto ACME
 ACME with Terraform Provider https://www.terraform.io/docs/providers/acme/
 ```sh
 git clone git@gitlab.com:kathra/deployment.git

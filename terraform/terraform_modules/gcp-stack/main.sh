@@ -69,8 +69,8 @@ function parseArgs() {
         case "$key" in
             --domain)                       domain=$value;;
             --charts-version)               kathraChartsVersion=$value;;
+            --images-version)               kathraImagesTag=$value;;
             --images-tag)                   kathraImagesTag=$value;;
-
             --gcp-project)                  gcpProjectName=$value;;
             --gcp-region)                   gcpRegion=$value;;
             --gcp-zone)                     gcpZone=$value;;

@@ -23,7 +23,7 @@ provider "keycloak" {
     username      = var.keycloak_username
     password      = var.keycloak_password
     url           = var.keycloak_url
-    version       = "1.17.1"
+    version       = "1.19.0"
     initial_login = false
 }
 
