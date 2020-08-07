@@ -134,14 +134,26 @@ function postInstall() {
     terraform output -json kathra > $tmp/settings.json
     installKathraCli $tmp/settings.json
     printInfo "Kathra is installed in $((`date +%s`-START_KATHRA_INSTALL)) secondes"
-    printInfo "You can use Kathra from dashboard : https://$(cat $tmp/settings.json | jq -r '.services.services.dashboard.host') or from kathra-cli: $KATHRA_CLI_GIT"
+    printInfo ""
+    printInfo "You can use Kathra from dashboard : https://$(cat $tmp/settings.json | jq -r '.services.services.dashboard.host') or use kathra-cli: $KATHRA_CLI_GIT"
     printInfo "All passwords are stored in Terraform (exec: terraform output)" 
     printInfo "User login: $(cat $tmp/settings.json | jq -r '.factory.realm.first_user.username')"
     printInfo "User password: $(cat $tmp/settings.json | jq -r '.factory.realm.first_user.password')"
+    printInfo ""
+    printInfo "Keycloak URL: $(terraform output -json kathra | jq -r '.factory.keycloak.url')"
     printInfo "Keycloak admin login: $(cat $tmp/settings.json | jq -r '.factory.keycloak.username')"
     printInfo "Keycloak admin password: $(cat $tmp/settings.json | jq -r '.factory.keycloak.password')"
 }
 export -f postInstall
+
+function preConfigureKubeConfig() {
+    terraform output kubeconfig_content > $HOME/kube_config_kathra.yaml
+    export KUBECONFIG=$HOME/kube_config_kathra.yaml
+    printInfo ""
+    printInfo "To access Kubernetes Cluster : "
+    printInfo "export KUBECONFIG=$HOME/kube_config_kathra.yaml ; kubectl get nodes"
+}
+export -f preConfigureKubeConfig
 
 export KATHRA_CLI_GIT="https://gitlab.com/kathra/kathra/kathra-cli.git"
 export LOCAL_CONF_FILE_KATHRA_CLI=$HOME/.kathra-context

@@ -66,4 +66,3 @@ output "namespace" {
 output "issuer" {
   value = yamldecode(helm_release.cert_manager.metadata[0].values).ingressShim.defaultIssuerName
 }
-

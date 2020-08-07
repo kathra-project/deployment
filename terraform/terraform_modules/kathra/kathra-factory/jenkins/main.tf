@@ -211,6 +211,7 @@ referenceContent:
   - data:
     - fileName: plugins.txt
       fileContent: |
+        credentials:2.3.10
         kubernetes
         kubernetes-credentials
         workflow-aggregator
@@ -451,7 +452,7 @@ referenceContent:
         unclassified:
           globalLibraries:
             libraries:
-            - defaultVersion: "feature/factory_tf"
+            - defaultVersion: "master"
               implicit: true
               includeInChangesets: false
               name: "kathra-pipeline-library"

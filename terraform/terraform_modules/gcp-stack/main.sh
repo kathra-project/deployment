@@ -18,7 +18,7 @@ export terraformModules=$SCRIPT_DIR/../terraform_modules
 export gcpStackModule=$SCRIPT_DIR
 
 export gcpProjectName="kathra-project"
-export gcpServiceAccount="kathra-sa-test"
+export gcpServiceAccount="kathra-sa"
 export gcpCredentials="/$HOME/terraform-gke-keyfile.json"
 export gcpRegion="us-central1"
 export gcpZone="us-central1-a"
@@ -31,6 +31,7 @@ function showHelp() {
     printInfo "Usage: "
     printInfo "deploy : Deploy on GCP"
     printInfo "destroy : Destroy on GCP"
+    exit 0
 }
 export -f showHelp
 
@@ -40,13 +41,13 @@ function showHelpDeploy() {
     printInfo "Deploy options : "
     printInfo "--domain=<my-domain.xyz>                       :        Full base domain"
     printInfo ""
-    printInfo "--charts-version=<branch|tag>                  :        Charts version   [default: $kathraChartsVersion]"
-    printInfo "--images-version=<tag>                         :        Images tags      [default: $kathraImagesTag]"
+    printInfo "--images-version=<tag>                         :        Images tags         [default: $kathraImagesTag]"
     printInfo ""
-    printInfo "--gcp-project-name=<group-name>                :        GCP Group Name   [default: $gcpProjectName]"
-    printInfo "--gcp-region=<region>                          :        GCP region       [default: $gcpRegion]"
-    printInfo "--gcp-zone=<zone>                              :        GCP zone         [default: $gcpZone]"
-    printInfo "--gcp-credentials=<file path>                  :        GCP credential   [default: $gcpCredentials]"
+    printInfo "--gcp-project-name=<group-name>                :        GCP Project name    [default: $gcpProjectName]"
+    printInfo "--gcp-service-account=<service-acount>         :        GCP Service account [default: $gcpServiceAccount]"
+    printInfo "--gcp-region=<region>                          :        GCP region          [default: $gcpRegion]"
+    printInfo "--gcp-zone=<zone>                              :        GCP zone            [default: $gcpZone]"
+    printInfo "--gcp-credentials=<file path>                  :        GCP credential      [default: $gcpCredentials]"
     printInfo ""
     printInfo "--verbose                                      :        Enable DEBUG log level"
 }
@@ -68,9 +69,9 @@ function parseArgs() {
         local value=${argument#*=}
         case "$key" in
             --domain)                       domain=$value;;
-            --charts-version)               kathraChartsVersion=$value;;
-            --images-version)               kathraImagesTag=$value;;
             --images-tag)                   kathraImagesTag=$value;;
+
+            --gcp-service-account)          gcpServiceAccount=$value;;
             --gcp-project)                  gcpProjectName=$value;;
             --gcp-region)                   gcpRegion=$value;;
             --gcp-zone)                     gcpZone=$value;;
@@ -84,6 +85,7 @@ function parseArgs() {
 
 function main() {
     parseArgs $*   
+    export START_KATHRA_INSTALL=`date +%s`
 
     which gcloud > /dev/null        || installGoogleCloudSDK
      
@@ -103,10 +105,24 @@ function deploy() {
     initTfVars $gcpStackModule/terraform.tfvars
     cd $gcpStackModule
     
-    # Deploy Kubernetes and configure
-    terraform init || printErrorAndExit "Terraform : Unable to init"
-    terraform apply -auto-approve || printErrorAndExit "Terraform : Unable to apply"
-    terraform output kubeconfig_content > $KUBECONFIG  || printErrorAndExit "Terraform : Unable to get kubeconfig_content"
+    
+    # Deploy Stack
+    terraform init                      || printErrorAndExit "Unable to init terraform"
+
+    local retrySecondInterval=10
+    local attempt_counter=0
+    local max_attempts=5
+    while true; do
+        terraform apply -auto-approve && break
+        printError "Terraform : Unable to apply, somes resources may be not ready, try again.. attempt ($attempt_counter/$max_attempts) "
+        [ ${attempt_counter} -eq ${max_attempts} ] && printError "Check $1, error" && return 1
+        attempt_counter=$(($attempt_counter+1))
+        sleep $retrySecondInterval
+    done
+
+    # Post install
+    postInstall
+    preConfigureKubeConfig
 }
 export -f deploy
 
@@ -118,7 +134,8 @@ function destroy() {
     cd $gcpStackModule
 
     terraform init
-    terraform destroy
+    terraform state rm $(terraform state list | grep -E "module.factory|kubernetes_addons|helm_release.kathra|kubernetes_namespace")
+    terraform destroy --target=module.kubernetes.google_container_cluster.kubernetes
 }
 export -f destroy
 

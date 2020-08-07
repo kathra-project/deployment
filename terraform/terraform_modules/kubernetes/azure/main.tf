@@ -23,7 +23,6 @@ variable cluster_name {
 variable location {
 }
 variable "kubernetes_version" {
-    default = "1.15.10"
 }
 
 resource "azurerm_kubernetes_cluster" "k8s" {

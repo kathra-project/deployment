@@ -27,7 +27,7 @@ variable "k8s_node_size" {
     default = "Standard_D8s_v3"
 }
 variable "k8s_version" {
-    default = "1.15.10"
+    default = "1.16.10"
 }
 
 provider "azurerm" {
