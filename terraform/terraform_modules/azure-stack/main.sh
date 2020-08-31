@@ -103,14 +103,12 @@ function parseArgs() {
 function main() {
     parseArgs $*    
 
-    [ "$domain" == "" ] && printError "Domain undefined" && showHelpDeploy && exit 1
     [ "$ARM_SUBSCRIPTION_ID" == "" ] && printError "ARM_SUBSCRIPTION_ID undefined" && showHelpDeploy && exit 1
     [ "$ARM_CLIENT_ID" == "" ] && printError "ARM_CLIENT_ID undefined" && showHelpDeploy && exit 1
     [ "$ARM_CLIENT_SECRET" == "" ] && printError "ARM_CLIENT_SECRET undefined" && showHelpDeploy && exit 1
     [ "$ARM_TENANT_ID" == "" ] && printError "ARM_TENANT_ID undefined" && showHelpDeploy && exit 1
 
     cd $azureStackModule
-    initTfVars $azureStackModule/terraform.tfvars
 
     findInArgs "deploy" $* > /dev/null && deploy $* && return 0
     findInArgs "destroy" $* > /dev/null && destroy $* && return 0
@@ -133,6 +131,10 @@ function initTfVars() {
 
 function deploy() {
     printDebug "deploy()"
+    
+    [ "$domain" == "" ] && printError "Domain undefined" && showHelpDeploy && exit 1
+    initTfVars $azureStackModule/terraform.tfvars
+
     checkDependencies
     export START_KATHRA_INSTALL=`date +%s`
 

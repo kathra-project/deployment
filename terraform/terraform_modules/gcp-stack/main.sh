@@ -89,7 +89,6 @@ function main() {
 
     which gcloud > /dev/null        || installGoogleCloudSDK
      
-    [ "$domain" == "" ] && printError "Domain is undefined" && showHelpDeploy && exit 1
     #[ "$gcpCredentials" == "" ] && printError "Define gcp credentials file" && showHelpDeploy && exit 1
     #[ ! -f $gcpCredentials ] && printError "File gcp credentials is not found : $gcpCredentials" && showHelpDeploy && exit 1
     findInArgs "deploy" $* > /dev/null && deploy $* && return 0
@@ -99,6 +98,8 @@ function main() {
 
 function deploy() {
     printDebug "deploy()"
+    [ "$domain" == "" ] && printError "Domain is undefined" && showHelpDeploy && exit 1
+
     checkDependencies
     configureServiceAccount
 
@@ -128,11 +129,7 @@ export -f deploy
 
 function destroy() {
     checkDependencies
-    configureServiceAccount
-
-    initTfVars $gcpStackModule/terraform.tfvars
     cd $gcpStackModule
-
     terraform init
     terraform state rm $(terraform state list | grep -E "module.factory|kubernetes_addons|helm_release.kathra|kubernetes_namespace")
     terraform destroy --target=module.kubernetes.google_container_cluster.kubernetes
@@ -148,7 +145,6 @@ function initTfVars() {
     echo "domain = \"$domain\"" >> $file
     echo "gcp_crendetials = \"$gcpCredentials\"" >> $file
     echo "kathra_version = \"$kathraImagesTag\"" >> $file
-    
 }
 export -f initTfVars
 
