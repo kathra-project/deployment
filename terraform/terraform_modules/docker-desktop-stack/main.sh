@@ -28,7 +28,7 @@ function showHelp() {
     printInfo ""
     printInfo "Args: "
     printInfo "--domain=<my-domain.xyz>        Base domain"
-    printInfo "--images-version=<tag>          Images tags [default: $kathraImagesTag]"
+    printInfo "--images-tag=<tag>              Images tags [default: $kathraImagesTag]"
     printInfo ""
     printInfo ""
     printInfo "Automatic TLS certificate generation from Let's Encrypt with DNS Challenge"
@@ -36,8 +36,8 @@ function showHelp() {
     printInfo "--acme-dns-config               Provider configuration"
     printInfo ""
     printInfo "Using own certificates"
-    printInfo "--tls-cert=<path>                TLS cert file path"
-    printInfo "--tls-key=<path>                 TLS key file path"
+    printInfo "--tls-cert=<path>               TLS cert file path"
+    printInfo "--tls-key=<path>                TLS key file path"
     printInfo ""
 
     printInfo ""
@@ -53,7 +53,7 @@ function parseArgs() {
         local value=${argument#*=}
         case "$key" in
             --domain)                       domain=$value;;
-            --images-version)               kathraImagesTag=$value;;
+            --images-tag)                   kathraImagesTag=$value;;
             --tls-cert)                     tlsCert=$value;;
             --tls-key)                      tlsKey=$value;;
             --acme-dns-provider)            automaticDnsChallenge=1 && acmeDnsProvider="$value";;
