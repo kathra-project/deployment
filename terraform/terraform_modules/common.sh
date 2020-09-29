@@ -69,7 +69,7 @@ function checkDependencies() {
     
     installTerraformPlugin "keycloak" "1.19.0" "https://github.com/mrparkers/terraform-provider-keycloak.git" "1.19.0"   || printErrorAndExit "Unable to install keycloak terraform plugin"
     installTerraformPlugin "kubectl"  "1.3.5"  "https://github.com/gavinbunney/terraform-provider-kubectl"    "v1.3.5"   || printErrorAndExit "Unable to install kubectl terraform plugin"
-    installTerraformPlugin "nexus"    "1.8.1"  "https://github.com/datadrivers/terraform-provider-nexus"      "v1.8.1"   || printErrorAndExit "Unable to install nexus terraform plugin"
+    installTerraformPlugin "nexus"    "1.10.2" "https://github.com/datadrivers/terraform-provider-nexus"      "v1.10.2"   || printErrorAndExit "Unable to install nexus terraform plugin"
 }
 export -f checkDependencies
 

@@ -24,7 +24,7 @@ resource "helm_release" "nexus" {
   repository = data.helm_repository.oteemocharts.metadata[0].name
   chart      = "sonatype-nexus"
   namespace  = var.namespace
-  version    = "2.1.0"
+  version    = "2.8.0"
 
   values = [<<EOF
 nexusProxy:
@@ -42,7 +42,7 @@ nexusProxy:
 nexus:
   adminPassword: ${var.password}
   imageName: sonatype/nexus3
-  imageTag: 3.24.0
+  imageTag: 3.25.1
   resources:
     limits:
       cpu: 2

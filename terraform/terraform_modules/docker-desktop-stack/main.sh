@@ -78,6 +78,9 @@ function main() {
 
 function deploy() {
     printDebug "deploy()"
+    [ "$OS" == "Windows_NT" ]                                                   || printErrorAndExit "Only for Windows_NT"
+    net session  > /dev/null 2> /dev/null                                       || printErrorAndExit "Please, start your console as admin"
+    which docker > /dev/null                                                    || printErrorAndExit "Docker not installed"
     export START_KATHRA_INSTALL=`date +%s`
     checkDependencies
     [ "$domain" == "" ]           && printErrorAndExit "Domain is not specifed" || printDebug "domain=$domain"
@@ -112,19 +115,29 @@ function installIngressController() {
         printInfo "Install Nginx ingress controller"
         helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
         helm repo update
-        helm install nginx ingress-nginx/ingress-nginx
+
+        cat <<EOF > $tmp/installIngressController.values.yaml
+controller:
+  config:
+    keep-alive: "0"
+    proxy-buffer-size: "256k"
+    proxy-buffering: "on"
+EOF
+
+        helm install -f $tmp/installIngressController.values.yaml nginx ingress-nginx/ingress-nginx 
+        checkCommandAndRetry "curl -v localhost 2>&1 | grep \"Server: nginx\" > /dev/null"
     else
+        [ "$(helm ls -o json | jq ".[] | select(.name==\"nginx\") | select(.status==\"deployed\") | ({name: .name}) | length")" != "1" ] && printErrorAndExit "Nginx installation have failed, please remove it ! (helm delete nginx)"
         printInfo "Nginx Ingress controller already installed"
     fi
     local ip=$(getLocalIp)
-    [ "$ip" == "" ] && printErrorAndExit "Unable to find ingress IP"
+    [ "$ip" == "" ] && printErrorAndExit "Unable to find local IP for ingress"
     printInfo "Ingress exposed on IP : $ip"
 }
 
 function destroy() {
     printDebug "destroy()"
     checkDependencies
-    minikube delete
     cd $SCRIPT_DIR
     rm terraform.tfstate*
     return 0
@@ -135,8 +148,10 @@ function addEntryHostFile() {
     local domain=$1
     local ip=$2
     printDebug "addEntryHostFile(domain: $domain, ip: $ip)"
-    grep -v " $domain$" < /C/Windows/system32/drivers/etc/hosts > $tmp/addEntryHostFile && cp $tmp/addEntryHostFile /C/Windows/system32/drivers/etc/hosts
-    [ $? -ne 0 ] && printErrorAndExit "Error"
+    grep -v " $domain$" < /C/Windows/system32/drivers/etc/hosts > $tmp/addEntryHostFile
+    
+    cp $tmp/addEntryHostFile /C/Windows/system32/drivers/etc/hosts
+    [ $? -ne 0 ] && printErrorAndExit "Error : Unable to modify host file, please start GitBash with admin rights"
     echo "$ip $domain" | tee -a /C/Windows/system32/drivers/etc/hosts
 }
 export -f addEntryHostFile
