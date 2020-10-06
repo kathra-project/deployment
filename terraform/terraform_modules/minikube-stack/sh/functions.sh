@@ -234,7 +234,7 @@ function terraformInitAndApply() {
     while true; do
         terraform apply -auto-approve && return 0 
         printError "Terraform : Unable to apply, somes resources may be not ready, try again.. attempt ($attempt_counter/$max_attempts) "
-        [ ${attempt_counter} -eq ${max_attempts} ] && printError "Check $1, error" && return 1
+        [ ${attempt_counter} -eq ${max_attempts} ] && printError "Check $1, error" && printErrorAndExit "Unable to apply after several attempts"
         attempt_counter=$(($attempt_counter+1))
         sleep $retrySecondInterval
     done

@@ -29,6 +29,10 @@ variable "acme_config" {
     default = null
 }
 
+variable "storage_class_default" {
+    default = "k8s.io/minikube-hostpath"
+}
+
 
 provider "kubernetes" {
     load_config_file       = "false"
@@ -104,7 +108,7 @@ resource "kubernetes_storage_class" "default" {
     metadata {
         name = "default"
     }
-    storage_provisioner = "docker.io/hostpath"
+    storage_provisioner = var.storage_class_default
     reclaim_policy      = "Delete"
 }
 

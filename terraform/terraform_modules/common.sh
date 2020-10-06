@@ -197,3 +197,16 @@ function writeEntryIntoFile(){
     jq ".$key = \"$value\"" $file > $file.updated && mv $file.updated $file
 }
 export -f writeEntryIntoFile
+
+function checkHardwareResources() {
+    local -i cpusRequired=16
+    local -i memoryRequired=33554432
+
+    local -i memoryCurrent=$(kubectl get nodes -o json | jq -r '.items[] | .status.allocatable.memory' | awk '{n += $1}; END{print n}')
+    [ $memoryRequired -gt $memoryCurrent ] &&  printError "Kathra needs $memoryRequired bytes of memory (current: $memoryCurrent)" && return 1
+
+    local -i cpusCurrent=$(kubectl get nodes -o json | jq -r '.items[] | .status.allocatable.cpu' | awk '{n += $1}; END{print n}')
+    [ $cpusRequired -gt $cpusCurrent ]   &&  printError "Kathra needs $cpusRequired vCPU (current: $cpusCurrent)" && return 2
+
+    return 0
+}

@@ -133,6 +133,7 @@ function deploy() {
     [ $manualDnsChallenge -eq 1 ] && generateCertsDnsChallenge $domain $tmp/tls.cert $tmp/tls.key
     startMinikube                                                               || printErrorAndExit "Unable to install minikube"
     kubectl get nodes                                                           || printErrorAndExit "Unable to connect to minikube with kubectl"
+    checkHardwareResources                                                      || printErrorAndExit "Not enought resources (cpu or memory)"
     coreDnsAddRecords $domain  "$(minikube ip)"                                 || printErrorAndExit "Unable to add dns entry into coredns"
     getKubeConfig > $tmp/kathra_minikube_kubeconfig                             || printErrorAndExit "Unable to get kubeconfig"
     

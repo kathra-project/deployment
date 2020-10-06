@@ -66,6 +66,8 @@ ingress:
   annotations:
     kubernetes.io/ingress.class: "${var.ingress_class}"
     cert-manager.io/issuer: "${var.ingress_cert_manager_issuer}"
+    nginx.ingress.kubernetes.io/proxy-buffering: "on"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 256k
   tls:
     enabled: true
     usesSecret: true
