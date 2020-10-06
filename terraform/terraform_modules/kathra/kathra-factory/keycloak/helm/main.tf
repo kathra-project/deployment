@@ -19,6 +19,37 @@ variable "password" {
 variable "ingress_class" {
 }
 
+
+data "helm_repository" "cetic" {
+  name = "cetic"
+  url  = "https://cetic.github.io/helm-charts"
+}
+
+resource "helm_release" "postgresql" {
+  name       = "keycloak-db"
+  repository = data.helm_repository.cetic.metadata[0].name
+  chart      = "postgresql"
+  namespace  = var.namespace
+
+  values = [<<EOF
+postgresql:
+  username: "${var.username}"
+  password: "${var.password}"
+  database: "keycloak"
+persistence:
+  enabled: true
+EOF
+]
+}
+
+data "kubernetes_service" "postgresql" {
+  metadata {
+    name      = "${helm_release.postgresql.name}-postgresql"
+    namespace = var.namespace
+  }
+  depends_on = [ helm_release.postgresql ]
+}
+
 data "helm_repository" "codecentric" {
   name = "codecentric"
   url  = "https://codecentric.github.io/helm-charts"
@@ -36,8 +67,7 @@ keycloak:
   username: "${var.username}"
   password: "${var.password}"
   persistence:
-    deployPostgres: true
-    dbVendor: "postgres"
+    deployPostgres: false
   resources:
     limits:
       cpu: 2
@@ -58,9 +88,30 @@ keycloak:
     - hosts:
       - ${var.ingress_host}
       secretName: ${var.ingress_tls_secret_name == null ? "keycloak-cert" : var.ingress_tls_secret_name}
+
+extraEnv: |
+  - name: DB_VENDOR
+    value: postgres
+  - name: DB_ADDR
+    value: ${data.kubernetes_service.postgresql.metadata[0].name}
+  - name: DB_PORT
+    value: "5432"
+  - name: DB_DATABASE
+    value: '${yamldecode(helm_release.postgresql.metadata[0].values).postgresql.database}'
+extraEnvFrom: |
+  - secretRef:
+      name: '{{ include "keycloak.fullname" . }}-db'
+
+
+secrets:
+  db:
+    stringData:
+      DB_USER: '${yamldecode(helm_release.postgresql.metadata[0].values).postgresql.username}'
+      DB_PASSWORD: '${yamldecode(helm_release.postgresql.metadata[0].values).postgresql.password}'
 EOF
 ]
 
+  depends_on = [ helm_release.postgresql ]
 }
 
 resource "null_resource" "check_tls_resolution" {
