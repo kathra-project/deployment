@@ -16,57 +16,106 @@ variable "kube_config" {
 variable "kathra_user_admin" {
     default = {
         username    = "user-sync"
-        password    = "dzdbd789"
     }
 }
 variable "kathra_group_admin" {
     default = "kathra-admin"
 }
 
-
-
 variable "keycloak" {
     default = {
         host_prefix   = "keycloak"
-        username      = "keycloak"
-        password      = "BTg1Dmda2gyzUwvdZh3N"
+        username      = null
+        password      = null
         client_id     = "admin-cli"
+        groups        = {
+            "my-team-a" : {
+                name = "my-team-a"
+            }
+        }
+        users         = {
+            "user_a" = {
+                firstname   = "Firstname UserA"
+                lastname    = "Firstname UserA"
+                email       = "user_a@kathra.org"
+                password_initial    = "123"
+                memberOf    = [
+                    "my-team"
+                ]
+            }
+        }
     }
 }
 variable "jenkins" {
     default = {
         host_prefix   = "jenkins"
-        password      = "BTg1Dmda2gyzUwvdZh3N"
     }
 }
 variable "nexus" {
     default = {
         host_prefix   = "nexus"
-        password      = "BTg1Dmda2gyzUwvdZh3N"
     }
 }
 variable "harbor" {
     default = {
         host_prefix   = "harbor"
-        password      = "BTg1Dmda2gyzUwvdZh3N"
     }
 }
 variable "gitlab" {
     default = {
         host_prefix   = "gitlab"
-        password      = "BTg1Dmda2gyzUwvdZh3N"
     }
 }
 variable "sonarqube" {
     default = {
         host_prefix   = "sonarqube"
-        password      = "BTg1Dmda2gyzUwvdZh3N"
     }
 }
 variable "deploymanager" {
     default = {
         tag           = "stable"
     }
+}
+
+variable ""
+
+variable "users" {
+    default = {
+    "user_a" = {
+        firstname   = "Firstname UserA"
+        lastname    = "Firstname UserA"
+        email       = "user_a@kathra.org"
+        password_initial    = "123"
+        memberOf    = [
+            "my-team"
+        ]
+    }}
+}
+
+variable "groups" {
+    default = {
+    "my-team" = {
+        name   = "my-team"
+    }}
+}
+
+variable "groups_memberships" {
+    default = {
+    "my-team" = {
+        members   = ["user_a"]
+    }}
+}
+
+/*****************************
+Password generation for real (admin_password) and technical admin (kathra_user_admin)
+******************************/
+resource "random_password" "admin_password" {
+    length = 20
+    special = false
+}
+resource "random_password" "kathra_user_admin" {
+    length = 20
+    special = false
 }
 
 /****************************
@@ -89,18 +138,22 @@ output "keycloak" {
     value = module.keycloak
 }
 
+
+provider "keycloak" {
+    client_id     = var.keycloak.client_id
+    username      = var.keycloak.username
+    password      = var.keycloak.password
+    url           = module.keycloak.url
+    initial_login = false
+}
+
 module "realm" {
     source                  = "./keycloak/realm"
     keycloak_realm          = "kathra"
-
-    keycloak_client_id      = var.keycloak.client_id
-    keycloak_username       = var.keycloak.username
-    keycloak_password       = var.keycloak.password
-    keycloak_url            = module.keycloak.url
-
     first_group_name        = "my-team"
     first_user_login        = "user"
     first_user_password     = "123"
+    keycloak_url            = module.keycloak.url
 }
 
 output "realm" {
@@ -116,10 +169,6 @@ module "gitlab_client" {
     realm                   = module.realm.name
     client_id               = "gitlab"
     redirect_uri            = "https://${var.gitlab.host_prefix}.${var.domain}/*"
-    
-    keycloak_client_id      = var.keycloak.client_id
-    keycloak_username       = var.keycloak.username
-    keycloak_password       = var.keycloak.password
     keycloak_url            = module.keycloak.url
 }
 
@@ -136,7 +185,7 @@ module "gitlab" {
     }
 
     namespace                   = var.namespace
-    password                    = var.gitlab.password
+    password                    = module.keycloak.password
 
     oidc_url                    = module.realm.url
     oidc_client_id              = module.gitlab_client.client_id
@@ -152,14 +201,9 @@ output "gitlab" {
 ****************************/
 module "harbor_client" {
     source                  = "./keycloak/client"
-
     realm                   = module.realm.name
     client_id               = "harbor"
     redirect_uri            = "https://${var.harbor.host_prefix}.${var.domain}/*"
-    
-    keycloak_client_id      = var.keycloak.client_id
-    keycloak_username       = var.keycloak.username
-    keycloak_password       = var.keycloak.password
     keycloak_url            = module.keycloak.url
 }
 module "harbor" {
@@ -174,7 +218,7 @@ module "harbor" {
     }
 
     namespace                   = var.namespace
-    password                    = var.harbor.password
+    password                    = module.keycloak.password
 
     oidc_url                    = module.realm.url
     oidc_client_id              = module.harbor_client.client_id
@@ -196,7 +240,7 @@ module "nexus" {
     ingress_tls_secret_name     = var.ingress_tls_secret_name
 
     namespace                   = var.namespace
-    password                    = var.nexus.password
+    password                    = module.keycloak.password
 }
 output "nexus" {
     value = module.nexus
@@ -211,10 +255,6 @@ module "sonarqube_client" {
     realm                   = module.realm.name
     client_id               = "sonarqube"
     redirect_uri            = "https://${var.sonarqube.host_prefix}.${var.domain}/*"
-    
-    keycloak_client_id      = var.keycloak.client_id
-    keycloak_username       = var.keycloak.username
-    keycloak_password       = var.keycloak.password
     keycloak_url            = module.keycloak.url
 }
 module "sonarqube" {
@@ -227,7 +267,7 @@ module "sonarqube" {
 
     namespace                   = var.namespace
 
-    password                    = var.sonarqube.password
+    password                    = module.keycloak.password
     
     oidc_url                    = module.realm.url
     oidc_client_id              = module.sonarqube_client.client_id
@@ -265,10 +305,6 @@ module "jenkins_client" {
     realm                   = module.realm.name
     client_id               = "jenkins"
     redirect_uri            = "https://${var.jenkins.host_prefix}.${var.domain}/*"
-    
-    keycloak_client_id      = var.keycloak.client_id
-    keycloak_username       = var.keycloak.username
-    keycloak_password       = var.keycloak.password
     keycloak_url            = module.keycloak.url
 }
 
@@ -281,7 +317,7 @@ module "jenkins" {
     ingress_tls_secret_name     = var.ingress_tls_secret_name
 
     namespace                   = var.namespace
-    password                    = var.jenkins.password
+    password                    = module.keycloak.password
 
     oidc                        = {
         host            = module.keycloak.host
@@ -373,15 +409,11 @@ module "user_sync" {
     lastname    = var.kathra_user_admin.username
     email       = "${var.kathra_user_admin.username}@${var.domain}"
     username    = var.kathra_user_admin.username
-    password    = var.kathra_user_admin.password
+    password    = random_password.kathra_user_admin.result
     jenkins     = module.jenkins
     gitlab      = module.gitlab
     keycloak    = {
-        host            = module.keycloak.host
         url             = module.keycloak.url
-        client_id       = var.keycloak.client_id
-        username        = var.keycloak.username
-        password        = var.keycloak.password
     }
     kube_config = var.kube_config
 }
@@ -400,13 +432,6 @@ module "group_admin" {
     realm_id    = module.realm.id
     name        = var.kathra_group_admin
     members     = [ module.user_sync.username ]
-    keycloak    = {
-        host            = module.keycloak.host
-        url             = module.keycloak.url
-        client_id       = var.keycloak.client_id
-        username        = var.keycloak.username
-        password        = var.keycloak.password
-    }
 }
 
 
@@ -421,10 +446,6 @@ module "kathra_client" {
     client_id                   = "kathra"
     redirect_uri                = "https://dashboard.${var.domain}/*"
     web_origins                 = [ "https://dashboard.${var.domain}" ]
-
-    keycloak_client_id          = var.keycloak.client_id
-    keycloak_username           = var.keycloak.username
-    keycloak_password           = var.keycloak.password
     keycloak_url                = module.keycloak.url
 }
 
@@ -434,3 +455,26 @@ output "kathra" {
 
 
 
+
+/****************************
+    KATHRA USERS
+****************************/
+
+module "users" {
+    for_each    = var.users
+
+    source      = "./user"
+    realm_id    = module.realm.id
+    namespace   = var.namespace
+    firstname   = each.firstname
+    lastname    = each.lastname
+    email       = each.email
+    username    = each.key
+    password    = each.password_initial
+    jenkins     = module.jenkins
+    gitlab      = module.gitlab
+    keycloak    = {
+        url             = module.keycloak.url
+    }
+    kube_config = var.kube_config
+}

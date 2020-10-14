@@ -2,29 +2,12 @@ variable "realm" {
 }
 variable "keycloak_url" {
 }
-variable "keycloak_client_id" {
-}
-variable "keycloak_username" {
-}
-variable "keycloak_password" {
-}
 variable "client_id" {
 }
 variable "redirect_uri" {
 }
 variable "web_origins" {
     default = [ "*" ]
-}
-
-
-
-provider "keycloak" {
-    client_id     = var.keycloak_client_id
-    username      = var.keycloak_username
-    password      = var.keycloak_password
-    url           = var.keycloak_url
-    version       = "1.19.0"
-    initial_login = false
 }
 
 resource "keycloak_openid_client" "client" {

@@ -21,17 +21,6 @@ variable "namespace" {
 variable "kube_config" {
 }
 
-
-provider "keycloak" {
-    client_id     = var.keycloak.client_id
-    username      = var.keycloak.username
-    password      = var.keycloak.password
-    url           = var.keycloak.url
-    version       = "1.19.0"
-    initial_login = false
-}
-
-
 resource "keycloak_user" "user" {
     realm_id    = var.realm_id
     username    = var.username

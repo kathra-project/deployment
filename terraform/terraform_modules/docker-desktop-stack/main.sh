@@ -97,13 +97,16 @@ function deploy() {
 
     local subdomains=( "keycloak" "sonarqube" "jenkins" "gitlab" "harbor" "nexus" "appmanager" "dashboard" "resourcemanager" "pipelinemanager" "sourcemanager" "codegen-helm" "codegen-swagger" "binaryrepositorymanager-harbor" "binaryrepositorymanager-nexus" )
     for subdomain in ${subdomains[@]}; do addEntryHostFile "$subdomain.$domain" "$(getLocalIp)"; done;
+    #echo ${subdomains[@]} | xargs -I % bash -c "addEntryHostFile '%.${domain}' '$(getLocalIp)'"
     
-    # Apply configuration
+    # Copy configuration from MinikubeStack
     cp -R ${SCRIPT_DIR}/../minikube-stack/namespace_with_tls .
     cp ${SCRIPT_DIR}/../minikube-stack/main.tf main.tf
     cd ${SCRIPT_DIR}
 
+    # Apply configuration
     terraformInitAndApply
+
     # Post install
     postInstall
 

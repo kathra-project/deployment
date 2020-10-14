@@ -23,10 +23,15 @@ variable "services_namespace" {
 variable "services_tls_secret_name" {
     default = null
 }
-variable "passwordDb" {
-    default = "dezofzeofo"
+variable "password_db" {
+    default = null
 }
 
+resource "random_password" "password_db" {
+    count = (var.password_db == null) ? 1 : 0
+    length = 16
+    special = false
+}
 
 ####################
 ### FACTORY
@@ -41,6 +46,12 @@ module "factory" {
     kube_config                 = var.kube_config
     deploymanager               = {
         tag = var.kathra_version
+    }
+    keycloak                    = {
+        host_prefix   = "keycloak"
+        username      = "keycloak"
+        password      = "P@sswo=03dToUpd4t3"
+        client_id     = "admin-cli"
     }
 }
 
@@ -88,7 +99,7 @@ module "services" {
             }
         }
         arangodb = {
-            password                = var.passwordDb
+            password                = (var.password_db == null) ? random_password.password_db[0].result : var.password_db
         }
         oidc = {
             client_id               = module.factory.kathra.client_id

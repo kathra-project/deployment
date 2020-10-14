@@ -68,6 +68,12 @@ keycloak:
   password: "${var.password}"
   persistence:
     deployPostgres: false
+    dbVendor: postgres
+    dbName:  '${yamldecode(helm_release.postgresql.metadata[0].values).postgresql.database}'
+    dbHost: ${data.kubernetes_service.postgresql.metadata[0].name}
+    dbPort: 5432
+    dbUser: '${yamldecode(helm_release.postgresql.metadata[0].values).postgresql.username}'
+    dbPassword: '${yamldecode(helm_release.postgresql.metadata[0].values).postgresql.password}'
   resources:
     limits:
       cpu: 2
@@ -89,25 +95,6 @@ keycloak:
       - ${var.ingress_host}
       secretName: ${var.ingress_tls_secret_name == null ? "keycloak-cert" : var.ingress_tls_secret_name}
 
-extraEnv: |
-  - name: DB_VENDOR
-    value: postgres
-  - name: DB_ADDR
-    value: ${data.kubernetes_service.postgresql.metadata[0].name}
-  - name: DB_PORT
-    value: "5432"
-  - name: DB_DATABASE
-    value: '${yamldecode(helm_release.postgresql.metadata[0].values).postgresql.database}'
-extraEnvFrom: |
-  - secretRef:
-      name: '{{ include "keycloak.fullname" . }}-db'
-
-
-secrets:
-  db:
-    stringData:
-      DB_USER: '${yamldecode(helm_release.postgresql.metadata[0].values).postgresql.username}'
-      DB_PASSWORD: '${yamldecode(helm_release.postgresql.metadata[0].values).postgresql.password}'
 EOF
 ]
 
