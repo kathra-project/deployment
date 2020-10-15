@@ -43,10 +43,6 @@ variable "resources" {
 
 
 
-data "helm_repository" "codecentric" {
-    name = "codecentric"
-    url  = "https://codecentric.github.io/helm-charts"
-}
 
 module "registry_config" {
     source                  = "./registry_config"
@@ -159,7 +155,7 @@ data "external" "get_host_ip" {
 
 resource "helm_release" "jenkins" {
     name          = "jenkins"
-    repository    = data.helm_repository.codecentric.metadata[0].name
+    repository    = "https://codecentric.github.io/helm-charts"
     chart         = "codecentric/jenkins"
     version       = "1.6.1"
     namespace     = var.namespace

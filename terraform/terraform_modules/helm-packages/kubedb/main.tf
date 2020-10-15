@@ -8,18 +8,13 @@ resource "kubernetes_namespace" "kubedb" {
   }
 }
 
-data "helm_repository" "stable" {
-  name = "appscode"
-  url  = "https://charts.appscode.com/stable/"
-}
-
 data "external" "apiserver_ca" {
     program = ["sh", "${path.module}/get-ca.sh"]
 }
 
 resource "helm_release" "kubedb" {
   name       = "kubedb-operator"
-  repository = data.helm_repository.stable.metadata[0].name
+  repository = "https://charts.appscode.com/stable/"
   chart      = "appscode/kubedb"
   version    = var.version_chart
   namespace  = "kubedb"

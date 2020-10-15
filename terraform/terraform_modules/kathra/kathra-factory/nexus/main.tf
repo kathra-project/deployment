@@ -12,16 +12,9 @@ variable "namespace" {
 variable "password" {
 }
 
-
-data "helm_repository" "oteemocharts" {
-  name = "oteemocharts"
-  url  = "https://oteemo.github.io/charts"
-}
-
-
 resource "helm_release" "nexus" {
   name       = "nexus"
-  repository = data.helm_repository.oteemocharts.metadata[0].name
+  repository = "https://oteemo.github.io/charts"
   chart      = "sonatype-nexus"
   namespace  = var.namespace
   version    = "2.8.0"

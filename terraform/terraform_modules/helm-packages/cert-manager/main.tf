@@ -22,11 +22,6 @@ resource "local_file" "clusterIssuer" {
     filename    = "${path.module}/clusterIssuer.yaml"
 }
 
-data "helm_repository" "jetstack" {
-  name = "jetstack"
-  url  = "https://charts.jetstack.io"
-}
-
 data "http" "certificaterequests_resources" {
   url = "https://raw.githubusercontent.com/jetstack/cert-manager/release-0.12/deploy/manifests/00-crds.yaml"
   request_headers = {
@@ -40,7 +35,7 @@ resource "kubectl_manifest" "preConfigure" {
 
 resource "helm_release" "cert_manager" {
   name       = "cert-manager"
-  repository = data.helm_repository.jetstack.metadata[0].name
+  repository = "https://charts.jetstack.io"
   chart      = "jetstack/cert-manager"
   version    = var.version_chart
   namespace  = var.namespace

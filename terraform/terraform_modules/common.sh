@@ -148,8 +148,6 @@ function postInstall() {
     printInfo ""
     printInfo "You can use Kathra from dashboard : https://$(cat $tmp/settings.json | jq -r '.services.services.dashboard.host') or use kathra-cli: $KATHRA_CLI_GIT"
     printInfo "All passwords & credentials are stored in Terraform (exec: terraform output)" 
-    printInfo "User login: $(cat $tmp/settings.json | jq -r '[.factory.identities.users[]][0].username')"
-    printInfo "User password: $(cat $tmp/settings.json | jq -r '[.factory.identities.users[]][0].initial_password[0].value')"
     printInfo ""
     printInfo "Keycloak URL: $(cat $tmp/settings.json | jq -r '.factory.keycloak.url')"
     printInfo "Keycloak admin login: $(cat $tmp/settings.json | jq -r '.factory.keycloak.admin.username')"

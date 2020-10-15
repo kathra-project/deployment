@@ -18,16 +18,10 @@ variable "oidc_client_id" {
 variable "oidc_client_secret" {
 }
 
-
-data "helm_repository" "oteemocharts" {
-  name = "oteemocharts"
-  url  = "https://oteemo.github.io/charts"
-}
-
 resource "helm_release" "sonarqube" {
 
   name       = "sonarqube"
-  repository = data.helm_repository.oteemocharts.metadata[0].name
+  repository = "https://oteemo.github.io/charts"
   chart      = "sonarqube"
   version    = "6.8.0"
   namespace  = var.namespace

@@ -6,13 +6,7 @@ variable "velero_client_id" {}
 variable "velero_client_secret" {}
 variable "namespace" {}
 variable "kubernetes_azure_group_name" {
-  default = "MC_kathra6_k8s-instance_francecentral"
-}
-
-
-data "helm_repository" "vmware-tanzu" {
-    name = "vmware-tanzu"
-    url  = "https://vmware-tanzu.github.io/helm-charts"
+  default = null
 }
 
 
@@ -38,7 +32,7 @@ resource "azurerm_storage_container" "kathra_backup" {
 
 resource "helm_release" "velero" {
   name       = "velero"
-  repository = data.helm_repository.vmware-tanzu.metadata[0].name
+  repository = "https://vmware-tanzu.github.io/helm-charts"
   chart      = "vmware-tanzu/velero"
   version    = "2.12.0"
   namespace  = kubernetes_namespace.kathra_backup.metadata[0].name

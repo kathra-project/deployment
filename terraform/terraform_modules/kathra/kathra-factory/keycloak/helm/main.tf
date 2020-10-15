@@ -19,15 +19,9 @@ variable "password" {
 variable "ingress_class" {
 }
 
-
-data "helm_repository" "cetic" {
-  name = "cetic"
-  url  = "https://cetic.github.io/helm-charts"
-}
-
 resource "helm_release" "postgresql" {
   name       = "keycloak-db"
-  repository = data.helm_repository.cetic.metadata[0].name
+  repository = "https://cetic.github.io/helm-charts"
   chart      = "postgresql"
   namespace  = var.namespace
 
@@ -50,14 +44,9 @@ data "kubernetes_service" "postgresql" {
   depends_on = [ helm_release.postgresql ]
 }
 
-data "helm_repository" "codecentric" {
-  name = "codecentric"
-  url  = "https://codecentric.github.io/helm-charts"
-}
-
 resource "helm_release" "keycloak" {
   name       = "keycloak"
-  repository = data.helm_repository.codecentric.metadata[0].name
+  repository = "https://codecentric.github.io/helm-charts"
   chart      = "keycloak"
   version    = var.version_chart
   namespace  = var.namespace

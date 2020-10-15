@@ -27,15 +27,9 @@ variable "resource_limits_memory" {
   default = "1Gi"
 }
 
-
-data "helm_repository" "goharbor" {
-    name = "goharbor"
-    url  = "https://helm.goharbor.io"
-}
-
 resource "helm_release" "harbor" {
     name       = "harbor"
-    repository = data.helm_repository.goharbor.metadata[0].name
+    repository = "https://helm.goharbor.io"
     chart      = "harbor"
     namespace  = var.namespace
     timeout    = 800

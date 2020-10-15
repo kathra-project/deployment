@@ -34,16 +34,10 @@ variable "max_replicas" {
 }
 
 
-data "helm_repository" "gitlab" {
-  name = "gitlab"
-  url  = "https://charts.gitlab.io/"
-}
-
-
 
 resource "helm_release" "gitlab" {
   name       = "gitlab"
-  repository = data.helm_repository.gitlab.metadata[0].name
+  repository = "https://charts.gitlab.io/"
   chart      = "gitlab"
   version    = "3.3.5"
   namespace  = var.namespace
