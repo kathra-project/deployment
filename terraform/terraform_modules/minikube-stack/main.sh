@@ -132,6 +132,7 @@ function deploy() {
     [ "$domain" == "" ]           && printErrorAndExit "Domain is not specifed"                    || printDebug "domain=$domain"
     [ $manualDnsChallenge -eq 1 ] && generateCertsDnsChallenge $domain $tmp/tls.cert $tmp/tls.key
     startMinikube                                                               || printErrorAndExit "Unable to install minikube"
+    prePullImages
     kubectl get nodes                                                           || printErrorAndExit "Unable to connect to minikube with kubectl"
     checkHardwareResources                                                      || printErrorAndExit "Not enought resources (cpu or memory)"
     coreDnsAddRecords $domain  "$(minikube ip)"                                 || printErrorAndExit "Unable to add dns entry into coredns"

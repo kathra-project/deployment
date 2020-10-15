@@ -98,6 +98,8 @@ function deploy() {
     checkHasSudo
 
     which docker > /dev/null                                                    || printErrorAndExit "Docker not installed"
+    prePullImages
+    
     export START_KATHRA_INSTALL=`date +%s`
     checkDependencies
     [ "$domain" == "" ]           && printErrorAndExit "Domain is not specifed" || printDebug "domain=$domain"
@@ -167,11 +169,7 @@ function destroy() {
 export -f destroy
 
 function addEntryHostFile() {
-    local domain=$1
-    local ip=$2
-    local hostsFile=$WINDIR/system32/drivers/etc/host
-    printDebug "addEntryHostFile(domain: $domain, ip: $ip)"
-    [ "$OS" != "Windows_NT" ] && addEntryHostFileWindows $domain $ip || addEntryHostFileWsl $domain $ip
+    [ "$OS" == "Windows_NT" ] && addEntryHostFileWindows $1 $2 || addEntryHostFileWsl $1 $2
 }
 export -f addEntryHostFile
 
@@ -179,7 +177,7 @@ function addEntryHostFileWindows() {
     local domain=$1
     local ip=$2
     local hostsFile=$WINDIR/system32/drivers/etc/host
-    printDebug "addEntryHostFile(domain: $domain, ip: $ip)"
+    printDebug "addEntryHostFileWindows(domain: $domain, ip: $ip)"
     grep -v " $domain$" < $hostsFile > $tmp/addEntryHostFile
     
     cp $tmp/addEntryHostFile $hostsFile
@@ -191,7 +189,7 @@ export -f addEntryHostFile
 function addEntryHostFileWsl() {
     local domain=$1
     local ip=$2
-    printDebug "addEntryHostFile(domain: $domain, ip: $ip)"
+    printDebug "addEntryHostFileWsl(domain: $domain, ip: $ip)"
     sudo grep -v " $domain$" < /etc/hosts > $tmp/addEntryHostFile && sudo cp $tmp/addEntryHostFile /etc/hosts
     echo "$ip $domain" | sudo tee -a /etc/hosts
 }

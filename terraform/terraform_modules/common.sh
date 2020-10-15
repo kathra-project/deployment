@@ -70,6 +70,7 @@ function checkDependencies() {
     installTerraformPlugin "keycloak" "2.0.0" "https://github.com/mrparkers/terraform-provider-keycloak.git" "v2.0.0"   || printErrorAndExit "Unable to install keycloak terraform plugin"
     installTerraformPlugin "kubectl"  "1.3.5"  "https://github.com/gavinbunney/terraform-provider-kubectl"    "v1.3.5"   || printErrorAndExit "Unable to install kubectl terraform plugin"
     installTerraformPlugin "nexus"    "1.10.2" "https://github.com/datadrivers/terraform-provider-nexus"      "v1.10.2"   || printErrorAndExit "Unable to install nexus terraform plugin"
+
 }
 export -f checkDependencies
 
@@ -134,6 +135,9 @@ function installTerraform() {
 }
 export -f installTerraform
 
+function prePullImages() {
+    cat $SCRIPT_DIR/../images-to-pull | xargs -P 20 -I % bash -c "printInfo 'Pulling image % ...' ; docker pull % > /dev/null 2> /dev/null && printInfo 'Image % is up to date' || printError 'Error pulling image %'"
+}
 
 function postInstall() {
     terraform output -json kathra > $tmp/settings.json
@@ -170,8 +174,8 @@ function postInstall() {
     printInfo "Sonarqube admin password: $(cat $tmp/settings.json | jq -r '.factory.sonarqube.admin.password')"
     printInfo ""
     printInfo "Harbor URL: $(cat $tmp/settings.json | jq -r '.factory.harbor.url')"
-    printInfo "Harbor admin login: $(cat $tmp/settings.json | jq -r '.factory.harbor.username')"
-    printInfo "Harbor admin password: $(cat $tmp/settings.json | jq -r '.factory.harbor.password')"
+    printInfo "Harbor admin login: $(cat $tmp/settings.json | jq -r '.factory.harbor.admin.username')"
+    printInfo "Harbor admin password: $(cat $tmp/settings.json | jq -r '.factory.harbor.admin.password')"
     printInfo ""
     printInfo "Kathra URL: https://$(cat $tmp/settings.json | jq -r '.services.services.dashboard.host')"
     printInfo "User login: $(cat $tmp/settings.json | jq -r '[.factory.identities.users[]][0].username')"
