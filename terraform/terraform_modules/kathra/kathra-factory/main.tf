@@ -77,31 +77,35 @@ variable "deploymanager" {
     }
 }
 
-variable ""
-
-variable "users" {
+variable "identities" {
     default = {
-    "user_a" = {
-        firstname   = "Firstname UserA"
-        lastname    = "Firstname UserA"
-        email       = "user_a@kathra.org"
-        password_initial    = "123"
-        memberOf    = [
-            "my-team"
-        ]
-    }}
+        "users" = {
+            "userA" = {
+                firstname           = "Firstname UserA"
+                lastname            = "Firstname UserA"
+                email               = "user_a@kathra.org"
+                initialPassword    = "123"
+            }
+        }
+        "groups" = {
+            "teamA" = {
+                name      = "team-a"
+                members   = ["user_a"]
+            }
+        }
+    }
 }
 
 variable "groups" {
     default = {
-    "my-team" = {
-        name   = "my-team"
+    "team-a" = {
+        name   = "team-a"
     }}
 }
 
 variable "groups_memberships" {
     default = {
-    "my-team" = {
+    "team-a" = {
         members   = ["user_a"]
     }}
 }
@@ -150,9 +154,9 @@ provider "keycloak" {
 module "realm" {
     source                  = "./keycloak/realm"
     keycloak_realm          = "kathra"
-    first_group_name        = "my-team"
-    first_user_login        = "user"
-    first_user_password     = "123"
+    #first_group_name        = "my-team"
+    #first_user_login        = "user"
+    #first_user_password     = "123"
     keycloak_url            = module.keycloak.url
 }
 
@@ -185,7 +189,6 @@ module "gitlab" {
     }
 
     namespace                   = var.namespace
-    password                    = module.keycloak.password
 
     oidc_url                    = module.realm.url
     oidc_client_id              = module.gitlab_client.client_id
@@ -218,7 +221,7 @@ module "harbor" {
     }
 
     namespace                   = var.namespace
-    password                    = module.keycloak.password
+    password                    = var.keycloak.password
 
     oidc_url                    = module.realm.url
     oidc_client_id              = module.harbor_client.client_id
@@ -240,7 +243,7 @@ module "nexus" {
     ingress_tls_secret_name     = var.ingress_tls_secret_name
 
     namespace                   = var.namespace
-    password                    = module.keycloak.password
+    password                    = var.keycloak.password
 }
 output "nexus" {
     value = module.nexus
@@ -267,7 +270,7 @@ module "sonarqube" {
 
     namespace                   = var.namespace
 
-    password                    = module.keycloak.password
+    password                    = var.keycloak.password
     
     oidc_url                    = module.realm.url
     oidc_client_id              = module.sonarqube_client.client_id
@@ -288,8 +291,8 @@ module "deploymanager" {
     ingress_base                = var.domain
     deployment_registry         = {
         host     = module.harbor.host
-        username = module.harbor.username
-        password = module.harbor.password
+        username = module.harbor.admin.username
+        password = module.harbor.admin.password
     }
 }
 output "deploymanager" {
@@ -317,7 +320,7 @@ module "jenkins" {
     ingress_tls_secret_name     = var.ingress_tls_secret_name
 
     namespace                   = var.namespace
-    password                    = module.keycloak.password
+    password                    = var.keycloak.password
 
     oidc                        = {
         host            = module.keycloak.host
@@ -342,18 +345,18 @@ module "jenkins" {
     binaries                    = {
         maven = {
             url      = module.nexus.url
-            username = module.nexus.username
-            password = module.nexus.password
+            username = module.nexus.admin.username
+            password = module.nexus.admin.password
         }
         pypi = {
             url      = module.nexus.url
-            username = module.nexus.username
-            password = module.nexus.password
+            username = module.nexus.admin.username
+            password = module.nexus.admin.password
         }
         registry = {
             host     = module.harbor.host
-            username = module.harbor.username
-            password = module.harbor.password
+            username = module.harbor.admin.username
+            password = module.harbor.admin.password
         }
     }
 
@@ -367,33 +370,6 @@ module "jenkins" {
 output "jenkins" {
     value = module.jenkins
 }
-
-/********************
-    FIRST USER
-***********************/
-
-module "gitlab_user_init_api_token" {
-    source        = "./gitlab/generate_api_token"
-    gitlab_host   = module.gitlab.host
-    keycloak_host = module.keycloak.host
-    username      = module.realm.first_user.username
-    password      = module.realm.first_user.password
-    release       = module.gitlab.name
-    namespace     = module.gitlab.namespace
-    kube_config   = var.kube_config
-}
-
-module "jenkins_user_init_api_token" {
-    source        = "./jenkins/generate_api_token"
-    jenkins_host  = module.jenkins.host
-    keycloak_host = module.keycloak.host
-    username      = module.realm.first_user.username
-    password      = module.realm.first_user.password
-    release       = module.jenkins.name
-    namespace     = module.jenkins.namespace
-    kube_config   = var.kube_config
-}
-
 
 
 
@@ -413,7 +389,7 @@ module "user_sync" {
     jenkins     = module.jenkins
     gitlab      = module.gitlab
     keycloak    = {
-        url             = module.keycloak.url
+        host    = module.keycloak.host
     }
     kube_config = var.kube_config
 }
@@ -459,22 +435,41 @@ output "kathra" {
 /****************************
     KATHRA USERS
 ****************************/
+resource "keycloak_user" "user" {
+    for_each    = var.identities.users
 
-module "users" {
-    for_each    = var.users
-
-    source      = "./user"
     realm_id    = module.realm.id
-    namespace   = var.namespace
-    firstname   = each.firstname
-    lastname    = each.lastname
-    email       = each.email
-    username    = each.key
-    password    = each.password_initial
-    jenkins     = module.jenkins
-    gitlab      = module.gitlab
-    keycloak    = {
-        url             = module.keycloak.url
+    username    = lower(each.key)
+    enabled     = true
+    email       = each.value.email
+    first_name  = each.value.firstname
+    last_name   = each.value.lastname
+    initial_password {
+      value     = each.value.initialPassword
+      temporary = true
     }
-    kube_config = var.kube_config
+}
+
+resource "keycloak_group" "group" {
+    for_each    = var.identities.groups
+     
+    realm_id    = module.realm.id
+    name        = lower(each.value.name)
+    parent_id   = module.realm.root_group.id
+}
+
+resource "keycloak_group_memberships" "members" {
+    for_each = var.identities.groups
+
+    realm_id = module.realm.id
+    group_id = keycloak_group.group[each.key].id
+    members  = each.value.members
+}
+
+output "identities" {
+    value = {
+        "users"             = keycloak_user.user
+        "group"             = keycloak_group.group
+        "group_memberships" = keycloak_group_memberships.members
+    }
 }

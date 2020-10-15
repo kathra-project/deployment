@@ -205,12 +205,14 @@ output "namespace" {
 output "name" {
     value = helm_release.harbor.name
 }
-output "username" {
-    value = "admin"
+
+output "admin" {
+  value = {
+    username = "admin"
+    password = yamldecode(helm_release.harbor.metadata[0].values).harborAdminPassword
+  }
 }
-output "password" {
-    value = yamldecode(helm_release.harbor.metadata[0].values).harborAdminPassword
-}
+
 output "host" {
     value = yamldecode(helm_release.harbor.metadata[0].values).expose.ingress.hosts.core
 }

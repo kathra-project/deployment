@@ -76,10 +76,27 @@ function main() {
     showHelp
 }
 
+function checkOs() {
+    [ "$OS" == "Windows_NT" ] && return 0
+    grep -qEi "(Microsoft|WSL)" /proc/version && return 0
+    printErrorAndExit "Only for Windows_NT or WSL system"
+}
+
+function checkHasSudo() {
+    if [ "$OS" != "Windows_NT" ]
+    then
+        net session  > /dev/null 2> /dev/null                                   || printErrorAndExit "Please, start your console as admin"
+    else
+        timeout 2 sudo id                                                       || printErrorAndExit "Please, get sudo"
+    fi
+}
+
 function deploy() {
     printDebug "deploy()"
-    [ "$OS" == "Windows_NT" ]                                                   || printErrorAndExit "Only for Windows_NT"
-    net session  > /dev/null 2> /dev/null                                       || printErrorAndExit "Please, start your console as admin"
+
+    checkOs
+    checkHasSudo
+
     which docker > /dev/null                                                    || printErrorAndExit "Docker not installed"
     export START_KATHRA_INSTALL=`date +%s`
     checkDependencies
@@ -102,6 +119,7 @@ function deploy() {
     # Copy configuration from MinikubeStack
     cp -R ${SCRIPT_DIR}/../minikube-stack/namespace_with_tls .
     cp ${SCRIPT_DIR}/../minikube-stack/main.tf main.tf
+    cp ${SCRIPT_DIR}/../minikube-stack/versions.tf versions.tf
     cd ${SCRIPT_DIR}
 
     # Apply configuration
@@ -153,11 +171,29 @@ function addEntryHostFile() {
     local ip=$2
     local hostsFile=$WINDIR/system32/drivers/etc/host
     printDebug "addEntryHostFile(domain: $domain, ip: $ip)"
+    [ "$OS" != "Windows_NT" ] && addEntryHostFileWindows $domain $ip || addEntryHostFileWsl $domain $ip
+}
+export -f addEntryHostFile
+
+function addEntryHostFileWindows() {
+    local domain=$1
+    local ip=$2
+    local hostsFile=$WINDIR/system32/drivers/etc/host
+    printDebug "addEntryHostFile(domain: $domain, ip: $ip)"
     grep -v " $domain$" < $hostsFile > $tmp/addEntryHostFile
     
     cp $tmp/addEntryHostFile $hostsFile
     [ $? -ne 0 ] && printErrorAndExit "Error : Unable to modify host file, please start GitBash with admin rights"
     echo "$ip $domain" | tee -a $hostsFile
+}
+export -f addEntryHostFile
+
+function addEntryHostFileWsl() {
+    local domain=$1
+    local ip=$2
+    printDebug "addEntryHostFile(domain: $domain, ip: $ip)"
+    sudo grep -v " $domain$" < /etc/hosts > $tmp/addEntryHostFile && sudo cp $tmp/addEntryHostFile /etc/hosts
+    echo "$ip $domain" | sudo tee -a /etc/hosts
 }
 export -f addEntryHostFile
 

@@ -122,12 +122,14 @@ output "namespace" {
 output "name" {
     value = helm_release.keycloak.name
 }
-output "username" {
-    value = yamldecode(helm_release.keycloak.metadata[0].values).keycloak.username
+
+output "admin" {
+  value = {
+    username = yamldecode(helm_release.keycloak.metadata[0].values).keycloak.username
+    password = yamldecode(helm_release.keycloak.metadata[0].values).keycloak.password
+  }
 }
-output "password" {
-    value = yamldecode(helm_release.keycloak.metadata[0].values).keycloak.password
-}
+
 output "host" {
     value = yamldecode(helm_release.keycloak.metadata[0].values).keycloak.ingress.hosts[0]
 }

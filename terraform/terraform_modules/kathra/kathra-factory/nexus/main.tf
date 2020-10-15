@@ -105,14 +105,10 @@ module "default_repositories" {
     password  = "admin123"
     vm_depends_on = [ null_resource.allow_anonymous ]
 }
-/*
+
 output "repositories" {
     value = module.default_repositories
 }
-*/
-
-
-
 
 provider "nexus" {
     insecure = true
@@ -127,6 +123,14 @@ output "namespace" {
 output "name" {
     value = helm_release.nexus.name
 }
+
+output "admin" {
+  value = {
+    username = "admin"
+    password = "admin123"
+  }
+}
+
 output "username" {
     value = nexus_user.kathra_user.userid
 }

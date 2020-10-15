@@ -33,6 +33,11 @@ resource "random_password" "password_db" {
     special = false
 }
 
+data "local_file" "identities" {
+    filename = "${path.module}/identities.yml"
+}
+
+
 ####################
 ### FACTORY
 ####################
@@ -53,6 +58,7 @@ module "factory" {
         password      = "P@sswo=03dToUpd4t3"
         client_id     = "admin-cli"
     }
+    identities                  =   yamldecode(data.local_file.identities.content)
 }
 
 ####################
@@ -123,8 +129,8 @@ module "services" {
 
     harbor                      = {
         url          = module.factory.harbor.url
-        username     = module.factory.harbor.username
-        password     = module.factory.harbor.password
+        username     = module.factory.harbor.admin.username
+        password     = module.factory.harbor.admin.password
     }
 
     nexus                         = module.factory.nexus
@@ -139,8 +145,8 @@ module "services" {
         }
         admin          = {
             auth_url      = "${module.factory.keycloak.url}/auth"
-            username      = module.factory.keycloak.username
-            password      = module.factory.keycloak.password
+            username      = module.factory.keycloak.admin.username
+            password      = module.factory.keycloak.admin.password
             realm         = "master"
             client_id     = "admin-cli"
         }

@@ -84,8 +84,13 @@ function installTerraformPlugin() {
     local basePlugin=$SCRIPT_DIR/.terraform/plugins
     [ "$OSTYPE" == "win32" ] && system="windows" && ext=".exe"
     [ "$OSTYPE" == "msys" ]  && system="windows" && ext=".exe"
-
+    
     local bin=$basePlugin/${system}_amd64/terraform-provider-${pluginName}_v${pluginVersion}${ext}
+    
+    local terraformMinorVersion=$(cd /tmp ; terraform version | head -n 1 | sed "s/.*v[0-9]*\.//g" | sed "s/\.[0-9]*//g")
+    ## If terraform version > 0.13.x
+    [ $terraformMinorVersion -ge 13 ] && bin=$basePlugin/registry.terraform.io/hashicorp/${pluginName}/${pluginVersion}/${system}_amd64/terraform-provider-${pluginName}_v${pluginVersion}${ext}
+    
     printDebug "$bin"
     [ -f $bin ] && return 0
     [ -d /tmp/terraform-provider-$pluginName ] && rm -rf /tmp/terraform-provider-$pluginName 
@@ -133,16 +138,46 @@ export -f installTerraform
 function postInstall() {
     terraform output -json kathra > $tmp/settings.json
     installKathraCli $tmp/settings.json
+
+    declare namespaceKathraSvc=$(terraform output -json kathra | jq -r '.services.namespace')
+    declare jobName=$(kubectl -n ${namespaceKathraSvc} get job -o json | jq -r '.items[0].metadata.labels."job-name"')
+    kubectl -n ${namespaceKathraSvc} wait --for=condition=complete job/${jobName}
+    [ $? -ne 0 ] && printError "Job ${jobName} not ready"
+
     printInfo "Kathra is installed in $((`date +%s`-START_KATHRA_INSTALL)) secondes"
     printInfo ""
     printInfo "You can use Kathra from dashboard : https://$(cat $tmp/settings.json | jq -r '.services.services.dashboard.host') or use kathra-cli: $KATHRA_CLI_GIT"
-    printInfo "All passwords are stored in Terraform (exec: terraform output)" 
-    printInfo "User login: $(cat $tmp/settings.json | jq -r '.factory.realm.first_user.username')"
-    printInfo "User password: $(cat $tmp/settings.json | jq -r '.factory.realm.first_user.password')"
+    printInfo "All passwords & credentials are stored in Terraform (exec: terraform output)" 
+    printInfo "User login: $(cat $tmp/settings.json | jq -r '[.factory.identities.users[]][0].username')"
+    printInfo "User password: $(cat $tmp/settings.json | jq -r '[.factory.identities.users[]][0].initial_password[0].value')"
     printInfo ""
-    printInfo "Keycloak URL: $(terraform output -json kathra | jq -r '.factory.keycloak.url')"
-    printInfo "Keycloak admin login: $(cat $tmp/settings.json | jq -r '.factory.keycloak.username')"
-    printInfo "Keycloak admin password: $(cat $tmp/settings.json | jq -r '.factory.keycloak.password')"
+    printInfo "Keycloak URL: $(cat $tmp/settings.json | jq -r '.factory.keycloak.url')"
+    printInfo "Keycloak admin login: $(cat $tmp/settings.json | jq -r '.factory.keycloak.admin.username')"
+    printInfo "Keycloak admin password: $(cat $tmp/settings.json | jq -r '.factory.keycloak.admin.password')"
+    printInfo ""
+    printInfo "Jenkins URL: $(cat $tmp/settings.json | jq -r '.factory.jenkins.url')"
+    printInfo "Jenkins admin login: $(cat $tmp/settings.json | jq -r '.factory.jenkins.admin.username')"
+    printInfo "Jenkins admin password: $(cat $tmp/settings.json | jq -r '.factory.jenkins.admin.password')"
+    printInfo ""
+    printInfo "Gitlab URL: $(cat $tmp/settings.json | jq -r '.factory.gitlab.url')"
+    printInfo "Gitlab admin login: $(cat $tmp/settings.json | jq -r '.factory.gitlab.admin.username')"
+    printInfo "Gitlab admin password: $(cat $tmp/settings.json | jq -r '.factory.gitlab.admin.password')"
+    printInfo ""
+    printInfo "Nexus URL: $(cat $tmp/settings.json | jq -r '.factory.nexus.url')"
+    printInfo "Nexus admin login: $(cat $tmp/settings.json | jq -r '.factory.nexus.admin.username')"
+    printInfo "Nexus admin password: $(cat $tmp/settings.json | jq -r '.factory.nexus.admin.password')"
+    printInfo ""
+    printInfo "Sonarqube URL: $(cat $tmp/settings.json | jq -r '.factory.sonarqube.url')"
+    printInfo "Sonarqube admin login: $(cat $tmp/settings.json | jq -r '.factory.sonarqube.admin.username')"
+    printInfo "Sonarqube admin password: $(cat $tmp/settings.json | jq -r '.factory.sonarqube.admin.password')"
+    printInfo ""
+    printInfo "Harbor URL: $(cat $tmp/settings.json | jq -r '.factory.harbor.url')"
+    printInfo "Harbor admin login: $(cat $tmp/settings.json | jq -r '.factory.harbor.username')"
+    printInfo "Harbor admin password: $(cat $tmp/settings.json | jq -r '.factory.harbor.password')"
+    printInfo ""
+    printInfo "Kathra URL: https://$(cat $tmp/settings.json | jq -r '.services.services.dashboard.host')"
+    printInfo "User login: $(cat $tmp/settings.json | jq -r '[.factory.identities.users[]][0].username')"
+    printInfo "User password: $(cat $tmp/settings.json | jq -r '[.factory.identities.users[]][0].initial_password[0].value')"
 }
 export -f postInstall
 

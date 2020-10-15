@@ -1,10 +1,13 @@
 variable "keycloak_realm" {
 }
 variable "first_user_login" {
+  default = null
 }
 variable "first_user_password" {
+  default = null
 }
 variable "first_group_name" {
+  default = null
 }
 variable "keycloak_url" {
 }
@@ -25,12 +28,15 @@ resource "keycloak_group" "root_group" {
 }
 
 resource "keycloak_group" "first_group" {
+    count       = var.first_group_name == null ? 0 : 1
+
     realm_id  = keycloak_realm.realm.id
     parent_id = keycloak_group.root_group.id
     name      = var.first_group_name
 }
 
 resource "keycloak_user" "first_user_wt_password" {
+    count       = var.first_user_login == null ? 0 : 1
     realm_id    = keycloak_realm.realm.id
     username    = var.first_user_login
     enabled     = true
@@ -45,12 +51,12 @@ resource "keycloak_user" "first_user_wt_password" {
 }
 
 resource "keycloak_group_memberships" "group_members" {
-    realm_id = keycloak_realm.realm.id
-    group_id = keycloak_group.first_group.id
+    count       = var.first_group_name == null || var.first_user_login == null ? 0 : 1
 
-    members  = [
-        keycloak_user.first_user_wt_password.username
-    ]
+    realm_id = keycloak_realm.realm.id
+    group_id = keycloak_group.first_group[0].id
+
+    members  = [keycloak_user.first_user_wt_password[0].username]
 }
 
 output "name" {
@@ -59,6 +65,10 @@ output "name" {
 
 output "id" {
     value = keycloak_realm.realm.id
+}
+
+output "root_group" {
+  value = keycloak_group.root_group
 }
 
 output "first_user" {
