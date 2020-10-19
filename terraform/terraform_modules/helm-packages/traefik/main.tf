@@ -8,11 +8,6 @@ variable "aks_group" {
     default =  "kathra"
 }
 
-data "helm_repository" "stable" {
-  name = "stable"
-  url  = "https://kubernetes-charts.storage.googleapis.com"
-}
-
 resource "kubernetes_namespace" "traefik" {
   metadata {
     name = "traefik"
@@ -24,7 +19,7 @@ resource "kubernetes_namespace" "traefik" {
 
 resource "helm_release" "traefik" {
   name       = "traefik"
-  repository = data.helm_repository.stable.metadata[0].name
+  repository = "https://kubernetes-charts.storage.googleapis.com"
   chart      = "traefik"
   version    = var.version_chart
   namespace  = "traefik"

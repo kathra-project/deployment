@@ -1,21 +1,9 @@
-variable "keycloak" {
-}
 variable "realm_id" {
 }
 variable "name" {
 }
 variable "members" {
 }
-
-provider "keycloak" {
-    client_id     = var.keycloak.client_id
-    username      = var.keycloak.username
-    password      = var.keycloak.password
-    url           = var.keycloak.url
-    version       = "1.17.1"
-    initial_login = false
-}
-
 resource "keycloak_group" "root_group" {
     realm_id = var.realm_id
     name     = var.name

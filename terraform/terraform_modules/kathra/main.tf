@@ -23,8 +23,18 @@ variable "services_namespace" {
 variable "services_tls_secret_name" {
     default = null
 }
-variable "passwordDb" {
-    default = "dezofzeofo"
+variable "password_db" {
+    default = null
+}
+
+resource "random_password" "password_db" {
+    count = (var.password_db == null) ? 1 : 0
+    length = 16
+    special = false
+}
+
+data "local_file" "identities" {
+    filename = "${path.module}/identities.yml"
 }
 
 
@@ -42,6 +52,13 @@ module "factory" {
     deploymanager               = {
         tag = var.kathra_version
     }
+    keycloak                    = {
+        host_prefix   = "keycloak"
+        username      = "keycloak"
+        password      = "P@sswo=03dToUpd4t3"
+        client_id     = "admin-cli"
+    }
+    identities                  =   yamldecode(data.local_file.identities.content)
 }
 
 ####################
@@ -88,7 +105,7 @@ module "services" {
             }
         }
         arangodb = {
-            password                = var.passwordDb
+            password                = (var.password_db == null) ? random_password.password_db[0].result : var.password_db
         }
         oidc = {
             client_id               = module.factory.kathra.client_id
@@ -112,8 +129,8 @@ module "services" {
 
     harbor                      = {
         url          = module.factory.harbor.url
-        username     = module.factory.harbor.username
-        password     = module.factory.harbor.password
+        username     = module.factory.harbor.admin.username
+        password     = module.factory.harbor.admin.password
     }
 
     nexus                         = module.factory.nexus
@@ -128,8 +145,8 @@ module "services" {
         }
         admin          = {
             auth_url      = "${module.factory.keycloak.url}/auth"
-            username      = module.factory.keycloak.username
-            password      = module.factory.keycloak.password
+            username      = module.factory.keycloak.admin.username
+            password      = module.factory.keycloak.admin.password
             realm         = "master"
             client_id     = "admin-cli"
         }

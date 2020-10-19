@@ -501,12 +501,14 @@ output "namespace" {
 output "name" {
     value = helm_release.jenkins.name
 }
-output "username" {
-    value = "admin"
+
+output "admin" {
+  value = {
+    username = "admin"
+    password = yamldecode(helm_release.jenkins.metadata[0].values).casc.secrets.ADMIN_PASSWORD
+  }
 }
-output "password" {
-    value = yamldecode(helm_release.jenkins.metadata[0].values).casc.secrets.ADMIN_PASSWORD
-}
+
 output "host" {
     value = yamldecode(helm_release.jenkins.metadata[0].values).ingress.hostName
 }

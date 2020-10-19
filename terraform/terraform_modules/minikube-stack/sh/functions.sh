@@ -45,11 +45,12 @@ function addLocalIpInCoreDNS() {
 }
 
 function getKubeConfig() {
-    local ca_file=$(kubectl config view -o json | jq -r '.clusters[] | select(.name=="minikube") | .cluster."certificate-authority"')
-    local host=$(kubectl config view -o json | jq -r '.clusters[] | select(.name=="minikube") | .cluster.server')
-    local client_cert_file=$(kubectl config view -o json | jq -r '.users[] | select(.name=="minikube") | .user."client-certificate"')
-    local client_key_file=$(kubectl config view -o json | jq -r '.users[] | select(.name=="minikube") | .user."client-key"')
-    echo "{\"cluster_ca_certificate\": \"$(cat $ca_file | base64 -w0)\", \"host\":\"$host\", \"client_certificate\":\"$(cat $client_cert_file | base64 -w0)\", \"client_key\":\"$(cat $client_key_file | base64 -w0)\"}"
+    printDebug "getKubeConfig()"
+    local ca_file=$(kubectl config view --raw -o json | jq -r '.clusters[] | select((.name=="minikube") or (.name=="docker-desktop")) | .cluster."certificate-authority-data"')
+    local host=$(kubectl config view --raw -o json | jq -r '.clusters[] | select((.name=="minikube") or (.name=="docker-desktop")) | .cluster.server')
+    local client_cert_file=$(kubectl config view --raw -o json | jq -r '.users[] | select((.name=="minikube") or (.name=="docker-desktop")) | .user."client-certificate-data"')
+    local client_key_file=$(kubectl config view --raw -o json | jq -r '.users[] | select((.name=="minikube") or (.name=="docker-desktop")) | .user."client-key-data"')
+    echo "{\"cluster_ca_certificate\": \"$(echo $ca_file)\", \"host\":\"$host\", \"client_certificate\":\"$(echo $client_cert_file)\", \"client_key\":\"$(echo $client_key_file)\"}"
 }
 
 function checkCommandAndRetry() {
@@ -119,21 +120,23 @@ function coreDnsAddRecords() {
     local domain=$1
     local ip=$2
     printDebug "coreDnsAddRecords(domain: $domain, ip: $ip)"
-    ## Add kathra.db into Coredns ConfigMap
+
+    ## Add or Patch kathra.db into Coredns ConfigMap
     kubectl -n kube-system get cm coredns -o json >  $tmp/coredns.cm.json
     local configMap=$(kubectl -n kube-system get cm coredns -o json | jq -r '.data["kathra.db"]')
-    if [ "$configMap" == "null" ]
-    then
-        cat > $tmp/kathra.db <<EOF
+    [ "$configMap" == "null" ] || kubectl -n kube-system patch configmap coredns --type=json -p='[{"op": "remove", "path": "/data/kathra.db"}]'
+
+    kubectl -n kube-system get cm coredns -o json >  $tmp/coredns.cm.json
+    cat > $tmp/kathra.db <<EOF
 $domain.            IN      SOA     sns.dns.icann.org. noc.dns.icann.org. 2015082541 7200 3600 1209600 3600
 $domain.            IN      NS      b.iana-servers.net.
 $domain.            IN      NS      a.iana-servers.net.
 $domain.            IN      A       $ip
 *.$domain.          IN      CNAME   $domain.
 EOF
-        jq ".data += {\"kathra.db\": \"$(cat $tmp/kathra.db | sed ':a;N;$!ba;s/\n/\n/g')\"}" < $tmp/coredns.cm.json | sed "s/53 {/53 {\\\\n file \/etc\/coredns\/kathra.db $domain /g" > $tmp/coredns.cm.updated.json
-        kubectl apply -f $tmp/coredns.cm.updated.json || printErrorAndExit "Unable to update coredns configmap: $tmp/coredns.cm.updated.json"
-    fi
+    jq ".data += {\"kathra.db\": \"$(cat $tmp/kathra.db | sed ':a;N;$!ba;s/\n/\n/g')\"}" < $tmp/coredns.cm.json | sed "s/53 {/53 {\\\\n file \/etc\/coredns\/kathra.db $domain /g" > $tmp/coredns.cm.updated.json
+    kubectl apply -f $tmp/coredns.cm.updated.json || printErrorAndExit "Unable to update coredns configmap: $tmp/coredns.cm.updated.json"
+    
     
     ## Mount kathra.db into Coredns Deployment
     kubectl -n kube-system get deployment coredns -o json > $tmp/coredns.deployment.json
@@ -143,7 +146,11 @@ EOF
         kubectl apply -f $tmp/coredns.deployment.updated.json || printErrorAndExit "Unable to update coredns deployment: $tmp/coredns.deployment.updated.json"
     fi
 
+    ## Force restart pods
+    kubectl -n kube-system delete pods -l k8s-app=kube-dns
+
     ## Test DNS config
+    printInfo "Check internal DNS $domain -> $ip"
     checkCommandAndRetry "kubectl delete pods check-dns ; kubectl run -it --rm --restart=Never --image=infoblox/dnstools:latest check-dns -- '-c' \"host $domain\" | tee | grep \"$domain has address $ip\" > /dev/null" || printErrorAndExit "Unable to run pod dnstools and check hostname"
     printInfo "CoreDNS Configured"
     return 0
@@ -204,3 +211,32 @@ function generateCertsDnsChallenge() {
     return 0
 }
 export -f generateCertsDnsChallenge
+
+function initTfVars() {
+    local file=$1
+    [ -f $file ] && rm $file
+    echo "domain = \"$domain\"" >> $file
+    echo "kube_config = $(getKubeConfig)" >> $file
+    echo "kathra_version = \"$kathraImagesTag\"" >> $file
+    [ $manualDnsChallenge -eq 1 ]    && echo "tls_cert_filepath = \"$tmp/tls.cert\""        >> $file
+    [ $manualDnsChallenge -eq 1 ]    && echo "tls_key_filepath = \"$tmp/tls.key\""          >> $file
+    [ $automaticDnsChallenge -eq 1 ] && echo "acme_provider = \"$acmeDnsProvider\""         >> $file
+    [ $automaticDnsChallenge -eq 1 ] && echo "acme_config = ${acmeDnsConfig}"               >> $file
+}
+export -f initTfVars
+
+
+function terraformInitAndApply() {
+    terraform init                      || printErrorAndExit "Unable to init terraform"
+    local retrySecondInterval=10
+    local attempt_counter=0
+    local max_attempts=5
+    while true; do
+        terraform apply -auto-approve && return 0 
+        printError "Terraform : Unable to apply, somes resources may be not ready, try again.. attempt ($attempt_counter/$max_attempts) "
+        [ ${attempt_counter} -eq ${max_attempts} ] && printError "Check $1, error" && printErrorAndExit "Unable to apply after several attempts"
+        attempt_counter=$(($attempt_counter+1))
+        sleep $retrySecondInterval
+    done
+}
+export -f terraformInitAndApply

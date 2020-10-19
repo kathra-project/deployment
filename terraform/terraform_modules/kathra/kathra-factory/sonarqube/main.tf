@@ -18,27 +18,25 @@ variable "oidc_client_id" {
 variable "oidc_client_secret" {
 }
 
-
-data "helm_repository" "oteemocharts" {
-  name = "oteemocharts"
-  url  = "https://oteemo.github.io/charts"
-}
-
 resource "helm_release" "sonarqube" {
 
   name       = "sonarqube"
-  repository = data.helm_repository.oteemocharts.metadata[0].name
+  repository = "https://oteemo.github.io/charts"
   chart      = "sonarqube"
-  version    = "6.2.2"
+  version    = "6.8.0"
   namespace  = var.namespace
   timeout    = 600
 
   values = [<<EOF
 
+image:
+  tag: 8.4-community
+
 ingress:
   enabled: true
   annotations:
     kubernetes.io/ingress.class: "${var.ingress_class}"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
     cert-manager.io/issuer: "${var.ingress_cert_manager_issuer}"
   hosts:
   - name: ${var.ingress_host}

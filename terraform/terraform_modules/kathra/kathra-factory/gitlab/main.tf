@@ -14,8 +14,6 @@ variable "ingress_tls_secret_name" {
 
 variable "namespace" { 
 }
-variable "password" {
-}
 variable "oidc_url" {
 }
 variable "oidc_client_id" {
@@ -36,26 +34,10 @@ variable "max_replicas" {
 }
 
 
-data "helm_repository" "gitlab" {
-  name = "gitlab"
-  url  = "https://charts.gitlab.io/"
-}
-
-resource "kubernetes_secret" "gitlab-root-pwd" {
-  metadata {
-    name        = "gitlab-root-pwd"
-    namespace   = var.namespace
-  }
-  data = {
-    password    = var.password
-  }
-}
-
-
 
 resource "helm_release" "gitlab" {
   name       = "gitlab"
-  repository = data.helm_repository.gitlab.metadata[0].name
+  repository = "https://charts.gitlab.io/"
   chart      = "gitlab"
   version    = "3.3.5"
   namespace  = var.namespace
@@ -168,19 +150,28 @@ resource "kubernetes_service" "gitlab_ssh_node_port" {
   }
 }
 
+data "kubernetes_secret" "pwd" {
+  metadata {
+    name        = "${helm_release.gitlab.name}-gitlab-initial-root-password"
+    namespace   = var.namespace
+  }
+  depends_on = [ helm_release.gitlab ]
+}
+
 output "namespace" {
     value = helm_release.gitlab.namespace
 }
 output "name" {
     value = helm_release.gitlab.name
 }
-output "username" {
-    value = "admin"
+
+output "admin" {
+  value = {
+    username = "root"
+    password = data.kubernetes_secret.pwd.data.password
+  }
 }
-output "password" {
-    //value = yamldecode(helm_release.gitlab.metadata[0].values).global.initialRootPassword
-    value = ""
-}
+
 output "host" {
     value = yamldecode(helm_release.gitlab.metadata[0].values).global.hosts.domain
 }

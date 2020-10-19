@@ -1,0 +1,41 @@
+users:
+  "demo":
+    firstname: "John"
+    lastname: "Doe"
+    email: "john.doe@kathra.org"
+    initialPassword: "123"
+  "j.bond":
+    firstname: "James"
+    lastname: "Bond"
+    email: "james.bond@kathra.org"
+    initialPassword: "123"
+  "j.bourne":
+    firstname: "Jason"
+    lastname: "Bourne"
+    email: "jason.bourne@kathra.org"
+    initialPassword: "123"
+  "h.bonisseur.de.la.bath":
+    firstname: "Hubert"
+    lastname: "Bonisseur de la Bath"
+    email: "hubert.bonisseur.de.la.bath@kathra.org"
+    initialPassword: "123"
+groups:
+  "demo-grp":
+    name: "demo-grp"
+    members:
+    - demo
+  "cia":
+    name: "cia"
+    members:
+    - "j.bourne"
+    - demo
+  "mi6":
+    name: "mi6"
+    members:
+    - "j.bond"
+    - demo
+  "oss":
+    name: "oss"
+    members:
+    - "h.bonisseur.de.la.bath"
+    - demo

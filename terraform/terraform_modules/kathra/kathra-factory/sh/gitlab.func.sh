@@ -89,7 +89,7 @@ function gitlabDefineAccountAsAdmin() {
     local dbPassword=$(echo $dbPasswordB64 | base64 -d)
     local podIdentifier=$(kubectl --kubeconfig=$kubeconfigFile -n $namespace get pods -l app=postgresql,release=$release -o json | jq -r -c '.items[0] | .metadata.name')
     kubectl --kubeconfig=$kubeconfigFile -n $namespace exec -it ${podIdentifier} -- bash -c "export PGPASSWORD=\"$dbPassword\" ; echo \"update users set admin=true where username like '${accountName}';\" | psql -U $dbUser -d $dbName" 2> /dev/null > $tmp/gitlabDefineAccountAsAdmin.updateDb
-    grep "UPDATE 1" < $tmp/gitlabDefineAccountAsAdmin > /dev/null || return 1
+    grep "UPDATE 1" < $tmp/gitlabDefineAccountAsAdmin.updateDb > /dev/null || return 1
     return 0
 }
 export -f gitlabDefineAccountAsAdmin

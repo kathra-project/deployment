@@ -56,16 +56,21 @@ export -f checkCommandAndRetry
 
 function checkDependencies() {
     printDebug "checkDependencies()"
-    which curl > /dev/null          || sudo apt-get install curl -y > /dev/null 2> /dev/null 
-    which jq >  /dev/null           || sudo apt-get install jq -y > /dev/null 2> /dev/null 
-    which unzip > /dev/null         || sudo apt-get install unzip -y > /dev/null 2> /dev/null 
-    which go > /dev/null            || sudo apt-get install golang-go > /dev/null 2> /dev/null 
+    local packageInstall="sudo apt-get install"
+    [ "$OSTYPE" == "win32" ] && packageInstall="choco install"
+    [ "$OSTYPE" == "msys" ]  && packageInstall="choco install"
+
+    which curl > /dev/null          || $packageInstall curl -y > /dev/null 2> /dev/null 
+    which jq >  /dev/null           || $packageInstall jq -y > /dev/null 2> /dev/null 
+    which unzip > /dev/null         || $packageInstall unzip -y > /dev/null 2> /dev/null 
+    which go > /dev/null            || $packageInstall golang-go > /dev/null 2> /dev/null 
     which kubectl > /dev/null       || installKubectl
     which terraform > /dev/null     || installTerraform
     
-    installTerraformPlugin "keycloak" "1.19.0" "https://github.com/mrparkers/terraform-provider-keycloak.git" "1.19.0"   || printErrorAndExit "Unable to install keycloak terraform plugin"
+    installTerraformPlugin "keycloak" "2.0.0" "https://github.com/mrparkers/terraform-provider-keycloak.git" "v2.0.0"   || printErrorAndExit "Unable to install keycloak terraform plugin"
     installTerraformPlugin "kubectl"  "1.3.5"  "https://github.com/gavinbunney/terraform-provider-kubectl"    "v1.3.5"   || printErrorAndExit "Unable to install kubectl terraform plugin"
-    installTerraformPlugin "nexus"    "1.8.1"  "https://github.com/datadrivers/terraform-provider-nexus"      "v1.8.1"   || printErrorAndExit "Unable to install nexus terraform plugin"
+    installTerraformPlugin "nexus"    "1.10.2" "https://github.com/datadrivers/terraform-provider-nexus"      "v1.10.2"   || printErrorAndExit "Unable to install nexus terraform plugin"
+
 }
 export -f checkDependencies
 
@@ -76,10 +81,17 @@ function installTerraformPlugin() {
     local pluginSourceRepositoryGit=$3
     local pluginSourceCommit=$4
     local system="linux"
-    [ "$OSTYPE" == "win32" ] && system="windows"
-    [ "$OSTYPE" == "msys" ]  && system="windows"
-
-    local bin=$SCRIPT_DIR/.terraform/plugins/${system}_amd64/terraform-provider-${pluginName}_v$pluginVersion
+    local ext=""
+    local basePlugin=$SCRIPT_DIR/.terraform/plugins
+    [ "$OSTYPE" == "win32" ] && system="windows" && ext=".exe"
+    [ "$OSTYPE" == "msys" ]  && system="windows" && ext=".exe"
+    
+    local bin=$basePlugin/${system}_amd64/terraform-provider-${pluginName}_v${pluginVersion}${ext}
+    
+    local terraformMinorVersion=$(cd /tmp ; terraform version | head -n 1 | sed "s/.*v[0-9]*\.//g" | sed "s/\.[0-9]*//g")
+    ## If terraform version > 0.13.x
+    [ $terraformMinorVersion -ge 13 ] && bin=$basePlugin/registry.terraform.io/hashicorp/${pluginName}/${pluginVersion}/${system}_amd64/terraform-provider-${pluginName}_v${pluginVersion}${ext}
+    
     printDebug "$bin"
     [ -f $bin ] && return 0
     [ -d /tmp/terraform-provider-$pluginName ] && rm -rf /tmp/terraform-provider-$pluginName 
@@ -87,7 +99,7 @@ function installTerraformPlugin() {
     cd /tmp/terraform-provider-$pluginName || return 1
     git checkout $pluginSourceCommit || return 1
     go build -o terraform-provider-$pluginName || return 1
-    [ ! -d "$(dirname $bin)" ] && mkdir "$(dirname $bin)"
+    [ ! -d "$(dirname $bin)" ] && mkdir -p "$(dirname $bin)"
     mv terraform-provider-$pluginName $bin || return 1
     cd $SCRIPT_DIR
 }
@@ -123,20 +135,51 @@ function installTerraform() {
 }
 export -f installTerraform
 
+function prePullImages() {
+    cat $SCRIPT_DIR/../images-to-pull | xargs -P 20 -I % bash -c "printInfo 'Pulling image % ...' ; docker pull % > /dev/null 2> /dev/null && printInfo 'Image % is up to date' || printError 'Error pulling image %'"
+}
 
 function postInstall() {
     terraform output -json kathra > $tmp/settings.json
     installKathraCli $tmp/settings.json
+
+    declare namespaceKathraSvc=$(terraform output -json kathra | jq -r '.services.namespace')
+    declare jobName=$(kubectl -n ${namespaceKathraSvc} get job -o json | jq -r '.items[0].metadata.labels."job-name"')
+    kubectl -n ${namespaceKathraSvc} wait --for=condition=complete job/${jobName}
+    [ $? -ne 0 ] && printError "Job ${jobName} not ready"
+
     printInfo "Kathra is installed in $((`date +%s`-START_KATHRA_INSTALL)) secondes"
     printInfo ""
     printInfo "You can use Kathra from dashboard : https://$(cat $tmp/settings.json | jq -r '.services.services.dashboard.host') or use kathra-cli: $KATHRA_CLI_GIT"
-    printInfo "All passwords are stored in Terraform (exec: terraform output)" 
-    printInfo "User login: $(cat $tmp/settings.json | jq -r '.factory.realm.first_user.username')"
-    printInfo "User password: $(cat $tmp/settings.json | jq -r '.factory.realm.first_user.password')"
+    printInfo "All passwords & credentials are stored in Terraform (exec: terraform output)" 
     printInfo ""
-    printInfo "Keycloak URL: $(terraform output -json kathra | jq -r '.factory.keycloak.url')"
-    printInfo "Keycloak admin login: $(cat $tmp/settings.json | jq -r '.factory.keycloak.username')"
-    printInfo "Keycloak admin password: $(cat $tmp/settings.json | jq -r '.factory.keycloak.password')"
+    printInfo "Keycloak URL: $(cat $tmp/settings.json | jq -r '.factory.keycloak.url')"
+    printInfo "Keycloak admin login: $(cat $tmp/settings.json | jq -r '.factory.keycloak.admin.username')"
+    printInfo "Keycloak admin password: $(cat $tmp/settings.json | jq -r '.factory.keycloak.admin.password')"
+    printInfo ""
+    printInfo "Jenkins URL: $(cat $tmp/settings.json | jq -r '.factory.jenkins.url')"
+    printInfo "Jenkins admin login: $(cat $tmp/settings.json | jq -r '.factory.jenkins.admin.username')"
+    printInfo "Jenkins admin password: $(cat $tmp/settings.json | jq -r '.factory.jenkins.admin.password')"
+    printInfo ""
+    printInfo "Gitlab URL: $(cat $tmp/settings.json | jq -r '.factory.gitlab.url')"
+    printInfo "Gitlab admin login: $(cat $tmp/settings.json | jq -r '.factory.gitlab.admin.username')"
+    printInfo "Gitlab admin password: $(cat $tmp/settings.json | jq -r '.factory.gitlab.admin.password')"
+    printInfo ""
+    printInfo "Nexus URL: $(cat $tmp/settings.json | jq -r '.factory.nexus.url')"
+    printInfo "Nexus admin login: $(cat $tmp/settings.json | jq -r '.factory.nexus.admin.username')"
+    printInfo "Nexus admin password: $(cat $tmp/settings.json | jq -r '.factory.nexus.admin.password')"
+    printInfo ""
+    printInfo "Sonarqube URL: $(cat $tmp/settings.json | jq -r '.factory.sonarqube.url')"
+    printInfo "Sonarqube admin login: $(cat $tmp/settings.json | jq -r '.factory.sonarqube.admin.username')"
+    printInfo "Sonarqube admin password: $(cat $tmp/settings.json | jq -r '.factory.sonarqube.admin.password')"
+    printInfo ""
+    printInfo "Harbor URL: $(cat $tmp/settings.json | jq -r '.factory.harbor.url')"
+    printInfo "Harbor admin login: $(cat $tmp/settings.json | jq -r '.factory.harbor.admin.username')"
+    printInfo "Harbor admin password: $(cat $tmp/settings.json | jq -r '.factory.harbor.admin.password')"
+    printInfo ""
+    printInfo "Kathra URL: https://$(cat $tmp/settings.json | jq -r '.services.services.dashboard.host')"
+    printInfo "User login: $(cat $tmp/settings.json | jq -r '[.factory.identities.users[]][0].username')"
+    printInfo "User password: $(cat $tmp/settings.json | jq -r '[.factory.identities.users[]][0].initial_password[0].value')"
 }
 export -f postInstall
 
@@ -191,3 +234,16 @@ function writeEntryIntoFile(){
     jq ".$key = \"$value\"" $file > $file.updated && mv $file.updated $file
 }
 export -f writeEntryIntoFile
+
+function checkHardwareResources() {
+    local -i cpusRequired=16
+    local -i memoryRequired=33554432
+
+    local -i memoryCurrent=$(kubectl get nodes -o json | jq -r '.items[] | .status.allocatable.memory' | awk '{n += $1}; END{print n}')
+    [ $memoryRequired -gt $memoryCurrent ] &&  printError "Kathra needs $memoryRequired bytes of memory (current: $memoryCurrent)" && return 1
+
+    local -i cpusCurrent=$(kubectl get nodes -o json | jq -r '.items[] | .status.allocatable.cpu' | awk '{n += $1}; END{print n}')
+    [ $cpusRequired -gt $cpusCurrent ]   &&  printError "Kathra needs $cpusRequired vCPU (current: $cpusCurrent)" && return 2
+
+    return 0
+}

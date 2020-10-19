@@ -102,7 +102,7 @@ function parseArgs() {
             --cpus)                         minikubeCpus=$value;;
             --memory)                       minikubeMemory=$value;;
             --disk-size)                    minikubeDiskSize=$value;;
-            --minikube-version)             minikubeVersion=$value && echo "value=$value";;
+            --minikube-version)             minikubeVersion=$value;;
             --vm-driver)                    minikubeVmDriver=$value;;
             --kubernetes-version)           kubernetesVersion=$value;;
             --verbose)                      debug=1;;
@@ -125,17 +125,6 @@ function main() {
     showHelp
 }
 
-function initTfVars() {
-    local file=$1
-    [ -f $file ] && rm $file
-    echo "domain = \"$domain\"" >> $file
-    echo "kube_config = $(getKubeConfig)" >> $file
-    [ $manualDnsChallenge -eq 1 ]    && echo "tls_cert_filepath = \"$tmp/tls.cert\""            >> $file
-    [ $manualDnsChallenge -eq 1 ]    && echo "tls_key_filepath = \"$tmp/tls.key\""              >> $file
-    [ $automaticDnsChallenge -eq 1 ] && echo "acme_provider = \"$acmeDnsProvider\""         >> $file
-    [ $automaticDnsChallenge -eq 1 ] && echo "acme_config = ${acmeDnsConfig}"               >> $file
-}
-
 function deploy() {
     printDebug "deploy()"
     export START_KATHRA_INSTALL=`date +%s`
@@ -143,7 +132,9 @@ function deploy() {
     [ "$domain" == "" ]           && printErrorAndExit "Domain is not specifed"                    || printDebug "domain=$domain"
     [ $manualDnsChallenge -eq 1 ] && generateCertsDnsChallenge $domain $tmp/tls.cert $tmp/tls.key
     startMinikube                                                               || printErrorAndExit "Unable to install minikube"
+    prePullImages
     kubectl get nodes                                                           || printErrorAndExit "Unable to connect to minikube with kubectl"
+    checkHardwareResources                                                      || printErrorAndExit "Not enought resources (cpu or memory)"
     coreDnsAddRecords $domain  "$(minikube ip)"                                 || printErrorAndExit "Unable to add dns entry into coredns"
     getKubeConfig > $tmp/kathra_minikube_kubeconfig                             || printErrorAndExit "Unable to get kubeconfig"
     

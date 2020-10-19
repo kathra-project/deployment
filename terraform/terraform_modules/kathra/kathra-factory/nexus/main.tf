@@ -12,19 +12,12 @@ variable "namespace" {
 variable "password" {
 }
 
-
-data "helm_repository" "oteemocharts" {
-  name = "oteemocharts"
-  url  = "https://oteemo.github.io/charts"
-}
-
-
 resource "helm_release" "nexus" {
   name       = "nexus"
-  repository = data.helm_repository.oteemocharts.metadata[0].name
+  repository = "https://oteemo.github.io/charts"
   chart      = "sonatype-nexus"
   namespace  = var.namespace
-  version    = "2.1.0"
+  version    = "2.8.0"
 
   values = [<<EOF
 nexusProxy:
@@ -42,7 +35,7 @@ nexusProxy:
 nexus:
   adminPassword: ${var.password}
   imageName: sonatype/nexus3
-  imageTag: 3.24.0
+  imageTag: 3.25.1
   resources:
     limits:
       cpu: 2
@@ -66,6 +59,8 @@ ingress:
   annotations:
     kubernetes.io/ingress.class: "${var.ingress_class}"
     cert-manager.io/issuer: "${var.ingress_cert_manager_issuer}"
+    nginx.ingress.kubernetes.io/proxy-buffering: "on"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 256k
   tls:
     enabled: true
     usesSecret: true
@@ -103,14 +98,10 @@ module "default_repositories" {
     password  = "admin123"
     vm_depends_on = [ null_resource.allow_anonymous ]
 }
-/*
+
 output "repositories" {
     value = module.default_repositories
 }
-*/
-
-
-
 
 provider "nexus" {
     insecure = true
@@ -125,6 +116,14 @@ output "namespace" {
 output "name" {
     value = helm_release.nexus.name
 }
+
+output "admin" {
+  value = {
+    username = "admin"
+    password = "admin123"
+  }
+}
+
 output "username" {
     value = nexus_user.kathra_user.userid
 }

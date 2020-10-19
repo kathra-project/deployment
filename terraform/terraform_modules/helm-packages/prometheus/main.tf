@@ -16,11 +16,6 @@ variable "grafana" {
 
 
 
-data "helm_repository" "stable" {
-  name = "stable"
-  url  = "https://kubernetes-charts.storage.googleapis.com"
-}
-
 /*
 resource "helm_release" "prometheus-operator" {
   name       = "prometheus"

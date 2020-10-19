@@ -29,7 +29,9 @@ variable "acme_config" {
     default = null
 }
 
-
+variable "storage_class_default" {
+    default = "k8s.io/minikube-hostpath"
+}
 
 
 provider "kubernetes" {
@@ -66,6 +68,7 @@ provider "kubectl" {
 ### ACME 
 ############################################################
 provider "acme" {
+    version     = "1.2.1"
     server_url = "https://acme-v02.api.letsencrypt.org/directory"
 }
 
@@ -90,6 +93,14 @@ resource "acme_certificate" "certificate" {
     common_name                 = "*.${var.domain}"
 }
 
+output "acme" {
+    value = {
+        "tls_private_key"   = tls_private_key.private_key[0]
+        "cert"              = "${acme_certificate.certificate[0].certificate_pem}${acme_certificate.certificate[0].issuer_pem}"
+        "key"               = acme_certificate.certificate[0].private_key_pem
+    }
+}
+
 ############################################################
 ### STORAGE CLASS 
 ############################################################
@@ -97,7 +108,7 @@ resource "kubernetes_storage_class" "default" {
     metadata {
         name = "default"
     }
-    storage_provisioner = "k8s.io/minikube-hostpath"
+    storage_provisioner = var.storage_class_default
     reclaim_policy      = "Delete"
 }
 
@@ -107,14 +118,14 @@ resource "kubernetes_storage_class" "default" {
 module "namespace_factory_with_tls" {
     source            = "./namespace_with_tls"
     namespace         = "kathra-factory"
-    default_tls_cert  = (var.acme_provider == null) ? file(var.tls_cert_filepath) : acme_certificate.certificate[0].certificate_pem 
+    default_tls_cert  = (var.acme_provider == null) ? file(var.tls_cert_filepath) : "${acme_certificate.certificate[0].certificate_pem}${acme_certificate.certificate[0].issuer_pem}"
     default_tls_key   = (var.acme_provider == null) ? file(var.tls_key_filepath)  : acme_certificate.certificate[0].private_key_pem
 }
 
 module "namespace_kathra_with_tls" {
     source            = "./namespace_with_tls"
     namespace         = "kathra-services"
-    default_tls_cert  = (var.acme_provider == null) ? file(var.tls_cert_filepath) : acme_certificate.certificate[0].certificate_pem 
+    default_tls_cert  = (var.acme_provider == null) ? file(var.tls_cert_filepath) : "${acme_certificate.certificate[0].certificate_pem}${acme_certificate.certificate[0].issuer_pem}"
     default_tls_key   = (var.acme_provider == null) ? file(var.tls_key_filepath)  : acme_certificate.certificate[0].private_key_pem
 }
 

@@ -19,14 +19,34 @@ variable "password" {
 variable "ingress_class" {
 }
 
-data "helm_repository" "codecentric" {
-  name = "codecentric"
-  url  = "https://codecentric.github.io/helm-charts"
+resource "helm_release" "postgresql" {
+  name       = "keycloak-db"
+  repository = "https://cetic.github.io/helm-charts"
+  chart      = "postgresql"
+  namespace  = var.namespace
+
+  values = [<<EOF
+postgresql:
+  username: "${var.username}"
+  password: "${var.password}"
+  database: "keycloak"
+persistence:
+  enabled: true
+EOF
+]
+}
+
+data "kubernetes_service" "postgresql" {
+  metadata {
+    name      = "${helm_release.postgresql.name}-postgresql"
+    namespace = var.namespace
+  }
+  depends_on = [ helm_release.postgresql ]
 }
 
 resource "helm_release" "keycloak" {
   name       = "keycloak"
-  repository = data.helm_repository.codecentric.metadata[0].name
+  repository = "https://codecentric.github.io/helm-charts"
   chart      = "keycloak"
   version    = var.version_chart
   namespace  = var.namespace
@@ -36,8 +56,13 @@ keycloak:
   username: "${var.username}"
   password: "${var.password}"
   persistence:
-    deployPostgres: true
-    dbVendor: "postgres"
+    deployPostgres: false
+    dbVendor: postgres
+    dbName:  '${yamldecode(helm_release.postgresql.metadata[0].values).postgresql.database}'
+    dbHost: ${data.kubernetes_service.postgresql.metadata[0].name}
+    dbPort: 5432
+    dbUser: '${yamldecode(helm_release.postgresql.metadata[0].values).postgresql.username}'
+    dbPassword: '${yamldecode(helm_release.postgresql.metadata[0].values).postgresql.password}'
   resources:
     limits:
       cpu: 2
@@ -58,9 +83,11 @@ keycloak:
     - hosts:
       - ${var.ingress_host}
       secretName: ${var.ingress_tls_secret_name == null ? "keycloak-cert" : var.ingress_tls_secret_name}
+
 EOF
 ]
 
+  depends_on = [ helm_release.postgresql ]
 }
 
 resource "null_resource" "check_tls_resolution" {
@@ -84,12 +111,14 @@ output "namespace" {
 output "name" {
     value = helm_release.keycloak.name
 }
-output "username" {
-    value = yamldecode(helm_release.keycloak.metadata[0].values).keycloak.username
+
+output "admin" {
+  value = {
+    username = yamldecode(helm_release.keycloak.metadata[0].values).keycloak.username
+    password = yamldecode(helm_release.keycloak.metadata[0].values).keycloak.password
+  }
 }
-output "password" {
-    value = yamldecode(helm_release.keycloak.metadata[0].values).keycloak.password
-}
+
 output "host" {
     value = yamldecode(helm_release.keycloak.metadata[0].values).keycloak.ingress.hosts[0]
 }

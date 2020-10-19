@@ -47,8 +47,17 @@ terraform output kubeconfig_content > /tmp/kubeconfig_content
 export KUBECONFIG=/tmp/kubeconfig_content
 ```
 
+## Docker Desktop (Windows)
 
-## Minikube
+### Requirements
+- Computer with 10 CPU and 20 Go Memory
+- Large bandwidth : Only for images pulling
+- DNS Provider : For DNS Challing with Let's Encrypt
+- Docker Desktop for Windows
+- Terraform, Git Bash
+- Root access : For additionnals packages and DNS configuration
+
+## Minikube (Ubuntu/Debian)
 
 ### Requirements
 - Computer with 10 CPU and 20 Go Memory
