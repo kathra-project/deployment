@@ -135,6 +135,8 @@ module "kathra" {
     kathra_version              = var.kathra_version
     ingress_controller          = "nginx"
     ingress_cert_manager_issuer = ""
+    storage_class               = kubernetes_storage_class.default.metadata[0].name
+    
     domain                      = var.domain
     kube_config                 = var.kube_config
 

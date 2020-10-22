@@ -115,6 +115,7 @@ module "kathra" {
     source                      = "../kathra"
     ingress_controller          = module.kubernetes_addons.ingress_controller
     ingress_cert_manager_issuer = module.kubernetes_addons.ingress_cert_manager_issuer
+    storage_class               = kubernetes_storage_class.default.metadata[0].name
     domain                      = var.domain
     kathra_version              = var.kathra_version
     kube_config                 = module.kubernetes.kube_config

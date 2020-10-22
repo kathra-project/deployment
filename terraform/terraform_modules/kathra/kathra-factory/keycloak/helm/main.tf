@@ -18,6 +18,9 @@ variable "password" {
 }
 variable "ingress_class" {
 }
+variable "storage_class" {
+  default = "default"
+}
 
 data "helm_repository" "cetic" {
   name = "cetic"
@@ -38,6 +41,7 @@ postgresql:
   database: "keycloak"
 persistence:
   enabled: true
+  storageClass: ${var.storage_class}
 EOF
 ]
 }
