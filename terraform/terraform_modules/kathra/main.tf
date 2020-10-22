@@ -11,6 +11,9 @@ variable "ingress_controller" {
 }
 variable "ingress_cert_manager_issuer" {
 }
+variable "storage_class" {
+    default = "default"
+}
 variable "kube_config" {
 }
 variable "factory_namespace" {
@@ -46,6 +49,7 @@ module "factory" {
     ingress_class               = var.ingress_controller
     ingress_cert_manager_issuer = var.ingress_cert_manager_issuer
     ingress_tls_secret_name     = var.factory_tls_secret_name
+    storage_class               = var.storage_class
     domain                      = var.domain
     namespace                   = var.factory_namespace
     kube_config                 = var.kube_config

@@ -9,6 +9,9 @@ variable "ingress_class" {
 }
 variable "ingress_cert_manager_issuer" {
 }
+variable "storage_class" {
+    default = "default"
+}
 variable "kube_config" {
 
 }
@@ -137,6 +140,8 @@ module "keycloak" {
     ingress_class               = var.ingress_class
     ingress_cert_manager_issuer = var.ingress_cert_manager_issuer
     ingress_tls_secret_name     = var.ingress_tls_secret_name
+    
+    storage_class               = var.storage_class
 }
 output "keycloak" {
     value = module.keycloak
@@ -318,6 +323,8 @@ module "jenkins" {
     ingress_class               = var.ingress_class
     ingress_cert_manager_issuer = var.ingress_cert_manager_issuer
     ingress_tls_secret_name     = var.ingress_tls_secret_name
+
+    storage_class               = var.storage_class
 
     namespace                   = var.namespace
     password                    = var.keycloak.password

@@ -23,6 +23,9 @@ variable "git_ssh" {
 variable "image_builder_version" {
   default = "latest"
 }
+variable "storage_class" {
+  default = "default"
+}
 
 
 variable "deploymanager_url" {
@@ -97,7 +100,7 @@ module "nfs-server" {
     source                  = "./nfs-cache"
     namespace               = var.namespace
     name                    = "jenkins-nfs-server"
-    storage_class           = "default"
+    storage_class           = var.storage_class
 }
 
 resource "kubernetes_storage_class" "nfs" {
@@ -211,7 +214,7 @@ referenceContent:
   - data:
     - fileName: plugins.txt
       fileContent: |
-        credentials:2.3.10
+        credentials
         kubernetes
         kubernetes-credentials
         workflow-aggregator
