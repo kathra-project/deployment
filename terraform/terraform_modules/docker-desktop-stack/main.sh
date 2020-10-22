@@ -99,7 +99,6 @@ function deploy() {
 
     which docker > /dev/null                                                    || printErrorAndExit "Docker not installed"
     prePullImages
-    
     export START_KATHRA_INSTALL=`date +%s`
     checkDependencies
     [ "$domain" == "" ]           && printErrorAndExit "Domain is not specifed" || printDebug "domain=$domain"
@@ -116,7 +115,7 @@ function deploy() {
 
     local subdomains=( "keycloak" "sonarqube" "jenkins" "gitlab" "harbor" "nexus" "appmanager" "dashboard" "resourcemanager" "pipelinemanager" "sourcemanager" "codegen-helm" "codegen-swagger" "binaryrepositorymanager-harbor" "binaryrepositorymanager-nexus" )
     for subdomain in ${subdomains[@]}; do addEntryHostFile "$subdomain.$domain" "$(getLocalIp)"; done;
-    #echo ${subdomains[@]} | xargs -I % bash -c "addEntryHostFile '%.${domain}' '$(getLocalIp)'"
+    #echo ${subdomains[@]} | xargs -I % bash -c "addEntryHostFile \"%.${domain}\" \"$(getLocalIp)\""
     
     # Copy configuration from MinikubeStack
     cp -R ${SCRIPT_DIR}/../minikube-stack/namespace_with_tls .
@@ -177,23 +176,23 @@ function addEntryHostFileWindows() {
     local domain=$1
     local ip=$2
     local hostsFile=$WINDIR/system32/drivers/etc/host
-    printDebug "addEntryHostFileWindows(domain: $domain, ip: $ip)"
+    printInfo "addEntryHostFileWindows(domain: $domain, ip: $ip)"
     grep -v " $domain$" < $hostsFile > $tmp/addEntryHostFile
     
     cp $tmp/addEntryHostFile $hostsFile
     [ $? -ne 0 ] && printErrorAndExit "Error : Unable to modify host file, please start GitBash with admin rights"
     echo "$ip $domain" | tee -a $hostsFile
 }
-export -f addEntryHostFile
+export -f addEntryHostFileWindows
 
 function addEntryHostFileWsl() {
     local domain=$1
     local ip=$2
-    printDebug "addEntryHostFileWsl(domain: $domain, ip: $ip)"
+    printInfo "addEntryHostFileWsl(domain: $domain, ip: $ip)"
     sudo grep -v " $domain$" < /etc/hosts > $tmp/addEntryHostFile && sudo cp $tmp/addEntryHostFile /etc/hosts
     echo "$ip $domain" | sudo tee -a /etc/hosts
 }
-export -f addEntryHostFile
+export -f addEntryHostFileWsl
 
 function getLocalIp() {
     printDebug "getLocalIp"

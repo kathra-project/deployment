@@ -19,11 +19,17 @@ variable "password" {
 variable "ingress_class" {
 }
 
+data "helm_repository" "cetic" {
+  name = "cetic"
+  url  = "https://cetic.github.io/helm-charts"
+}
+
 resource "helm_release" "postgresql" {
-  name       = "keycloak-db"
-  repository = "https://cetic.github.io/helm-charts"
-  chart      = "postgresql"
-  namespace  = var.namespace
+  name          = "keycloak-db"
+  repository    = data.helm_repository.cetic.metadata[0].name
+  chart         = "postgresql"
+  namespace     = var.namespace
+  version       = "0.2.0"
 
   values = [<<EOF
 postgresql:
