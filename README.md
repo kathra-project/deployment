@@ -50,17 +50,47 @@ export KUBECONFIG=/tmp/kubeconfig_content
 ## Docker Desktop (Windows)
 
 ### Requirements
-- Computer with 10 CPU and 20 Go Memory
+- Computer with 10 CPU and 30 Go Memory
 - Large bandwidth : Only for images pulling
 - DNS Provider : For DNS Challing with Let's Encrypt
-- Docker Desktop for Windows
+- Docker Desktop with Kubernetes for Windows
 - Terraform, Git Bash
-- Root access : For additionnals packages and DNS configuration
+- Root access
+
+
+#### Manual ACME
+```sh
+# From Git Bash with adminstrator access
+git clone git@gitlab.com:kathra/deployment.git
+./deployment/terraform/terraform_modules/docker-desktop-stack
+./main.sh deploy --domain=local.my-domain.org --manual-acme
+```
+
+By default, the login is 'demo' and password '123'.
+
+You can add/remove users with file 'terraform/terraform_modules/kathra/identities.yml'.
+
+#### Auto ACME
+ACME with Terraform Provider https://www.terraform.io/docs/providers/acme/dns_providers/
+```sh
+# From Git Bash with adminstrator access
+git clone git@gitlab.com:kathra/deployment.git
+./deployment/terraform/terraform_modules/docker-desktop-stack
+./main.sh deploy --domain=local.my-domain.org --acme-dns-provider=ovh --acme-dns-config='{"OVH_APPLICATION_KEY": "app-key", "OVH_APPLICATION_SECRET": "app-secret","OVH_CONSUMER_KEY": "consumer-key","OVH_ENDPOINT": "ovh-eu"}'
+```
+
+#### Own TLS Cert
+```sh
+# From Git Bash with adminstrator access
+git clone git@gitlab.com:kathra/deployment.git
+./deployment/terraform/terraform_modules/docker-desktop-stack
+./main.sh deploy --domain=local.my-domain.org --tlsCert=<path> --tlsKey=<path>
+```
 
 ## Minikube (Ubuntu/Debian)
 
 ### Requirements
-- Computer with 10 CPU and 20 Go Memory
+- Computer with 10 CPU and 30 Go Memory
 - Large bandwidth : Only for images pulling
 - DNS Provider : For DNS Challing with Let's Encrypt
 - Ubuntu or Debian OS : Not tested on other distrib
@@ -80,7 +110,9 @@ git clone git@gitlab.com:kathra/deployment.git
 
 This procedure installs Minikube and configures somes features (Traefik, KubeDB and internal DNS).
 
-By default, the login is 'user' and password '123'. You can override this configure during installation.
+By default, the login is 'demo' and password '123'.
+
+You can add/remove users with file 'terraform/terraform_modules/kathra/identities.yml'.
 
 #### Auto ACME
 ACME with Terraform Provider https://www.terraform.io/docs/providers/acme/dns_providers/

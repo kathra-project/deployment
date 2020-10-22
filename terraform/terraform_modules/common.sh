@@ -88,7 +88,10 @@ function installTerraformPlugin() {
     
     local bin=$basePlugin/${system}_amd64/terraform-provider-${pluginName}_v${pluginVersion}${ext}
     
-    local terraformMinorVersion=$(cd /tmp ; terraform version | head -n 1 | sed "s/.*v[0-9]*\.//g" | sed "s/\.[0-9]*//g")
+    cd /tmp
+    terraform version > /tmp/terraform.version
+    local terraformMinorVersion=$(cat /tmp/terraform.version | head -n 1 | sed "s/.*v[0-9]*\.//g" | sed "s/\.[0-9]*//g")
+    cd $SCRIPT_DIR
     ## If terraform version > 0.13.x
     [ $terraformMinorVersion -ge 13 ] && bin=$basePlugin/registry.terraform.io/hashicorp/${pluginName}/${pluginVersion}/${system}_amd64/terraform-provider-${pluginName}_v${pluginVersion}${ext}
     
@@ -136,7 +139,8 @@ function installTerraform() {
 export -f installTerraform
 
 function prePullImages() {
-    cat $SCRIPT_DIR/../images-to-pull | xargs -P 20 -I % bash -c "printInfo 'Pulling image % ...' ; docker pull % > /dev/null 2> /dev/null && printInfo 'Image % is up to date' || printError 'Error pulling image %'"
+    printDebug "prePullImages()"
+    cat $SCRIPT_DIR/../images-to-pull | awk '{count++; print $1 ";" count;}' | xargs -P5 -I%  bash -c "declare input=\"%\"; declare image=\$(echo \$input | sed 's/;.*//g') ; declare index=\$(echo \$input | sed 's/.*;//g') ; printInfo \"Pulling image \$image ...  \$index/$(cat $SCRIPT_DIR/../images-to-pull | wc -l) \" ; docker pull \$image > /dev/null 2> /dev/null && printInfo \"Image \$image is up to date\" || printError \"Error pulling image \$image\""
 }
 
 function postInstall() {
