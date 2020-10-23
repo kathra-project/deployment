@@ -20,7 +20,7 @@ export azureLocation="eastus"
 export terraformVersion="0.12.21"
 export traefikChartVersion="1.85.0"
 
-export kubernetesVersion="1.16.10"
+export kubernetesVersion="1.18.8"
 
 export kathraImagesTag="stable"
 
@@ -178,6 +178,8 @@ function checkDependencies() {
     which az > /dev/null || installAzureCli
     which kubectl > /dev/null || installKubectl
     which terraform > /dev/null || installTerraform
+
+    checkTerraformPlugins
 }
 export -f checkDependencies
 

@@ -8,3 +8,4 @@ target
 **/.terraform.tfstate.lock.info
 kube_config
 terraform/terraform_modules/docker-desktop-stack/main.tf
+terraform/terraform_modules/helm-packages/cert-manager/clusterIssuer.yaml

@@ -36,7 +36,7 @@ grafana:
       secretName: ${var.grafana.ingress_tls_secret_name == null ? "grafana-cert" : var.grafana.ingress_tls_secret_name}
     annotations:
       kubernetes.io/ingress.class: "${var.ingress_class}"
-      cert-manager.io/issuer: "${var.ingress_cert_manager_issuer}"
+      cert-manager.io/cluster-issuer: "${var.ingress_cert_manager_issuer}"
 
 EOF
 ]

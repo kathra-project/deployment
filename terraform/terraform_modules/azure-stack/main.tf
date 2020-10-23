@@ -18,7 +18,7 @@ variable "group" {
     default = "kathra"
 }
 variable "location" {
-    default = "francecentral"
+    default = "eastus"
 }
 variable "k8s_node_count" {
     default = 2
@@ -27,7 +27,7 @@ variable "k8s_node_size" {
     default = "Standard_D8s_v3"
 }
 variable "k8s_version" {
-    default = "1.16.10"
+    default = "1.18.8"
 }
 
 provider "azurerm" {
@@ -128,15 +128,15 @@ module "kathra" {
 ### BACKUP
 ####################
 module "backup" {
-    source                  = "./../backup/azure"
-    group                   = azurerm_resource_group.kathra.name
-    namespace               = "velero"
-    location                = var.location
-    tenant_id               = var.tenant_id
-    subscribtion_id         = var.subscribtion_id
-    velero_client_id        = var.k8s_client_id
-    velero_client_secret    = var.k8s_client_secret
-    kubernetes_azure_group_name = "${module.kubernetes.azure_group}"
+    source                      = "./../backup/azure"
+    group                       = azurerm_resource_group.kathra.name
+    namespace                   = "velero"
+    location                    = var.location
+    tenant_id                   = var.tenant_id
+    subscribtion_id             = var.subscribtion_id
+    velero_client_id            = var.k8s_client_id
+    velero_client_secret        = var.k8s_client_secret
+    kubernetes_azure_group_name = module.kubernetes.azure_group
 }
 
 

@@ -67,12 +67,16 @@ function checkDependencies() {
     which kubectl > /dev/null       || installKubectl
     which terraform > /dev/null     || installTerraform
     
-    installTerraformPlugin "keycloak" "2.0.0" "https://github.com/mrparkers/terraform-provider-keycloak.git" "v2.0.0"   || printErrorAndExit "Unable to install keycloak terraform plugin"
-    installTerraformPlugin "kubectl"  "1.3.5"  "https://github.com/gavinbunney/terraform-provider-kubectl"    "v1.3.5"   || printErrorAndExit "Unable to install kubectl terraform plugin"
-    installTerraformPlugin "nexus"    "1.10.2" "https://github.com/datadrivers/terraform-provider-nexus"      "v1.10.2"   || printErrorAndExit "Unable to install nexus terraform plugin"
-
+    checkTerraformPlugins
 }
 export -f checkDependencies
+
+function checkTerraformPlugins() {
+    installTerraformPlugin "keycloak" "2.0.0" "https://github.com/mrparkers/terraform-provider-keycloak.git" "v2.0.0"   || printErrorAndExit "Unable to install keycloak terraform plugin"
+    installTerraformPlugin "kubectl"  "1.9.1"  "https://github.com/gavinbunney/terraform-provider-kubectl"    "v1.9.1"   || printErrorAndExit "Unable to install kubectl terraform plugin"
+    installTerraformPlugin "nexus"    "1.10.2" "https://github.com/datadrivers/terraform-provider-nexus"      "v1.10.2"   || printErrorAndExit "Unable to install nexus terraform plugin"
+}
+export -f checkTerraformPlugins
 
 function installTerraformPlugin() {
     printDebug "installTerraformPlugin(pluginName: $1, pluginVersion: $2, pluginSourceCommit: $3, pluginSourceCommit: $4)"
