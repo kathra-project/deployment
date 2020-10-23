@@ -46,11 +46,33 @@ function addLocalIpInCoreDNS() {
 
 function getKubeConfig() {
     printDebug "getKubeConfig()"
-    local ca_file=$(kubectl config view --raw -o json | jq -r '.clusters[] | select((.name=="minikube") or (.name=="docker-desktop")) | .cluster."certificate-authority-data"')
+    local ca_data=$(kubectl config view --raw -o json | jq -r '.clusters[] | select((.name=="minikube") or (.name=="docker-desktop")) | .cluster."certificate-authority-data"')
+    if [ "$ca_data" == "null" ] 
+    then
+        local ca_file=$(kubectl config view --raw -o json | jq -r '.clusters[] | select((.name=="minikube") or (.name=="docker-desktop")) | .cluster."certificate-authority"')
+        [ ! -f "$ca_file" ] && printErrorAndExit "Unable to find certificate-authority in kubectl config view"
+        ca_data=$(cat $ca_file | base64 -w0)
+    fi 
     local host=$(kubectl config view --raw -o json | jq -r '.clusters[] | select((.name=="minikube") or (.name=="docker-desktop")) | .cluster.server')
-    local client_cert_file=$(kubectl config view --raw -o json | jq -r '.users[] | select((.name=="minikube") or (.name=="docker-desktop")) | .user."client-certificate-data"')
-    local client_key_file=$(kubectl config view --raw -o json | jq -r '.users[] | select((.name=="minikube") or (.name=="docker-desktop")) | .user."client-key-data"')
-    echo "{\"cluster_ca_certificate\": \"$(echo $ca_file)\", \"host\":\"$host\", \"client_certificate\":\"$(echo $client_cert_file)\", \"client_key\":\"$(echo $client_key_file)\"}"
+    
+    local client_cert_data=$(kubectl config view --raw -o json | jq -r '.users[] | select((.name=="minikube") or (.name=="docker-desktop")) | .user."client-certificate-data"')
+    if [ "$client_cert_data" == "null" ] 
+    then
+        local client_cert_file=$(kubectl config view --raw -o json | jq -r '.users[] | select((.name=="minikube") or (.name=="docker-desktop")) | .user."client-certificate"')
+        [ ! -f "$client_cert_file" ] &&  printErrorAndExit "Unable to find client-certificate in kubectl config view"
+        client_cert_data=$(cat $client_cert_file | base64 -w0)
+    fi
+
+    local client_key_data=$(kubectl config view --raw -o json | jq -r '.users[] | select((.name=="minikube") or (.name=="docker-desktop")) | .user."client-key-data"')
+    if [ "$client_key_data" == "null" ]
+    then
+        local client_key_file=$(kubectl config view --raw -o json | jq -r '.users[] | select((.name=="minikube") or (.name=="docker-desktop")) | .user."client-key"')
+        [ ! -f "$client_key_file" ] && printErrorAndExit "Unable to find client-key in kubectl config view"
+        client_key_data=$(cat $client_key_file | base64 -w0)
+    fi
+
+    echo "{\"cluster_ca_certificate\": \"$(echo $ca_data)\", \"host\":\"$host\", \"client_certificate\":\"$(echo $client_cert_data)\", \"client_key\":\"$(echo $client_key_data)\"}"
+
 }
 
 function checkCommandAndRetry() {
