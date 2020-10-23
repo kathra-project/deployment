@@ -148,8 +148,10 @@ function postInstall() {
     installKathraCli $tmp/settings.json
 
     declare namespaceKathraSvc=$(terraform output -json kathra | jq -r '.services.namespace')
+
+    checkCommandAndRetry "[ "$(kubectl -n ${namespaceKathraSvc} get job | grep kathra-sync | wc -l)" -gt 1 ]"
     declare jobName=$(kubectl -n ${namespaceKathraSvc} get job -o json | jq -r '.items[0].metadata.labels."job-name"')
-    kubectl -n ${namespaceKathraSvc} wait --for=condition=complete job/${jobName}
+    kubectl -n ${namespaceKathraSvc} wait --for=condition=complete job/${jobName} 2> /dev/null > /dev/null
     [ $? -ne 0 ] && printError "Job ${jobName} not ready"
 
     printInfo "Kathra is installed in $((`date +%s`-START_KATHRA_INSTALL)) secondes"
@@ -184,6 +186,8 @@ function postInstall() {
     printInfo "Kathra URL: https://$(cat $tmp/settings.json | jq -r '.services.services.dashboard.host')"
     printInfo "User login: $(cat $tmp/settings.json | jq -r '[.factory.identities.users[]][0].username')"
     printInfo "User password: $(cat $tmp/settings.json | jq -r '[.factory.identities.users[]][0].initial_password[0].value')"
+    printInfo ""
+    printInfo "To add users or groups, edit file './../kathra/identities.yml'"
 }
 export -f postInstall
 
