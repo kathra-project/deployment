@@ -10,7 +10,7 @@ variable "node_size" {
 }
 
 variable "kubernetes_version" {
-    default = "1.16.8-gke.15"
+    default = "1.18.9-gke.2501"
 }
 
 resource "random_id" "username" {
