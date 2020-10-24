@@ -33,7 +33,7 @@ resource "azurerm_storage_container" "kathra_backup" {
 resource "helm_release" "velero" {
   name       = "velero"
   repository = "https://vmware-tanzu.github.io/helm-charts"
-  chart      = "vmware-tanzu/velero"
+  chart      = "velero"
   version    = "2.12.0"
   namespace  = kubernetes_namespace.kathra_backup.metadata[0].name
 

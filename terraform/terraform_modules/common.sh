@@ -67,12 +67,16 @@ function checkDependencies() {
     which kubectl > /dev/null       || installKubectl
     which terraform > /dev/null     || installTerraform
     
+    checkTerraformPlugins
+}
+export -f checkDependencies
+
+function checkTerraformPlugins() {
     installTerraformPlugin "keycloak" "2.0.0" "https://github.com/mrparkers/terraform-provider-keycloak.git" "v2.0.0"   || printErrorAndExit "Unable to install keycloak terraform plugin"
     installTerraformPlugin "kubectl"  "1.3.5"  "https://github.com/gavinbunney/terraform-provider-kubectl"    "v1.3.5"   || printErrorAndExit "Unable to install kubectl terraform plugin"
     installTerraformPlugin "nexus"    "1.10.2" "https://github.com/datadrivers/terraform-provider-nexus"      "v1.10.2"   || printErrorAndExit "Unable to install nexus terraform plugin"
-
 }
-export -f checkDependencies
+export -f checkTerraformPlugins
 
 function installTerraformPlugin() {
     printDebug "installTerraformPlugin(pluginName: $1, pluginVersion: $2, pluginSourceCommit: $3, pluginSourceCommit: $4)"
@@ -149,10 +153,10 @@ function postInstall() {
 
     declare namespaceKathraSvc=$(terraform output -json kathra | jq -r '.services.namespace')
 
-    checkCommandAndRetry "[ "$(kubectl -n ${namespaceKathraSvc} get job | grep kathra-sync | wc -l)" -gt 1 ]"
-    declare jobName=$(kubectl -n ${namespaceKathraSvc} get job -o json | jq -r '.items[0].metadata.labels."job-name"')
-    kubectl -n ${namespaceKathraSvc} wait --for=condition=complete job/${jobName} 2> /dev/null > /dev/null
-    [ $? -ne 0 ] && printError "Job ${jobName} not ready"
+    #checkCommandAndRetry "[ "$(kubectl -n ${namespaceKathraSvc} get job | grep kathra-sync | wc -l)" -gt 1 ]"
+    #declare jobName=$(kubectl -n ${namespaceKathraSvc} get job -o json | jq -r '.items[0].metadata.labels."job-name"')
+    #kubectl -n ${namespaceKathraSvc} wait --for=condition=complete job/${jobName} 2> /dev/null > /dev/null
+    #[ $? -ne 0 ] && printError "Job ${jobName} not ready"
 
     printInfo "Kathra is installed in $((`date +%s`-START_KATHRA_INSTALL)) secondes"
     printInfo ""

@@ -20,7 +20,7 @@ export azureLocation="eastus"
 export terraformVersion="0.12.21"
 export traefikChartVersion="1.85.0"
 
-export kubernetesVersion="1.16.10"
+export kubernetesVersion="1.18.8"
 
 export kathraImagesTag="stable"
 
@@ -52,8 +52,8 @@ function showHelpDeploy() {
     printInfo "--azure-group-name=<group-name>                :        Azure Group Name [default: $azureGroupName]"
     printInfo "--azure-location=<location>                    :        Azure Location [default: $azureLocation]"
     printInfo "--azure-subscribtion-id=<ARM_SUBSCRIPTION_ID>  :        Azure ARM_SUBSCRIPTION_ID [default: $ARM_SUBSCRIPTION_ID]"
-    printInfo "--azure-client-id=<ARM_CLIENT_ID>              :        Azure ARM_CLIENT_ID [default: $ARM_CLIENT_ID]"
-    printInfo "--azure-client-secret=<ARM_CLIENT_SECRET>      :        Azure ARM_CLIENT_SECRET [default: $ARM_CLIENT_SECRET]"
+    printInfo "--azure-client-id=<ARM_CLIENT_ID>              :        Azure ARM_CLIENT_ID [default: $(echo $ARM_CLIENT_ID | sed 's/[a-z0-9]/x/g')]"
+    printInfo "--azure-client-secret=<ARM_CLIENT_SECRET>      :        Azure ARM_CLIENT_SECRET [default: $(echo $ARM_CLIENT_SECRET | sed 's/[a-z0-9]/x/g')]"
     printInfo "--azure-tenant-id=<ARM_TENANT_ID>              :        Azure ARM_TENANT_ID [default: $ARM_TENANT_ID]"
     printInfo ""
     printInfo "--kubernetes-version=<version>                 :        Kubernetes Version [default: $kubernetesVersion]"
@@ -178,6 +178,8 @@ function checkDependencies() {
     which az > /dev/null || installAzureCli
     which kubectl > /dev/null || installKubectl
     which terraform > /dev/null || installTerraform
+
+    checkTerraformPlugins
 }
 export -f checkDependencies
 

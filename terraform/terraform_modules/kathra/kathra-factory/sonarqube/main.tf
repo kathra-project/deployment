@@ -37,7 +37,7 @@ ingress:
   annotations:
     kubernetes.io/ingress.class: "${var.ingress_class}"
     nginx.ingress.kubernetes.io/proxy-buffering: "off"
-    cert-manager.io/issuer: "${var.ingress_cert_manager_issuer}"
+    cert-manager.io/cluster-issuer: "${var.ingress_cert_manager_issuer}"
   hosts:
   - name: ${var.ingress_host}
     path: /

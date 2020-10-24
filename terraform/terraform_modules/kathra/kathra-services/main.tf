@@ -142,7 +142,7 @@ kathra-appmanager:
   ingress:
     annotations:
       kubernetes.io/ingress.class: "${var.kathra.ingress.class}"
-      cert-manager.io/issuer: "${var.kathra.ingress.cert-manager_issuer}"
+      cert-manager.io/cluster-issuer: "${var.kathra.ingress.cert-manager_issuer}"
       ingress.kubernetes.io/force-ssl-redirect: "true"
     tls:
     - hosts:
@@ -171,7 +171,7 @@ kathra-binaryrepositorymanager-harbor:
   ingress:
     annotations:
       kubernetes.io/ingress.class: "${var.kathra.ingress.class}"
-      cert-manager.io/issuer: "${var.kathra.ingress.cert-manager_issuer}"
+      cert-manager.io/cluster-issuer: "${var.kathra.ingress.cert-manager_issuer}"
       ingress.kubernetes.io/force-ssl-redirect: "true"
     tls:
     - hosts:
@@ -201,7 +201,7 @@ kathra-binaryrepositorymanager-nexus:
   ingress:
     annotations:
       kubernetes.io/ingress.class: "${var.kathra.ingress.class}"
-      cert-manager.io/issuer: "${var.kathra.ingress.cert-manager_issuer}"
+      cert-manager.io/cluster-issuer: "${var.kathra.ingress.cert-manager_issuer}"
       ingress.kubernetes.io/force-ssl-redirect: "true"
     tls:
     - hosts:
@@ -233,7 +233,7 @@ kathra-catalogmanager:
   ingress:
     annotations:
       kubernetes.io/ingress.class: "${var.kathra.ingress.class}"
-      cert-manager.io/issuer: "${var.kathra.ingress.cert-manager_issuer}"
+      cert-manager.io/cluster-issuer: "${var.kathra.ingress.cert-manager_issuer}"
       ingress.kubernetes.io/force-ssl-redirect: "true"
     tls:
     - hosts:
@@ -257,7 +257,7 @@ kathra-codegen-swagger:
   ingress:
     annotations:
       kubernetes.io/ingress.class: "${var.kathra.ingress.class}"
-      cert-manager.io/issuer: "${var.kathra.ingress.cert-manager_issuer}"
+      cert-manager.io/cluster-issuer: "${var.kathra.ingress.cert-manager_issuer}"
       ingress.kubernetes.io/force-ssl-redirect: "true"
     tls:
     - hosts:
@@ -279,7 +279,7 @@ kathra-codegen-helm:
   ingress:
     annotations:
       kubernetes.io/ingress.class: "${var.kathra.ingress.class}"
-      cert-manager.io/issuer: "${var.kathra.ingress.cert-manager_issuer}"
+      cert-manager.io/cluster-issuer: "${var.kathra.ingress.cert-manager_issuer}"
       ingress.kubernetes.io/force-ssl-redirect: "true"
     tls:
     - hosts:
@@ -306,7 +306,7 @@ kathra-dashboard:
   ingress:
     annotations:
       kubernetes.io/ingress.class: "${var.kathra.ingress.class}"
-      cert-manager.io/issuer: "${var.kathra.ingress.cert-manager_issuer}"
+      cert-manager.io/cluster-issuer: "${var.kathra.ingress.cert-manager_issuer}"
       ingress.kubernetes.io/force-ssl-redirect: "true"
     tls:
     - hosts:
@@ -331,7 +331,7 @@ kathra-pipelinemanager:
   ingress:
     annotations:
       kubernetes.io/ingress.class: "${var.kathra.ingress.class}"
-      cert-manager.io/issuer: "${var.kathra.ingress.cert-manager_issuer}"
+      cert-manager.io/cluster-issuer: "${var.kathra.ingress.cert-manager_issuer}"
       ingress.kubernetes.io/force-ssl-redirect: "true"
     tls:
     - hosts:
@@ -359,7 +359,7 @@ kathra-platformmanager:
   ingress:
     annotations:
       kubernetes.io/ingress.class: "${var.kathra.ingress.class}"
-      cert-manager.io/issuer: "${var.kathra.ingress.cert-manager_issuer}"
+      cert-manager.io/cluster-issuer: "${var.kathra.ingress.cert-manager_issuer}"
       ingress.kubernetes.io/force-ssl-redirect: "true"
     tls:
     - hosts:
@@ -386,7 +386,7 @@ kathra-resourcemanager:
   ingress:
     annotations:
       kubernetes.io/ingress.class: "${var.kathra.ingress.class}"
-      cert-manager.io/issuer: "${var.kathra.ingress.cert-manager_issuer}"
+      cert-manager.io/cluster-issuer: "${var.kathra.ingress.cert-manager_issuer}"
       ingress.kubernetes.io/force-ssl-redirect: "true"
     tls:
     - hosts:
@@ -426,7 +426,7 @@ kathra-sourcemanager:
   ingress:
     annotations:
       kubernetes.io/ingress.class: "${var.kathra.ingress.class}"
-      cert-manager.io/issuer: "${var.kathra.ingress.cert-manager_issuer}"
+      cert-manager.io/cluster-issuer: "${var.kathra.ingress.cert-manager_issuer}"
       ingress.kubernetes.io/force-ssl-redirect: "true"
     tls:
     - hosts:
@@ -452,7 +452,7 @@ kathra-usermanager:
   ingress:
     annotations:
       kubernetes.io/ingress.class: "${var.kathra.ingress.class}"
-      cert-manager.io/issuer: "${var.kathra.ingress.cert-manager_issuer}"
+      cert-manager.io/cluster-issuer: "${var.kathra.ingress.cert-manager_issuer}"
       ingress.kubernetes.io/force-ssl-redirect: "true"
     tls:
     - hosts:
